@@ -40,6 +40,7 @@ yarn-error.log*
 Thumbs.db
 
 # Secrets / credentials
+firebase_credentials.json
 *.json
 !package.json
 !package-lock.json
