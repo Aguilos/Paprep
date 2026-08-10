@@ -20,22 +20,21 @@ ENV/
 *.db
 *.sqlite3
 
-# Node / Next.js
+# Node / Next.js (unused)
 node_modules/
-next-supabase-mvp/node_modules/
-next-supabase-mvp/.next/
+next-supabase-mvp/
 .next/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# IDEs
+# IDE / editor
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS
+# OS artefacts
 .DS_Store
 Thumbs.db
 
@@ -44,3 +43,19 @@ firebase_credentials.json
 *.json
 !package.json
 !package-lock.json
+
+# Runtime logs / temp files
+ping.txt
+server_err.txt
+server_out.txt
+
+# Firebase schema (unused backend)
+firebase_schema/
+
+# Migration artefacts (one-off)
+migration_verify.txt
+migrate_sqlite_to_supabase.py
+
+# Unused helper scripts
+write2.py
+scripts/
