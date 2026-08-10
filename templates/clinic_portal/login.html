@@ -1,0 +1,64 @@
+{% extends 'clinic_portal/auth_base.html' %}
+{% block title %}Clinic Login{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center" style="background:linear-gradient(135deg,#1a3a5c 0%,#0d6efd 100%);">
+  <div class="card shadow-lg border-0" style="width:100%;max-width:420px;border-radius:18px;overflow:hidden;">
+    <div class="card-body p-5">
+      <div class="text-center mb-4">
+        <div class="mx-auto mb-3 d-flex align-items-center justify-content-center"
+             style="width:68px;height:68px;background:linear-gradient(135deg,#4E97D9,#9B59B6);border-radius:50%;box-shadow:0 4px 16px rgba(78,151,217,.35);overflow:hidden;">
+          <img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo" style="width:52px;height:52px;border-radius:50%;object-fit:cover;">
+        </div>
+        <h2 class="fw-800 mb-1" style="font-family:Nunito,sans-serif;">Clinic Portal</h2>
+        <p class="text-muted small mb-0">Sign in to manage your clinic on PaPrep.</p>
+      </div>
+
+      <form method="POST" action="{{ url_for('clinic_portal.login') }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Email Address</label>
+          <input type="email" name="email" class="form-control form-control-lg"
+                 value="{{ email or '' }}" placeholder="clinic@example.com"
+                 required autocomplete="email">
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Password</label>
+          <div class="input-group">
+            <input type="password" name="password" id="cp_password"
+                   class="form-control form-control-lg"
+                   placeholder="Your password" required autocomplete="current-password">
+            <button type="button" class="btn btn-outline-secondary"
+                    onclick="togglePw('cp_password',this)">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 btn-lg fw-700">
+          <i class="bi bi-box-arrow-in-right me-2"></i> Log In
+        </button>
+      </form>
+
+      <div class="text-center mt-4 small text-muted">
+        New clinic?
+        <a href="{{ url_for('clinic_portal.signup') }}" class="fw-700 text-decoration-none">Create an account</a>
+      </div>
+      <div class="text-center mt-2 small text-muted">
+        <a href="{{ url_for('main.index') }}" class="text-muted text-decoration-none">
+          <i class="bi bi-arrow-left me-1"></i> Back to landing page
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePw(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.querySelector('i').className = el.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+</script>
+{% endblock %}

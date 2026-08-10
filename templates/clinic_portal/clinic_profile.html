@@ -1,0 +1,287 @@
+{% extends 'clinic_portal/base.html' %}
+{% block title %}Clinic Profile & Location{% endblock %}
+{% block page_title %}Clinic Profile & Location{% endblock %}
+
+{% macro ampm(t) -%}
+{%- if t -%}
+  {%- set p = t.split(':') -%}
+  {%- set h = p[0] | int -%}
+  {%- set m = p[1] if p | length > 1 else '00' -%}
+  {%- if h == 0 %}12:{{ m }} AM
+  {%- elif h < 12 %}{{ h }}:{{ m }} AM
+  {%- elif h == 12 %}12:{{ m }} PM
+  {%- else %}{{ h - 12 }}:{{ m }} PM
+  {%- endif -%}
+{%- endif -%}
+{%- endmacro %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  .loc-map { height: 320px; border-radius: 10px; border: 1px solid #dee2e6; }
+  .sched-table td { vertical-align: middle; }
+  .sched-table tr.is-closed td:not(:nth-child(1)):not(:nth-child(2)) { opacity:.35; pointer-events:none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h4 class="page-heading mb-0">Clinic Profile &amp; Location</h4>
+  <p class="text-muted small mb-0">Update your clinic's info, map pin, and weekly schedule.</p>
+</div>
+
+<form method="POST" action="{{ url_for('clinic_portal.clinic_profile') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-4" id="profileTabs">
+    <li class="nav-item">
+      <button type="button" class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabDetails">
+        <i class="bi bi-info-circle me-1"></i> Clinic Details
+      </button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#tabMap"
+              id="mapTabBtn">
+        <i class="bi bi-geo-alt me-1"></i> Map Location
+      </button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#tabSchedule">
+        <i class="bi bi-clock me-1"></i> Schedule
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content bg-white p-4 rounded shadow-sm">
+
+    <!-- Details tab -->
+    <div class="tab-pane fade show active" id="tabDetails">
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label fw-semibold">Clinic Name <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control" value="{{ clinic.name }}" required>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label fw-semibold">Address</label>
+          <input type="text" name="address" class="form-control" value="{{ clinic.address or '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">City / Municipality</label>
+          <input type="text" name="city" class="form-control" value="{{ clinic.city or '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Phone</label>
+          <input type="tel" name="phone" class="form-control" value="{{ clinic.phone or '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Email</label>
+          <input type="email" name="email" class="form-control" value="{{ clinic.email or '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Website</label>
+          <input type="url" name="website" class="form-control" value="{{ clinic.website or '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Clinic Type</label>
+          <select name="clinic_type" class="form-select">
+            <option value="general" {% if clinic.clinic_type == 'general' %}selected{% endif %}>General</option>
+            <option value="pediatric" {% if clinic.clinic_type == 'pediatric' %}selected{% endif %}>Pediatric</option>
+            <option value="specialty" {% if clinic.clinic_type == 'specialty' %}selected{% endif %}>Specialty</option>
+          </select>
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="accepts_special_needs"
+                   id="cp_sn" {% if clinic.accepts_special_needs %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="cp_sn">
+              <i class="bi bi-person-heart me-1" style="color:#9B59B6;"></i>
+              Accepts Special Needs Children
+            </label>
+          </div>
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Description</label>
+          <textarea name="description" class="form-control" rows="3">{{ clinic.description or '' }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map tab -->
+    <div class="tab-pane fade" id="tabMap">
+      <p class="text-muted small mb-2">
+        <i class="bi bi-cursor-fill me-1 text-primary"></i>
+        Click anywhere on the map to place your clinic's pin. The coordinates fill automatically.
+      </p>
+      <div id="clinicMapDiv" class="loc-map mb-3"></div>
+      <div class="row g-2">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small">Latitude</label>
+          <input type="number" step="0.000001" name="latitude" id="cp_lat"
+                 class="form-control form-control-sm"
+                 value="{{ clinic.latitude if clinic.latitude else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small">Longitude</label>
+          <input type="number" step="0.000001" name="longitude" id="cp_lng"
+                 class="form-control form-control-sm"
+                 value="{{ clinic.longitude if clinic.longitude else '' }}">
+        </div>
+      </div>
+      <small class="text-muted">You can also type coordinates manually.</small>
+    </div>
+
+    <!-- Schedule tab -->
+    <div class="tab-pane fade" id="tabSchedule">
+      <p class="text-muted small mb-2">
+        <i class="bi bi-clock me-1"></i>
+        Set your weekly operating hours. Check <strong>Closed</strong> for days off.
+      </p>
+      <div class="table-responsive">
+        <table class="table table-sm sched-table align-middle">
+          <thead class="table-light">
+            <tr><th>Day</th><th>Status</th><th>Hours</th></tr>
+          </thead>
+          <tbody>
+            {% for day in days %}
+            {% set s = schedules.get(day) %}
+            <tr id="row_{{ day }}" {% if s and s.is_closed %}class="is-closed"{% endif %}>
+              <td class="fw-semibold small" style="width:100px;white-space:nowrap;">{{ day }}</td>
+              <td style="width:85px;">
+                <div class="form-check mb-0">
+                  <input class="form-check-input" type="checkbox" name="closed_{{ day }}"
+                         id="closed_{{ day }}"
+                         {% if s and s.is_closed %}checked{% endif %}
+                         onchange="toggleDay(this,'{{ day }}')">
+                  <label class="form-check-label text-danger small" for="closed_{{ day }}">Closed</label>
+                </div>
+              </td>
+              <td id="times_{{ day }}" {% if s and s.is_closed %}style="opacity:.35;pointer-events:none;"{% endif %}>
+                {% set oh = 8 %} {% set om = '00' %} {% set op = 'AM' %}
+                {% set ch = 5 %} {% set cm = '00' %} {% set cp = 'PM' %}
+                {% if s and s.open_time %}
+                  {% set parts = s.open_time.split(':') %}
+                  {% set hv = parts[0] | int %}
+                  {% set mv = parts[1] if parts | length > 1 else '00' %}
+                  {% if hv == 0 %}{% set oh = 12 %}{% set op = 'AM' %}
+                  {% elif hv < 12 %}{% set oh = hv %}{% set op = 'AM' %}
+                  {% elif hv == 12 %}{% set oh = 12 %}{% set op = 'PM' %}
+                  {% else %}{% set oh = hv - 12 %}{% set op = 'PM' %}{% endif %}
+                  {% set om = mv %}
+                {% endif %}
+                {% if s and s.close_time %}
+                  {% set parts2 = s.close_time.split(':') %}
+                  {% set hv2 = parts2[0] | int %}
+                  {% set mv2 = parts2[1] if parts2 | length > 1 else '00' %}
+                  {% if hv2 == 0 %}{% set ch = 12 %}{% set cp = 'AM' %}
+                  {% elif hv2 < 12 %}{% set ch = hv2 %}{% set cp = 'AM' %}
+                  {% elif hv2 == 12 %}{% set ch = 12 %}{% set cp = 'PM' %}
+                  {% else %}{% set ch = hv2 - 12 %}{% set cp = 'PM' %}{% endif %}
+                  {% set cm = mv2 %}
+                {% endif %}
+                <div class="d-flex gap-1 align-items-center flex-wrap row-gap-1">
+                  <small class="text-muted" style="width:36px;">Open</small>
+                  <select name="open_hour_{{ day }}" class="form-select form-select-sm px-1" style="width:52px;">
+                    {% for h in range(1,13) %}<option value="{{ h }}" {% if h == oh %}selected{% endif %}>{{ h }}</option>{% endfor %}
+                  </select>
+                  <select name="open_min_{{ day }}" class="form-select form-select-sm px-1" style="width:58px;">
+                    {% for mn in ['00','15','30','45'] %}<option value="{{ mn }}" {% if mn == om %}selected{% endif %}>:{{ mn }}</option>{% endfor %}
+                  </select>
+                  <select name="open_period_{{ day }}" class="form-select form-select-sm px-1" style="width:58px;">
+                    <option value="AM" {% if op == 'AM' %}selected{% endif %}>AM</option>
+                    <option value="PM" {% if op == 'PM' %}selected{% endif %}>PM</option>
+                  </select>
+                  <span class="text-muted">—</span>
+                  <small class="text-muted" style="width:38px;">Close</small>
+                  <select name="close_hour_{{ day }}" class="form-select form-select-sm px-1" style="width:52px;">
+                    {% for h in range(1,13) %}<option value="{{ h }}" {% if h == ch %}selected{% endif %}>{{ h }}</option>{% endfor %}
+                  </select>
+                  <select name="close_min_{{ day }}" class="form-select form-select-sm px-1" style="width:58px;">
+                    {% for mn in ['00','15','30','45'] %}<option value="{{ mn }}" {% if mn == cm %}selected{% endif %}>:{{ mn }}</option>{% endfor %}
+                  </select>
+                  <select name="close_period_{{ day }}" class="form-select form-select-sm px-1" style="width:58px;">
+                    <option value="AM" {% if cp == 'AM' %}selected{% endif %}>AM</option>
+                    <option value="PM" {% if cp == 'PM' %}selected{% endif %}>PM</option>
+                  </select>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- tab-content -->
+
+  <div class="mt-3 d-flex gap-2">
+    <button type="submit" class="btn btn-primary btn-lg">
+      <i class="bi bi-check-lg me-1"></i> Save All Changes
+    </button>
+    <a href="{{ url_for('clinic_portal.dashboard') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+  </div>
+</form>
+
+<script>
+  let cpMap = null, cpMarker = null;
+  const PH_CENTER = [12.8797, 121.7740];
+
+  // Init map only when map tab is shown
+  document.getElementById('mapTabBtn').addEventListener('shown.bs.tab', () => {
+    if (!cpMap) {
+      cpMap = L.map('clinicMapDiv').setView(PH_CENTER, 6);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors', maxZoom: 18
+      }).addTo(cpMap);
+      L.DomEvent.disableClickPropagation(cpMap.getContainer());
+      cpMap.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        document.getElementById('cp_lat').value = lat.toFixed(6);
+        document.getElementById('cp_lng').value = lng.toFixed(6);
+        if (cpMarker) cpMap.removeLayer(cpMarker);
+        cpMarker = L.marker([lat, lng]).addTo(cpMap).bindPopup('{{ clinic.name }}').openPopup();
+      });
+    }
+    cpMap.invalidateSize();
+    const lat = parseFloat(document.getElementById('cp_lat').value);
+    const lng = parseFloat(document.getElementById('cp_lng').value);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      if (cpMarker) cpMap.removeLayer(cpMarker);
+      cpMarker = L.marker([lat, lng]).addTo(cpMap).bindPopup('{{ clinic.name }}');
+      cpMap.setView([lat, lng], 14);
+    }
+  });
+
+  // Sync typed coordinates → map marker
+  ['cp_lat','cp_lng'].forEach(id =>
+    document.getElementById(id).addEventListener('change', () => {
+      const lat = parseFloat(document.getElementById('cp_lat').value);
+      const lng = parseFloat(document.getElementById('cp_lng').value);
+      if (!cpMap || isNaN(lat) || isNaN(lng)) return;
+      if (cpMarker) cpMap.removeLayer(cpMarker);
+      cpMarker = L.marker([lat, lng]).addTo(cpMap);
+      cpMap.setView([lat, lng], 14);
+    })
+  );
+
+  function toggleDay(checkbox, day) {
+    const timesEl = document.getElementById('times_' + day);
+    const row = document.getElementById('row_' + day);
+    if (checkbox.checked) {
+      timesEl.style.opacity = '.35';
+      timesEl.style.pointerEvents = 'none';
+      timesEl.querySelectorAll('select').forEach(s => s.disabled = true);
+    } else {
+      timesEl.style.opacity = '';
+      timesEl.style.pointerEvents = '';
+      timesEl.querySelectorAll('select').forEach(s => s.disabled = false);
+    }
+  }
+
+  // Init disabled state on page load
+  document.querySelectorAll('[id^="closed_"]').forEach(cb => {
+    if (cb.checked) toggleDay(cb, cb.id.replace('closed_',''));
+  });
+</script>
+{% endblock %}

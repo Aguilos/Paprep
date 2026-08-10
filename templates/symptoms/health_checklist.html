@@ -1,0 +1,569 @@
+{% extends 'base.html' %}
+{% block title %}Dietary & Health Checklist{% endblock %}
+{% block page_title %}Dietary & Health Checklist{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ── Page Layout ─────────────────────────────────────── */
+  .checklist-hero {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
+    border: 1px solid #d1fae5;
+    border-radius: 16px;
+    padding: 1.5rem 1.75rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+  }
+  .checklist-hero-icon {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, #10b981, #06b6d4);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  .checklist-hero-text h4 { font-size: 1.1rem; font-weight: 700; margin-bottom: .15rem; color: #065f46; }
+  .checklist-hero-text p  { font-size: .82rem; color: #6b7280; margin: 0; }
+
+  /* ── Progress Ring ───────────────────────────────────── */
+  .progress-ring-wrap {
+    display: flex; align-items: center; gap: 1rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .progress-ring-svg { flex-shrink: 0; }
+  .progress-ring-bg  { fill: none; stroke: #f3f4f6; stroke-width: 6; }
+  .progress-ring-fg  {
+    fill: none; stroke: #10b981; stroke-width: 6;
+    stroke-linecap: round;
+    transform: rotate(-90deg); transform-origin: 50% 50%;
+    transition: stroke-dashoffset .5s ease;
+  }
+  .progress-ring-label { font-size: 1.15rem; font-weight: 800; color: #065f46; }
+  .progress-ring-sub   { font-size: .78rem; color: #6b7280; }
+  .progress-ring-text-wrap h5 { font-size: .95rem; font-weight: 700; color: #111827; margin-bottom: .1rem; }
+  .progress-ring-text-wrap p  { font-size: .82rem; color: #6b7280; margin: 0; }
+
+  /* ── Category Card ───────────────────────────────────── */
+  .checklist-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    transition: box-shadow .2s;
+  }
+  .checklist-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+
+  .checklist-card-header {
+    display: flex; align-items: center; gap: .75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .checklist-card-header-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; color: #fff; flex-shrink: 0;
+  }
+  .checklist-card-header h5 { font-size: .95rem; font-weight: 700; margin: 0; color: #111827; }
+  .checklist-card-header .badge-count {
+    margin-left: auto;
+    background: #f3f4f6; color: #6b7280;
+    font-size: .72rem; font-weight: 600;
+    padding: .25rem .6rem; border-radius: 20px;
+  }
+
+  .checklist-card-body { padding: .75rem 1.25rem 1.25rem; }
+
+  /* ── Checklist Item ──────────────────────────────────── */
+  .check-item {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .65rem .75rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .15s;
+    user-select: none;
+    margin-bottom: .25rem;
+  }
+  .check-item:hover { background: #f9fafb; }
+  .check-item input[type="checkbox"] { display: none; }
+
+  .check-box {
+    width: 22px; height: 22px; flex-shrink: 0;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+    background: #fff;
+  }
+  .check-box i { font-size: .75rem; color: #fff; display: none; }
+
+  .check-item.checked .check-box {
+    border-color: #10b981;
+    background: #10b981;
+  }
+  .check-item.checked .check-box i { display: block; }
+
+  .check-item.checked .check-label { color: #6b7280; text-decoration: line-through; }
+
+  .check-label { font-size: .875rem; color: #374151; font-weight: 500; flex: 1; }
+
+  /* ── Notes ───────────────────────────────────────────── */
+  .notes-card {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .notes-card label { font-size: .875rem; font-weight: 700; color: #92400e; margin-bottom: .5rem; display: block; }
+  .notes-card textarea {
+    width: 100%; border: 1px solid #fcd34d; border-radius: 10px;
+    padding: .65rem .85rem; font-size: .875rem; font-family: 'Nunito', sans-serif;
+    background: #fff; resize: vertical; min-height: 80px;
+    outline: none; transition: border-color .15s;
+  }
+  .notes-card textarea:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,.15); }
+
+  /* ── Sleep Guide Tip ─────────────────────────────────── */
+  .sleep-tip {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 12px;
+    padding: .75rem 1rem;
+    font-size: .8rem; color: #3730a3;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: .6rem;
+  }
+
+  /* ── Date Badge ──────────────────────────────────────── */
+  .date-badge {
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: #f3f4f6; border-radius: 20px;
+    padding: .3rem .85rem; font-size: .8rem; color: #6b7280;
+    margin-bottom: 1rem;
+    cursor: pointer; text-decoration: none;
+    transition: background .15s, color .15s;
+    border: none;
+  }
+  .date-badge:hover { background: #e0fdf4; color: #065f46; }
+  .date-badge .date-history-hint {
+    font-size: .72rem; color: #10b981; font-weight: 600;
+    margin-left: .3rem; opacity: 0; transition: opacity .2s;
+  }
+  .date-badge:hover .date-history-hint { opacity: 1; }
+
+  /* ── View History button ────────────────────────────── */
+  .btn-view-history {
+    background: #f3f4f6; border: 1px solid #e5e7eb;
+    color: #374151; border-radius: 10px;
+    padding: .45rem 1rem; font-size: .8rem; font-weight: 700;
+    display: inline-flex; align-items: center; gap: .4rem;
+    cursor: pointer; transition: background .15s, color .15s;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .btn-view-history:hover { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+
+  /* ── Save Button ─────────────────────────────────────── */
+  .btn-save-checklist {
+    background: linear-gradient(135deg, #10b981, #06b6d4);
+    color: #fff; border: none; border-radius: 12px;
+    padding: .75rem 2rem; font-size: .95rem; font-weight: 700;
+    display: flex; align-items: center; gap: .5rem;
+    transition: opacity .2s, transform .15s;
+    cursor: pointer;
+  }
+  .btn-save-checklist:hover { opacity: .92; transform: translateY(-1px); }
+
+  /* ── Flash ───────────────────────────────────────────── */
+  .flash-success {
+    background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46;
+    border-radius: 12px; padding: .75rem 1rem; font-size: .875rem;
+    display: flex; align-items: center; gap: .6rem; margin-bottom: 1.25rem;
+  }
+
+  /* ── History Section ─────────────────────────────────── */
+  .history-section {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .history-section-header {
+    display: flex; align-items: center; gap: .85rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f3f4f6;
+    background: #f9fafb;
+  }
+  .history-section-icon {
+    width: 36px; height: 36px; flex-shrink: 0;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: .95rem;
+  }
+  .history-section-title { font-size: .95rem; font-weight: 700; color: #111827; }
+  .history-section-sub   { font-size: .75rem; color: #6b7280; }
+  .history-total-badge {
+    background: #ede9fe; color: #5b21b6;
+    font-size: .72rem; font-weight: 700;
+    padding: .25rem .7rem; border-radius: 20px; white-space: nowrap;
+  }
+
+  .history-empty {
+    padding: 2.5rem; text-align: center; color: #9ca3af;
+  }
+  .history-empty i { font-size: 2.5rem; display: block; margin-bottom: .75rem; }
+  .history-empty p { font-size: .875rem; margin: 0; }
+
+  .history-list { padding: .25rem 0; }
+
+  .history-entry { border-bottom: 1px solid #f3f4f6; }
+  .history-entry:last-child { border-bottom: none; }
+
+  .history-entry-row {
+    width: 100%; display: flex; align-items: center; gap: .75rem;
+    padding: .75rem 1.25rem;
+    background: none; border: none; text-align: left; cursor: pointer;
+    transition: background .15s;
+  }
+  .history-entry-row:hover { background: #f9fafb; }
+  .history-entry-row.collapsed .history-chevron { transform: rotate(0deg); }
+  .history-entry-row:not(.collapsed) .history-chevron { transform: rotate(180deg); }
+  .history-chevron { font-size: .75rem; color: #9ca3af; flex-shrink: 0; transition: transform .2s; }
+
+  .history-entry-date { min-width: 150px; }
+  .history-day-name  { display: block; font-size: .7rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; }
+  .history-date-str  { font-size: .85rem; font-weight: 600; color: #111827; }
+  .today-pill {
+    background: #d1fae5; color: #065f46;
+    font-size: .65rem; font-weight: 700;
+    padding: .1rem .45rem; border-radius: 20px; margin-left: .35rem;
+  }
+
+  .history-bar-wrap {
+    flex: 1; height: 7px; background: #f3f4f6; border-radius: 99px; overflow: hidden;
+  }
+  .history-bar { height: 100%; border-radius: 99px; min-width: 3px; transition: width .3s; }
+
+  .history-count { font-size: .78rem; font-weight: 700; white-space: nowrap; min-width: 38px; text-align: right; }
+  .history-pct   { font-size: .78rem; font-weight: 700; white-space: nowrap; min-width: 38px; text-align: right; }
+
+  .history-entry-body {
+    padding: .75rem 1.25rem 1rem 1.25rem;
+    background: #fafafa;
+    border-top: 1px solid #f3f4f6;
+  }
+  .history-items-wrap {
+    display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem;
+  }
+  .history-item-tag {
+    background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;
+    font-size: .72rem; font-weight: 600;
+    padding: .2rem .55rem; border-radius: 20px;
+    display: inline-flex; align-items: center; gap: .3rem;
+  }
+  .history-notes {
+    font-size: .8rem; color: #78350f;
+    background: #fffbeb; border: 1px solid #fde68a;
+    border-radius: 8px; padding: .5rem .75rem; margin-top: .4rem;
+  }
+  /* Child switcher banner */
+  .child-switcher-banner {
+    display: flex; align-items: center; flex-wrap: wrap; gap: .6rem;
+    background: #f0f0fe; border: 1px solid #c7d2fe;
+    border-radius: 12px; padding: .65rem 1rem; margin-bottom: 1rem;
+  }
+  .child-switcher-pills { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .child-pill {
+    border: 2px solid #c7d2fe; background: #fff;
+    color: #4b5563; border-radius: 20px;
+    padding: .25rem .85rem; font-size: .82rem; font-weight: 600;
+    cursor: pointer; transition: all .18s; display: flex; align-items: center; gap: .35rem;
+  }
+  .child-pill:hover { border-color: #6366f1; color: #4f46e5; background: #eef2ff; }
+  .child-pill.active {
+    background: linear-gradient(135deg,#6366f1,#8b5cf6);
+    border-color: transparent; color: #fff;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+  <!-- Hero -->
+  <div class="checklist-hero">
+    <div class="checklist-hero-icon"><i class="bi bi-clipboard2-heart-fill"></i></div>
+    <div class="checklist-hero-text">
+      <h4>Dietary & Health Monitoring Checklist</h4>
+      <p>Daily tracker for <strong>{{ active_child.name }}</strong>
+         &nbsp;·&nbsp; {{ active_child.age_display }}
+         &nbsp;·&nbsp; {{ active_child.age_bracket }}
+      </p>
+    </div>
+  </div>
+
+  {% if all_children|length > 1 %}
+  <!-- Child switcher banner (only shown when there are multiple children) -->
+  <div class="child-switcher-banner">
+    <i class="bi bi-person-fill-check" style="color:#6366f1;font-size:1rem;"></i>
+    <span style="font-size:.85rem;color:#374151;">Viewing checklist for:</span>
+    <div class="child-switcher-pills">
+      {% for c in all_children %}
+      <button type="button"
+              class="child-pill {% if c.id == active_child.id %}active{% endif %}"
+              onclick="switchToChild('{{ c.id }}')">
+        {{ c.name }}
+        {% if c.id == active_child.id %}<i class="bi bi-check-lg"></i>{% endif %}
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Date (click opens history modal) -->
+  <button class="date-badge" data-bs-toggle="modal" data-bs-target="#historyModal" type="button">
+    <i class="bi bi-calendar3"></i>
+    Today &mdash; {{ today.strftime('%B %d, %Y') }}
+    <span class="date-history-hint"><i class="bi bi-clock-history"></i> View History</span>
+  </button>
+
+  <!-- Progress Ring -->
+  {% set pct = ((checked_count / total_items) * 100)|int if total_items > 0 else 0 %}
+  {% set circumference = 2 * 3.14159 * 26 %}
+  {% set offset = circumference - (pct / 100 * circumference) %}
+  <div class="progress-ring-wrap">
+    <svg class="progress-ring-svg" width="64" height="64" viewBox="0 0 64 64">
+      <circle class="progress-ring-bg" cx="32" cy="32" r="26"/>
+      <circle class="progress-ring-fg" cx="32" cy="32" r="26"
+              stroke-dasharray="{{ '%.2f'|format(circumference) }}"
+              stroke-dashoffset="{{ '%.2f'|format(offset) }}"
+              {% if pct == 100 %}stroke="#10b981"{% elif pct >= 50 %}stroke="#f59e0b"{% else %}stroke="#ef4444"{% endif %}/>
+    </svg>
+    <div style="flex:1">
+      <div class="progress-ring-label">{{ checked_count }} / {{ total_items }}</div>
+      <div class="progress-ring-sub">items completed today</div>
+    </div>
+    <div class="progress-ring-text-wrap">
+      {% if pct == 100 %}
+        <h5 style="color:#065f46">All done! 🌟</h5>
+        <p>Great job keeping track today.</p>
+      {% elif pct >= 70 %}
+        <h5 style="color:#92400e">Almost there!</h5>
+        <p>Just a few more items to check.</p>
+      {% elif pct >= 40 %}
+        <h5 style="color:#1d4ed8">Good progress</h5>
+        <p>Keep going — you're halfway through.</p>
+      {% else %}
+        <h5 style="color:#374151">Let's get started</h5>
+        <p>Check off each item as you go.</p>
+      {% endif %}
+    </div>
+    <button type="button" class="btn-view-history" data-bs-toggle="modal" data-bs-target="#historyModal">
+      <i class="bi bi-clock-history"></i> History
+    </button>
+  </div>
+
+  <!-- Sleep Tip -->
+  {% if sleep_guide %}
+  <div class="sleep-tip">
+    <i class="bi bi-moon-stars-fill"></i>
+    <span><strong>Recommended sleep for {{ active_child.age_bracket }}:</strong> {{ sleep_guide }}</span>
+  </div>
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('symptoms.health_checklist') }}" id="checklistForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <!-- Category Cards -->
+    {% for cat_key, cat in categories.items() %}
+    <div class="checklist-card">
+      <div class="checklist-card-header">
+        <div class="checklist-card-header-icon"
+             style="background:{{ cat.color }}">
+          <i class="bi {{ cat.icon }}"></i>
+        </div>
+        <h5>{{ cat.title }}</h5>
+        {% set ns = namespace(cnt=0) %}
+        {% for it in cat['items'] %}{% if it.key in checked_today %}{% set ns.cnt = ns.cnt + 1 %}{% endif %}{% endfor %}
+        <span class="badge-count" id="count-{{ cat_key }}">
+          {{ ns.cnt }} / {{ cat['items'] | length }}
+        </span>
+      </div>
+      <div class="checklist-card-body">
+        {% for item in cat['items'] %}
+        {% set is_checked = item.key in checked_today %}
+        <label class="check-item {% if is_checked %}checked{% endif %}"
+               for="item_{{ item.key }}"
+               data-cat="{{ cat_key }}"
+               data-key="{{ item.key }}">
+          <input type="checkbox" name="items" value="{{ item.key }}"
+                 id="item_{{ item.key }}" {% if is_checked %}checked{% endif %}>
+          <div class="check-box"><i class="bi bi-check"></i></div>
+          <span class="check-label">{{ item.label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <!-- Notes -->
+    <div class="notes-card">
+      <label for="notesField"><i class="bi bi-pencil-square me-1"></i>Additional Notes (optional)</label>
+      <textarea name="notes" id="notesField"
+                placeholder="Any observations, concerns, or reminders for today…">{{ notes_today or '' }}</textarea>
+    </div>
+
+    <!-- Save -->
+    <div class="d-flex justify-content-end mb-4">
+      <button type="submit" class="btn-save-checklist">
+        <i class="bi bi-floppy-fill"></i>
+        Save Today's Checklist
+      </button>
+    </div>
+  </form>
+
+  
+  <div class="disclaimer-banner mb-4">
+    <div class="disclaimer-icon"><i class="bi bi-info-circle-fill"></i></div>
+    <div class="disclaimer-text small">
+      This checklist is a daily self-monitoring aid for parents and guardians.
+      It does not replace professional medical or nutritional advice.
+      Consult your child's pediatrician for any health concerns.
+    </div>
+  </div>
+
+  <!-- ── Full History Modal ───────────────────────────── -->
+  <div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content" style="border-radius:16px;border:none;">
+
+        <div class="modal-header" style="background:#f9fafb;border-bottom:1px solid #f3f4f6;border-radius:16px 16px 0 0;">
+          <div class="d-flex align-items-center gap-3">
+            <div class="history-section-icon"><i class="bi bi-clock-history"></i></div>
+            <div>
+              <div class="history-section-title" id="historyModalLabel">Checklist History</div>
+              <div class="history-section-sub">All saved entries for {{ active_child.name }}</div>
+            </div>
+          </div>
+          <span class="history-total-badge ms-3">{{ history|length }} entr{{ 'y' if history|length == 1 else 'ies' }}</span>
+          <button type="button" class="btn-close ms-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-0">
+          {% if not history %}
+          <div class="history-empty">
+            <i class="bi bi-calendar-x"></i>
+            <p>No checklist entries yet. Save today's checklist to start your history!</p>
+          </div>
+          {% else %}
+          <div class="history-list">
+            {% for entry in history %}
+            {% set bar_clr = '#10b981' if entry.pct == 100 else ('#f59e0b' if entry.pct >= 50 else '#ef4444') %}
+            <div class="history-entry">
+              <button class="history-entry-row collapsed"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#hist-{{ entry.id }}"
+                      aria-expanded="false">
+                <div class="history-entry-date">
+                  <span class="history-day-name">{{ entry.day_str }}</span>
+                  <span class="history-date-str">{{ entry.date_str }}{% if entry.is_today %} <span class="today-pill">Today</span>{% endif %}</span>
+                </div>
+                <div class="history-bar-wrap">
+                  <div class="history-bar" style="width:{{ entry.pct }}%;background:{{ bar_clr }}"></div>
+                </div>
+                <div class="history-count" style="color:{{ bar_clr }}">{{ entry.count }}/{{ entry.total }}</div>
+                <div class="history-pct" style="color:{{ bar_clr }}">{{ entry.pct }}%</div>
+                <i class="bi bi-chevron-down history-chevron"></i>
+              </button>
+              <div class="collapse" id="hist-{{ entry.id }}">
+                <div class="history-entry-body">
+                  {% if entry.labels %}
+                  <div class="history-items-wrap">
+                    {% for lbl in entry.labels %}
+                    <span class="history-item-tag"><i class="bi bi-check-circle-fill"></i> {{ lbl }}</span>
+                    {% endfor %}
+                  </div>
+                  {% else %}
+                  <p class="text-muted small mb-2">No items were checked on this day.</p>
+                  {% endif %}
+                  {% if entry.notes %}
+                  <div class="history-notes"><i class="bi bi-pencil-square me-1"></i>{{ entry.notes }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  // The <label for="..."> already toggles the hidden checkbox on click.
+  // We only need the 'change' event to sync the visual state.
+  document.querySelectorAll('.check-item input[type="checkbox"]').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      const label = cb.closest('.check-item');
+      label.classList.toggle('checked', cb.checked);
+      updateCategoryCount(label.dataset.cat);
+      updateRing();
+    });
+  });
+
+  function updateCategoryCount(catKey) {
+    const catItems = document.querySelectorAll('.check-item[data-cat="' + catKey + '"]');
+    const total    = catItems.length;
+    const done     = Array.from(catItems).filter(l => l.classList.contains('checked')).length;
+    const el = document.getElementById('count-' + catKey);
+    if (el) el.textContent = done + ' / ' + total;
+  }
+
+  function updateRing() {
+    const allItems  = document.querySelectorAll('.check-item');
+    const total     = allItems.length;
+    const done      = Array.from(allItems).filter(l => l.classList.contains('checked')).length;
+    const pct       = total > 0 ? done / total : 0;
+    const r         = 26;
+    const circ      = 2 * Math.PI * r;
+    const offset    = circ - pct * circ;
+
+    const fg = document.querySelector('.progress-ring-fg');
+    if (fg) {
+      fg.style.strokeDashoffset = offset.toFixed(2);
+      fg.setAttribute('stroke',
+        pct === 1 ? '#10b981' : pct >= 0.5 ? '#f59e0b' : '#ef4444'
+      );
+    }
+
+    const label = document.querySelector('.progress-ring-label');
+    if (label) label.textContent = done + ' / ' + total;
+  }
+})();
+
+function switchToChild(childId) {
+  fetch('{{ url_for("children.set_active_child") }}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+    body: JSON.stringify({ child_id: parseInt(childId) })
+  }).then(r => r.json()).then(() => location.reload());
+}
+</script>
+{% endblock %}

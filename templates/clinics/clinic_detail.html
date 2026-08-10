@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+{% block title %}{{ clinic.name }}{% endblock %}
+{% block page_title %}Clinic Details{% endblock %}
+
+{% macro ampm(t) -%}
+{%- if t -%}
+  {%- set p = t.split(':') -%}
+  {%- set h = p[0] | int -%}
+  {%- set m = p[1] if p | length > 1 else '00' -%}
+  {%- if h == 0 %}12:{{ m }} AM
+  {%- elif h < 12 %}{{ h }}:{{ m }} AM
+  {%- elif h == 12 %}12:{{ m }} PM
+  {%- else %}{{ h - 12 }}:{{ m }} PM
+  {%- endif -%}
+{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="page-container">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('clinics.clinic_locator') }}">Find a Clinic</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">{{ clinic.name }}</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4">
+
+    <!-- Left: Clinic Info -->
+    <div class="col-lg-5">
+      <div class="clinic-detail-card">
+        <div class="clinic-detail-header">
+          <div class="clinic-type-icon">
+            {% if clinic.clinic_type == 'pediatric' %}
+              <i class="bi bi-house-heart-fill"></i>
+            {% elif clinic.clinic_type == 'specialty' %}
+              <i class="bi bi-hospital-fill"></i>
+            {% else %}
+              <i class="bi bi-building-fill-cross"></i>
+            {% endif %}
+          </div>
+          <div>
+            <span class="clinic-type-badge badge-{{ clinic.clinic_type or 'general' }}">
+              {{ clinic.clinic_type | title if clinic.clinic_type else 'Clinic' }}
+
+        
+            </span>
+            {% if clinic.accepts_special_needs %}
+            <span class="badge-sn ms-2">
+              <i class="bi bi-person-heart me-1"></i>Accepts Special Needs
+            </span>
+            {% endif %}
+          </div>
+          <h3 class="clinic-detail-name mt-2">{{ clinic.name }}</h3>
+        </div>
+
+        <div class="clinic-info-list">
+          {% if clinic.address %}
+          <div class="clinic-info-row">
+            <i class="bi bi-geo-alt-fill clinic-info-icon"></i>
+            <div>
+              <div>{{ clinic.address }}</div>
+              {% if clinic.city %}<div class="text-muted small">{{ clinic.city }}</div>{% endif %}
+            </div>
+          </div>
+          {% endif %}
+          {% if clinic.phone %}
+          <div class="clinic-info-row">
+            <i class="bi bi-telephone-fill clinic-info-icon"></i>
+            <a href="tel:{{ clinic.phone }}">{{ clinic.phone }}</a>
+          </div>
+          {% endif %}
+          {% if clinic.email %}
+          <div class="clinic-info-row">
+            <i class="bi bi-envelope-fill clinic-info-icon"></i>
+            <a href="mailto:{{ clinic.email }}">{{ clinic.email }}</a>
+          </div>
+          {% endif %}
+          {% if clinic.website %}
+          <div class="clinic-info-row">
+            <i class="bi bi-globe clinic-info-icon"></i>
+            <a href="{{ clinic.website }}" target="_blank" rel="noopener noreferrer">
+              {{ clinic.website | replace('https://', '') | replace('http://', '') }}
+              <i class="bi bi-box-arrow-up-right ms-1 small"></i>
+            </a>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if clinic.description %}
+        <div class="clinic-description mt-3">
+          <p class="text-muted small mb-0">{{ clinic.description }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Mini map for this clinic -->
+        {% if clinic.latitude and clinic.longitude %}
+        <div class="clinic-mini-map mt-3" id="miniMap"></div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- Right: Announcements + Operating Hours -->
+    <div class="col-lg-7">
+
+      <!-- Announcements -->
+      {% if announcements %}
+      <div class="slots-card mb-4">
+        <div class="slots-header" style="background:linear-gradient(90deg,#FF6B35,#f7941d);">
+          <i class="bi bi-megaphone-fill me-2"></i> Clinic Announcements
+        </div>
+        <div class="slots-body p-3">
+          <div class="d-flex flex-column gap-3">
+            {% for ann in announcements %}
+            <div class="d-flex gap-3 align-items-start p-3 rounded-3"
+                 style="background:#fff8f4;border-left:4px solid #FF6B35;">
+              <div class="flex-shrink-0 mt-1">
+                <i class="bi bi-megaphone text-warning fs-5"></i>
+              </div>
+              <div>
+                <div class="fw-700 mb-1" style="font-size:14px;">{{ ann.title }}</div>
+                <p class="text-muted small mb-0" style="white-space:pre-wrap;">{{ ann.body }}</p>
+                {% if ann.expires_at %}
+                <small class="text-muted"><i class="bi bi-calendar-x me-1"></i>Until {{ ann.expires_at.strftime('%b %d, %Y') }}</small>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Operating Hours -->
+      <div class="slots-card">
+        <div class="slots-header">
+          <i class="bi bi-clock-fill me-2"></i> Operating Hours
+        </div>
+        <div class="slots-body p-3">
+          {% if schedules %}
+          {% set today_name = today.strftime('%A') %}
+          <table class="table table-sm mb-0 align-middle">
+            <tbody>
+              {% for sched in schedules %}
+              <tr class="{% if sched.day_of_week == today_name %}table-primary fw-semibold{% endif %}">
+                <td style="width:120px;">
+                  {{ sched.day_of_week }}
+                  {% if sched.day_of_week == today_name %}
+                  <span class="badge bg-primary ms-1" style="font-size:10px;">Today</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if sched.is_closed %}
+                  <span class="text-danger"><i class="bi bi-x-circle me-1"></i>Closed</span>
+                  {% else %}
+                  <i class="bi bi-clock me-1 text-success"></i>
+                  {{ ampm(sched.open_time) }} — {{ ampm(sched.close_time) }}
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="text-center py-4 text-muted">
+            <i class="bi bi-clock fs-2 d-block mb-2"></i>
+            No schedule available. Please contact the clinic directly.
+          </div>
+          {% endif %}
+        </div>
+        <div class="slots-note">
+          <i class="bi bi-info-circle me-1"></i>
+          <small>Please contact the clinic directly to confirm and book an appointment.</small>
+        </div>
+      </div>
+
+      <div class="back-link mt-3">
+        <a href="{{ url_for('clinics.clinic_locator') }}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left me-2"></i> Back to Clinic Locator
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% if current_user.is_authenticated %}
+<!-- Chat panel for this clinic -->
+<div id="chat_panel_{{ clinic.id }}" class="card position-fixed d-none" style="right:20px;bottom:80px;width:320px;z-index:1060;">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>Chat with {{ clinic.name }}</div>
+    <button class="btn btn-sm btn-light" onclick="document.getElementById('chat_panel_{{ clinic.id }}').classList.add('d-none')">✕</button>
+  </div>
+  <div class="card-body p-2" style="height:300px;overflow:auto;" id="chat_list_{{ clinic.id }}">
+    <!-- messages loaded via AJAX -->
+  </div>
+  <div class="card-footer">
+    <form onsubmit="sendMessage(event, {{ clinic.id }})" class="d-flex gap-2">
+      <input id="chat_input_{{ clinic.id }}" class="form-control form-control-sm" placeholder="Type a message..." />
+      <button class="btn btn-sm btn-primary">Send</button>
+    </form>
+  </div>
+</div>
+<script>document.querySelector('[data-chat-open][data-clinic-id="{{ clinic.id }}"]').addEventListener('click', function(){const p=document.getElementById('chat_panel_{{ clinic.id }}');p.classList.toggle('d-none');});</script>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+{% endblock %}
+  <script>
+    // Attach click handlers to all chat bubble triggers
+    document.querySelectorAll('[data-chat-open]').forEach(function(el) {
+      el.addEventListener('click', function() {
+        const clinicId = this.dataset.clinicId;
+        if (!clinicId) return;
+        const panel = document.getElementById('chat_panel_' + clinicId);
+        if (panel) {
+          panel.classList.toggle('d-none');
+        }
+      });
+    });
+  </script>
+{% block extra_js %}
+{% if clinic.latitude and clinic.longitude %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLaA=" crossorigin=""></script>
+<script>
+  // Mini map for clinic detail
+  (function() {
+    const lat = {{ clinic.latitude }};
+    const lng = {{ clinic.longitude }};
+    const name = {{ clinic.name | tojson }};
+
+    const map = L.map('miniMap', { zoomControl: true, scrollWheelZoom: false })
+      .setView([lat, lng], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(map);
+
+    const marker = L.marker([lat, lng]).addTo(map);
+    marker.bindPopup(`<strong>${name}</strong>`).openPopup();
+  })();
+</script>
+{% endif %}
+
+<script>
+  // Date tab switcher
+  function showDateSlots(dateStr, btn) {
+    document.querySelectorAll('.slot-grid').forEach(g => g.style.display = 'none');
+    document.querySelectorAll('.date-tab').forEach(t => t.classList.remove('date-tab--active'));
+    const grid = document.getElementById('slots_' + dateStr);
+    if (grid) grid.style.display = 'grid';
+    if (btn) btn.classList.add('date-tab--active');
+  }
+</script>
+
+<!-- Chat widget loader -->
+{% if current_user.is_authenticated %}
+<script src="/static/js/chat.js"></script>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Learning Modules{% endblock %}
+{% block page_title %}Learning Modules{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+  <!-- Page Header -->
+  <div class="page-header mb-4">
+    <div>
+      <h4 class="page-heading">Parenting Resources & Learning Guides</h4>
+      <p class="text-muted mb-0">
+        Evidence-based guides on parenting, nutrition, safety, and child health.
+        Download any module as a reference guide.
+      </p>
+    </div>
+  </div>
+
+  <!-- Category Filter Tabs -->
+  <div class="category-tabs mb-4" id="categoryTabs">
+    <a href="{{ url_for('modules.list_modules') }}"
+       class="cat-tab {% if not active_category %}cat-tab--active{% endif %}">
+      <i class="bi bi-grid-1x2 me-1"></i> All
+    </a>
+    {% for key, meta in category_meta.items() %}
+    {% if key != 'special_needs' or has_special_needs_child %}
+    <a href="{{ url_for('modules.list_modules', category=key) }}"
+       class="cat-tab {% if active_category == key %}cat-tab--active{% endif %}"
+       style="--cat-color: {{ meta.color }};">
+      <i class="{{ meta.icon }} me-1"></i> {{ meta.label }}
+    </a>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  <!-- Module Grid -->
+  {% if grouped %}
+    {% for cat_key, mods in grouped.items() %}
+    {% set meta = category_meta.get(cat_key, {}) %}
+    <div class="modules-section mb-5">
+      <div class="modules-section-header"
+           style="border-left: 4px solid {{ meta.color or '#4E97D9' }};">
+        <i class="{{ meta.icon or 'bi-book' }}" style="color: {{ meta.color or '#4E97D9' }};"></i>
+        <h5 class="mb-0">{{ meta.label or cat_key|title }}</h5>
+        {% if cat_key == 'special_needs' %}
+        <span class="badge-sn ms-2">Special Needs</span>
+        {% endif %}
+      </div>
+
+      <div class="row g-3 mt-1">
+        {% for module in mods %}
+        <div class="col-md-6 col-lg-4">
+          <div class="learning-card" data-cat="{{ module.category }}">
+            <div class="learning-card-header" style="background-color: {{ meta.color or '#4E97D9' }};">
+              <i class="{{ module.icon or meta.icon or 'bi-book' }}"></i>
+            </div>
+            <div class="learning-card-body">
+              {% if module.age_group %}
+              <span class="age-badge mb-2">
+                <i class="bi bi-person-fill me-1"></i>{{ module.age_group }}
+              </span>
+              {% endif %}
+              <h6 class="learning-card-title">{{ module.title }}</h6>
+              <p class="learning-card-desc text-muted small">{{ module.description }}</p>
+              {% if module.pdf_data %}
+              <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 small">
+                <i class="bi bi-file-earmark-pdf-fill me-1"></i>PDF Available
+              </span>
+              {% endif %}
+            </div>
+            <div class="learning-card-footer">
+              <a href="{{ url_for('modules.module_detail', module_id=module.id) }}"
+                 class="btn btn-sm btn-primary flex-grow-1">
+                <i class="bi bi-book-fill me-1"></i> Read
+              </a>
+              {% if module.pdf_data %}
+              <a href="{{ url_for('modules.download_module', module_id=module.id) }}"
+                 class="btn btn-sm btn-danger" title="Download PDF">
+                <i class="bi bi-file-earmark-pdf"></i>
+              </a>
+              {% else %}
+              <a href="{{ url_for('modules.download_module', module_id=module.id) }}"
+                 class="btn btn-sm btn-outline-secondary" title="Download">
+                <i class="bi bi-download"></i>
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-book fs-1 text-muted"></i>
+    <h5 class="mt-3 text-muted">No modules found</h5>
+    <p class="text-muted">Try selecting a different category.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

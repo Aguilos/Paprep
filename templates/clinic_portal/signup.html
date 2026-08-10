@@ -1,0 +1,79 @@
+{% extends 'clinic_portal/auth_base.html' %}
+{% block title %}Create Clinic Account{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-4"
+     style="background:linear-gradient(135deg,#1a3a5c 0%,#0d6efd 100%);">
+  <div class="card shadow-lg border-0" style="width:100%;max-width:460px;border-radius:18px;overflow:hidden;">
+    <div class="card-body p-5">
+      <div class="text-center mb-4">
+        <div class="mx-auto mb-3 d-flex align-items-center justify-content-center"
+             style="width:68px;height:68px;background:linear-gradient(135deg,#4E97D9,#9B59B6);border-radius:50%;box-shadow:0 4px 16px rgba(78,151,217,.35);overflow:hidden;">
+          <img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo" style="width:52px;height:52px;border-radius:50%;object-fit:cover;">
+        </div>
+        <h2 class="fw-800 mb-1" style="font-family:Nunito,sans-serif;">Create Clinic Account</h2>
+        <p class="text-muted small mb-0">Register your clinic on PaPrep — it's free.</p>
+      </div>
+
+      <form method="POST" action="{{ url_for('clinic_portal.signup') }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Contact Person's Name <span class="text-danger">*</span></label>
+          <input type="text" name="contact_name" class="form-control"
+                 value="{{ contact_name or '' }}"
+                 placeholder="e.g. Dr. Maria Santos" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+          <input type="email" name="email" class="form-control"
+                 value="{{ email or '' }}"
+                 placeholder="clinic@example.com" required autocomplete="email">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <input type="password" name="password" id="pw1" class="form-control"
+                   placeholder="At least 8 characters" required minlength="8">
+            <button type="button" class="btn btn-outline-secondary" onclick="togglePw('pw1',this)">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <input type="password" name="confirm_password" id="pw2" class="form-control"
+                   placeholder="Repeat password" required>
+            <button type="button" class="btn btn-outline-secondary" onclick="togglePw('pw2',this)">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 btn-lg fw-700">
+          <i class="bi bi-check-lg me-2"></i> Create Account
+        </button>
+      </form>
+
+      <div class="text-center mt-4 small text-muted">
+        Already have an account?
+        <a href="{{ url_for('clinic_portal.login') }}" class="fw-700 text-decoration-none">Log in</a>
+      </div>
+      <div class="text-center mt-2 small text-muted">
+        <a href="{{ url_for('auth.login') }}" class="text-muted text-decoration-none">
+          <i class="bi bi-arrow-left me-1"></i> Back to parent login
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePw(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.querySelector('i').className = el.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+</script>
+{% endblock %}

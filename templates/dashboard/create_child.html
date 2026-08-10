@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}{% if editing %}Edit{% else %}Add{% endif %} Child Profile{% endblock %}
+{% block page_title %}{% if editing %}Edit Child Profile{% else %}Create Child Profile{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  {% if not current_user.children and not editing %}
+  <div class="onboarding-banner">
+    <div class="onboarding-icon"><i class="bi bi-stars"></i></div>
+    <div>
+      <h3>One more step!</h3>
+      <p class="mb-0">Tell us about your child so we can personalise your PaPrep experience.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="form-card">
+    <div class="form-card-header">
+      <h4 class="mb-0">
+        <i class="bi bi-person-plus-fill me-2"></i>
+        {% if editing %}Update {{ child.name }}'s Profile{% else %}Child's Profile{% endif %}
+      </h4>
+    </div>
+    <div class="form-card-body">
+
+      <form method="POST"
+            action="{{ url_for('children.edit_child', child_id=child.id) if editing else url_for('children.create_child') }}"
+            id="childForm" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Child's Name -->
+        <div class="mb-4">
+          <label for="child_name" class="form-label fw-semibold">
+            Child's Name <span class="text-danger">*</span>
+          </label>
+          <input type="text" class="form-control form-control-lg" id="child_name" name="name"
+                 value="{{ child.name if editing else (form_data.get('name', '')) }}"
+                 placeholder="e.g. Maria, Baby Juan" required maxlength="100"
+                 autocomplete="off">
+          <div class="invalid-feedback">Please enter your child's name.</div>
+        </div>
+
+        <!-- Date of Birth -->
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6">
+            <label for="dob" class="form-label fw-semibold">
+              Date of Birth <span class="text-danger">*</span>
+            </label>
+            <input type="date" class="form-control form-control-lg" id="dob" name="date_of_birth"
+                   value="{{ child.date_of_birth.isoformat() if editing else (form_data.get('date_of_birth', '')) }}"
+                   required>
+            <div class="form-text">Age must be 0–5 years.</div>
+            <div class="invalid-feedback">Please enter a valid date of birth.</div>
+          </div>
+          <div class="col-sm-6">
+            <label for="gender" class="form-label fw-semibold">Gender</label>
+            <select class="form-select form-select-lg" id="gender" name="gender">
+              <option value="">Prefer not to say</option>
+              <option value="male" {% if (editing and child.gender == 'male') or form_data.get('gender') == 'male' %}selected{% endif %}>Boy</option>
+              <option value="female" {% if (editing and child.gender == 'female') or form_data.get('gender') == 'female' %}selected{% endif %}>Girl</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Child Type — CRITICAL SELECTION -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold">
+            Child Type <span class="text-danger">*</span>
+          </label>
+          <p class="text-muted small mb-3">
+            This selection personalises the content shown in your PaPrep dashboard.
+            Special Needs Support features are only available when "Child with Special Needs" is selected.
+          </p>
+          <div class="child-type-selector">
+            <label class="child-type-option" id="typeNormalLabel">
+              <input type="radio" name="child_type" value="normal" id="typeNormal"
+                     {% if (editing and child.child_type == 'normal') or form_data.get('child_type', 'normal') == 'normal' %}checked{% endif %}
+                     required>
+              <div class="child-type-card type-normal">
+                <div class="type-icon"><i class="bi bi-emoji-smile-fill"></i></div>
+                <div class="type-text">
+                  <strong>Normal Child</strong>
+                  <small>Standard parenting, health & nutrition modules</small>
+                </div>
+                <div class="type-check"><i class="bi bi-check-circle-fill"></i></div>
+              </div>
+            </label>
+            <label class="child-type-option" id="typeSNLabel">
+              <input type="radio" name="child_type" value="special_needs" id="typeSpecialNeeds"
+                     {% if (editing and child.child_type == 'special_needs') or form_data.get('child_type') == 'special_needs' %}checked{% endif %}>
+              <div class="child-type-card type-special-needs">
+                <div class="type-icon"><i class="bi bi-person-heart"></i></div>
+                <div class="type-text">
+                  <strong>Child with Special Needs</strong>
+                  <small>All standard modules + Special Needs Support</small>
+                </div>
+                <div class="type-check"><i class="bi bi-check-circle-fill"></i></div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Special Needs Details (conditional) -->
+        <div id="specialNeedsFields" class="sn-fields mb-4"
+             style="display: {% if (editing and child.child_type == 'special_needs') or form_data.get('child_type') == 'special_needs' %}block{% else %}none{% endif %};">
+          <div class="sn-fields-inner">
+            <h6 class="sn-fields-title">
+              <i class="bi bi-person-heart me-2"></i>Special Needs Details
+            </h6>
+            <div class="mb-3">
+              <label for="sn_type" class="form-label fw-semibold">
+                Type of Special Need <span class="text-danger">*</span>
+              </label>
+              <select class="form-select" id="sn_type" name="special_needs_type">
+                <option value="">— Select type —</option>
+                {% for snt in special_needs_types %}
+                <option value="{{ snt }}"
+                        {% if editing and child.special_needs_type == snt %}selected
+                        {% elif form_data.get('special_needs_type') == snt %}selected{% endif %}>
+                  {{ snt }}
+                </option>
+                {% endfor %}
+              </select>
+              <div class="invalid-feedback" id="snTypeFeedback">Please select the type of special need.</div>
+            </div>
+            <div class="mb-3">
+              <label for="sn_notes" class="form-label fw-semibold">
+                Additional Notes <span class="text-muted">(optional)</span>
+              </label>
+              <textarea class="form-control" id="sn_notes" name="special_needs_notes"
+                        rows="3" maxlength="500"
+                        placeholder="Therapists, school, current interventions, etc.">{{ child.special_needs_notes if editing else form_data.get('special_needs_notes', '') }}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile Colour -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Profile Colour</label>
+          <div class="color-picker">
+            {% for color in profile_colors %}
+            <label class="color-option">
+              <input type="radio" name="profile_color" value="{{ color }}"
+                     {% if (editing and child.profile_color == color) or (not editing and color == '#4E97D9') %}checked{% endif %}>
+              <span class="color-swatch" style="background-color: {{ color }};"></span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 mt-4">
+          <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
+            <i class="bi bi-check-lg me-2"></i>
+            {% if editing %}Save Changes{% else %}Create Profile{% endif %}
+          </button>
+          {% if editing %}
+          <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+          {% endif %}
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle special needs fields based on radio selection
+document.querySelectorAll('input[name="child_type"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    const snFields = document.getElementById('specialNeedsFields');
+    const snType = document.getElementById('sn_type');
+    if (this.value === 'special_needs') {
+      snFields.style.display = 'block';
+      snType.setAttribute('required', 'required');
+    } else {
+      snFields.style.display = 'none';
+      snType.removeAttribute('required');
+    }
+  });
+});
+
+// Validate DOB on client side
+document.getElementById('childForm').addEventListener('submit', function(e) {
+  const dob = document.getElementById('dob').value;
+  if (dob) {
+    const birthDate = new Date(dob);
+    const today = new Date();
+    const ageMonths = (today.getFullYear() - birthDate.getFullYear()) * 12
+      + (today.getMonth() - birthDate.getMonth());
+    if (ageMonths > 72) {
+      e.preventDefault();
+      document.getElementById('dob').classList.add('is-invalid');
+      document.getElementById('dob').nextElementSibling.textContent = 'PaPrep supports children aged 0–5 years only.';
+      document.getElementById('dob').nextElementSibling.style.display = 'block';
+      return;
+    }
+  }
+});
+
+// Highlight selected child type card
+document.querySelectorAll('input[name="child_type"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    document.querySelectorAll('.child-type-card').forEach(card => card.classList.remove('selected'));
+    this.closest('.child-type-option').querySelector('.child-type-card').classList.add('selected');
+  });
+  if (radio.checked) {
+    radio.closest('.child-type-option').querySelector('.child-type-card').classList.add('selected');
+  }
+});
+</script>
+{% endblock %}

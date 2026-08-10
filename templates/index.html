@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Welcome to PaPrep{% endblock %}
+{% block body_class %}landing-page{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="container">
+    <div class="row align-items-center min-vh-80 py-5">
+      <div class="col-lg-6">
+        <div class="hero-badge mb-3">
+          <i class="bi bi-balloon-heart-fill me-2"></i> For parents of children aged 0–5
+        </div>
+        <h1 class="hero-title">
+          Your complete<br>
+          <span class="text-gradient">parenting companion</span>
+        </h1>
+        <p class="hero-subtitle mt-3">
+          PaPrep gives parents the tools, knowledge, and support they need to raise
+          healthy, happy children from newborns to preschoolers.
+        </p>
+        <div class="hero-actions mt-4">
+          <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-lg px-5 me-3">
+            <i class="bi bi-rocket-takeoff me-2"></i> Get Started Free
+          </a>
+          <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg px-4">
+            Log In
+          </a>
+        </div>
+        <p class="hero-note mt-3 text-muted small">
+          <i class="bi bi-shield-check me-1"></i> Free to use &nbsp;·&nbsp;
+          <i class="bi bi-lock me-1"></i> Your data is private
+        </p>
+      </div>
+      <div class="col-lg-6 d-none d-lg-flex justify-content-center">
+        <div class="hero-graphic">
+          <div class="hero-bubble bubble-1"><i class="bi bi-heart-pulse-fill"></i></div>
+          <div class="hero-bubble bubble-2"><i class="bi bi-book-fill"></i></div>
+          <div class="hero-bubble bubble-3"><i class="bi bi-hospital-fill"></i></div>
+          <div class="hero-bubble bubble-4"><i class="bi bi-shield-check"></i></div>
+          <div class="hero-center-icon"><img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo" style="width:72px;height:72px;border-radius:50%;object-fit:cover;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section py-5">
+  <div class="container">
+    <div class="section-header text-center mb-5">
+      <h2 class="section-title">Everything you need in one place</h2>
+      <p class="section-subtitle text-muted">
+        Essential modules designed around your child's unique needs.
+      </p>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card feature-card--parenting">
+          <div class="feature-icon"><i class="bi bi-people-fill"></i></div>
+          <h3>Parenting & Learning Modules</h3>
+          <p>Evidence-based guides on parenting, nutrition, safety, and child health with downloadable resources.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card feature-card--health">
+          <div class="feature-icon"><i class="bi bi-person-heart"></i></div>
+          <h3>Special Needs Support</h3>
+          <p>Personalised resources for families raising children with ASD, Down syndrome, ADHD, and more.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card feature-card--symptom">
+          <div class="feature-icon"><i class="bi bi-clipboard2-pulse-fill"></i></div>
+          <h3>Symptom Checker</h3>
+          <p>Select your child's symptoms and receive clear monitoring guidance with a transparent medical disclaimer.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card feature-card--clinic">
+          <div class="feature-icon"><i class="bi bi-geo-alt-fill"></i></div>
+          <h3>Clinic Locator</h3>
+          <p>Find nearby pediatric clinics on an interactive map and list view using Leaflet + OpenStreetMap.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card feature-card--schedule">
+          <div class="feature-icon"><i class="bi bi-calendar3"></i></div>
+          <h3>Clinic Time Availability</h3>
+          <p>View real-time clinic schedules and available time slots so you can plan visits efficiently.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="feature-card feature-card--profile">
+          <div class="feature-icon"><i class="bi bi-person-badge-fill"></i></div>
+          <h3>Child Profile Dashboard</h3>
+          <p>Manage individual profiles for each child with personalised, age-appropriate content.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section class="steps-section py-5 bg-light-blue">
+  <div class="container">
+    <div class="section-header text-center mb-5">
+      <h2 class="section-title">Simple to get started</h2>
+    </div>
+    <div class="row g-4 justify-content-center">
+      <div class="col-sm-6 col-md-3 text-center">
+        <div class="step-badge">1</div>
+        <h5 class="mt-3 fw-bold">Create Account</h5>
+        <p class="text-muted small">Sign up in under a minute.</p>
+      </div>
+      <div class="col-sm-6 col-md-3 text-center">
+        <div class="step-badge">2</div>
+        <h5 class="mt-3 fw-bold">Add Child Profile</h5>
+        <p class="text-muted small">Set up your child's profile — normal or special needs.</p>
+      </div>
+      <div class="col-sm-6 col-md-3 text-center">
+        <div class="step-badge">3</div>
+        <h5 class="mt-3 fw-bold">Explore Dashboard</h5>
+        <p class="text-muted small">Access personalised modules and tools.</p>
+      </div>
+      <div class="col-sm-6 col-md-3 text-center">
+        <div class="step-badge">4</div>
+        <h5 class="mt-3 fw-bold">Stay Empowered</h5>
+        <p class="text-muted small">Learn, track, and find care for your child.</p>
+      </div>
+    </div>
+    <div class="text-center mt-5">
+      <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-lg px-5">
+        <i class="bi bi-rocket-takeoff me-2"></i> Start Now — It's Free
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Clinic Portal CTA -->
+<section class="py-4 border-top">
+  <div class="container">
+    <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 px-2 py-3">
+      <div>
+        <h5 class="fw-bold mb-1"><i class="bi bi-hospital-fill me-2 text-teal"></i>Are you a clinic or healthcare provider?</h5>
+        <p class="text-muted mb-0 small">Manage your clinic profile, schedules, and availability on PaPrep.</p>
+      </div>
+      <a href="{{ url_for('clinic_portal.login') }}" class="btn btn-outline-teal text-nowrap px-4">
+        <i class="bi bi-building-fill me-2"></i> Clinic Portal Login
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

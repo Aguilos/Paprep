@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}{{ module.title }}{% endblock %}
+{% block page_title %}{{ module.title }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('modules.list_modules') }}">Learning Modules</a>
+      </li>
+      {% if meta %}
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('modules.list_modules', category=module.category) }}">
+          {{ meta.get('label', module.category|title) }}
+        </a>
+      </li>
+      {% endif %}
+      <li class="breadcrumb-item active" aria-current="page">{{ module.title }}</li>
+    </ol>
+  </nav>
+
+  <div class="module-detail-card">
+    <!-- Header -->
+    <div class="module-detail-header" style="background-color: {{ meta.get('color', '#4E97D9') }};">
+      <div class="module-detail-icon">
+        <i class="{{ module.icon or meta.get('icon', 'bi-book') }}"></i>
+      </div>
+      <div class="module-detail-meta">
+        <span class="module-cat-label">{{ meta.get('label', module.category|title) }}</span>
+        {% if module.age_group %}
+        <span class="module-age-label"><i class="bi bi-person me-1"></i>{{ module.age_group }}</span>
+        {% endif %}
+      </div>
+      <h2 class="module-detail-title">{{ module.title }}</h2>
+      {% if module.is_special_needs %}
+      <span class="badge bg-white text-purple mt-2">
+        <i class="bi bi-person-heart me-1"></i> Special Needs Resource
+      </span>
+      {% endif %}
+    </div>
+
+    <!-- Description -->
+    {% if module.description %}
+    <div class="module-description-bar">
+      <i class="bi bi-info-circle me-2 text-muted"></i>
+      <p class="mb-0 text-muted">{{ module.description }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Content -->
+    <div class="module-content">
+      {{ module.content | safe }}
+    </div>
+
+    <!-- PDF Viewer -->
+    {% if module.pdf_data %}
+    <div class="pdf-viewer-section mt-4">
+      <div class="pdf-viewer-header d-flex align-items-center justify-content-between mb-2">
+        <h6 class="mb-0 fw-semibold">
+          <i class="bi bi-file-earmark-pdf-fill text-danger me-2"></i>PDF Reference Book
+        </h6>
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('modules.view_pdf', module_id=module.id) }}"
+             class="btn btn-sm btn-outline-danger" target="_blank" title="Open PDF in new tab">
+            <i class="bi bi-box-arrow-up-right me-1"></i> Open in New Tab
+          </a>
+          <a href="{{ url_for('modules.download_module', module_id=module.id) }}"
+             class="btn btn-sm btn-danger">
+            <i class="bi bi-download me-1"></i> Download PDF
+          </a>
+        </div>
+      </div>
+      <div class="pdf-embed-wrapper">
+        <iframe src="{{ url_for('modules.view_pdf', module_id=module.id) }}"
+                class="pdf-embed-frame"
+                title="PDF Viewer – {{ module.title }}"
+                allowfullscreen></iframe>
+      </div>
+      <p class="text-muted small mt-2">
+        <i class="bi bi-info-circle me-1"></i>
+        Can't see the PDF? <a href="{{ url_for('modules.view_pdf', module_id=module.id) }}"
+                               target="_blank">Open it in a new tab</a> or
+        <a href="{{ url_for('modules.download_module', module_id=module.id) }}">download it</a>.
+      </p>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="module-actions">
+      {% if module.pdf_data %}
+      <a href="{{ url_for('modules.download_module', module_id=module.id) }}"
+         class="btn btn-primary">
+        <i class="bi bi-file-earmark-pdf me-2"></i> Download PDF
+      </a>
+      {% else %}
+      <a href="{{ url_for('modules.download_module', module_id=module.id) }}"
+         class="btn btn-primary">
+        <i class="bi bi-download me-2"></i> Download as Reference Guide
+      </a>
+      {% endif %}
+      <a href="{{ url_for('modules.list_modules', category=module.category) }}"
+         class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i> Back to Modules
+      </a>
+    </div>
+  </div>
+
+  <!-- Disclaimer -->
+  <div class="health-disclaimer mt-4">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    <small>
+      The information in this module is for educational purposes only and does not constitute
+      medical advice. Always consult a qualified healthcare professional for specific concerns
+      about your child's health and development.
+    </small>
+  </div>
+
+</div>
+{% endblock %}

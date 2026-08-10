@@ -1,0 +1,214 @@
+{% extends 'clinic_portal/base.html' %}
+{% block title %}Learning Modules{% endblock %}
+{% block page_title %}Learning Modules{% endblock %}
+
+{% block extra_css %}
+<style>
+.modal-dialog-scrollable { max-height: 90vh; }
+.modal-dialog-scrollable .modal-content { max-height: 90vh; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="page-heading mb-0">Learning Modules</h4>
+    <p class="text-muted small mb-0">Add educational content visible to PaPrep parents.</p>
+  </div>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModuleModal">
+    <i class="bi bi-plus-lg me-1"></i> Add Module
+  </button>
+</div>
+
+{% if modules %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle bg-white rounded shadow-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Title</th>
+        <th>Category</th>
+        <th>Age Group</th>
+        <th>PDF</th>
+        <th style="width:100px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in modules %}
+      {% set cmeta = category_meta.get(m.category, {}) %}
+      <tr>
+        <td>
+          <div class="fw-600">{{ m.title }}</div>
+          {% if m.description %}
+          <small class="text-muted d-block text-truncate" style="max-width:260px;">{{ m.description }}</small>
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge rounded-pill" style="background:{{ cmeta.color or '#888' }};">
+            <i class="{{ cmeta.icon or 'bi-book' }} me-1"></i>{{ cmeta.label or m.category }}
+          </span>
+        </td>
+        <td><small class="text-muted">{{ m.age_group or '—' }}</small></td>
+        <td>
+          {% if m.pdf_data %}
+          <a href="{{ url_for('clinic_portal.view_pdf', module_id=m.id) }}" target="_blank"
+             class="badge bg-success text-decoration-none">
+            <i class="bi bi-file-earmark-pdf me-1"></i>View PDF
+          </a>
+          {% else %}
+          <span class="badge bg-light text-muted border">No PDF</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-primary" title="Edit"
+                    onclick="openEditModule({{ m.id }})">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <form method="POST" action="{{ url_for('clinic_portal.delete_module', module_id=m.id) }}"
+                  onsubmit="return confirm('Delete module &quot;{{ m.title }}&quot;?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted bg-white rounded shadow-sm">
+  <i class="bi bi-book fs-1 d-block mb-2"></i>
+  No modules yet. Click <strong>Add Module</strong> to create your first one.
+</div>
+{% endif %}
+
+<!-- ── ADD MODULE MODAL ────────────────────────────────────── -->
+<div class="modal fade" id="addModuleModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable" style="max-height:90vh;">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('clinic_portal.add_module') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-plus-circle me-2 text-primary"></i>Add Learning Module</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+              <input type="text" name="title" class="form-control" required placeholder="e.g. Baby's First Foods">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Category</label>
+              <select name="category" class="form-select">
+                {% for key, cmeta in category_meta.items() %}
+                <option value="{{ key }}">{{ cmeta.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Age Group</label>
+              <input type="text" name="age_group" class="form-control" placeholder="e.g. 6–12 months">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Description <small class="text-muted">(short summary)</small></label>
+              <textarea name="description" class="form-control" rows="2"
+                        placeholder="Brief overview shown on the modules list."></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Content <small class="text-muted">(what's inside)</small></label>
+              <textarea name="content" class="form-control" rows="3"
+                        placeholder="Describe topics, lessons, or sections in this module..."></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">PDF <small class="text-muted">(optional)</small></label>
+              <input type="file" name="pdf_file" accept=".pdf" class="form-control">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save Module</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT MODULE MODAL ───────────────────────────────────── -->
+<div class="modal fade" id="editModuleModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable" style="max-height:90vh;">
+    <div class="modal-content">
+      <form method="POST" id="editModuleForm" action="" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-pencil-square me-2 text-primary"></i>Edit Module</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+              <input type="text" name="title" id="em_title" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Category</label>
+              <select name="category" id="em_category" class="form-select">
+                {% for key, cmeta in category_meta.items() %}
+                <option value="{{ key }}">{{ cmeta.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Age Group</label>
+              <input type="text" name="age_group" id="em_age_group" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Description</label>
+              <textarea name="description" id="em_description" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Content</label>
+              <textarea name="content" id="em_content" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Replace PDF <small class="text-muted">(optional)</small></label>
+              <input type="file" name="pdf_file" accept=".pdf" class="form-control">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Module data for JS -->
+<script>
+const MODULES_DATA = [
+  {% for m in modules %}
+  {id:{{ m.id }}, title:{{ m.title | tojson }}, category:{{ (m.category or 'parenting') | tojson }},
+   age_group:{{ (m.age_group or '') | tojson }}, description:{{ (m.description or '') | tojson }},
+   content:{{ (m.content or '') | tojson }}}{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+function openEditModule(id) {
+  const m = MODULES_DATA.find(x => x.id === id);
+  if (!m) return;
+  document.getElementById('editModuleForm').action = `/clinic/modules/${id}/edit`;
+  document.getElementById('em_title').value       = m.title || '';
+  document.getElementById('em_category').value    = m.category || 'parenting';
+  document.getElementById('em_age_group').value   = m.age_group || '';
+  document.getElementById('em_description').value = m.description || '';
+  document.getElementById('em_content').value     = m.content || '';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('editModuleModal')).show();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Symptom Checker{% endblock %}
+{% block page_title %}Symptom Checker{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+  <!-- Disclaimer Banner (prominent) -->
+  <div class="disclaimer-banner">
+    <div class="disclaimer-icon"><i class="bi bi-shield-exclamation"></i></div>
+    <div class="disclaimer-text">
+      <strong>Medical Disclaimer:</strong> {{ disclaimer }}
+    </div>
+  </div>
+
+  <div class="row g-4 mt-1">
+    <!-- Left: Symptom selection -->
+    <div class="col-lg-6">
+      <div class="symptom-panel">
+        <div class="symptom-panel-header">
+          <i class="bi bi-list-check me-2"></i>
+          <h5 class="mb-0">Select Your Child's Symptoms</h5>
+        </div>
+        <div class="symptom-panel-body" id="symptomPanel">
+          <p class="text-muted small mb-3">
+            Check all symptoms your child is currently experiencing, then click
+            <strong>"Check Symptoms"</strong> to receive monitoring guidance.
+          </p>
+
+          {% set category_icons = {
+            'fever': 'bi-thermometer-half',
+            'respiratory': 'bi-lungs',
+            'digestive': 'bi-droplet-half',
+            'skin': 'bi-stars',
+            'eyes_ears': 'bi-eye',
+            'behavioral': 'bi-lightning',
+            'general': 'bi-heart-pulse'
+          } %}
+
+          {% for cat_key, symptoms in grouped.items() %}
+          <div class="symptom-category mb-3">
+            <div class="symptom-cat-header">
+              <i class="{{ category_icons.get(cat_key, 'bi-circle') }} me-2"></i>
+              {{ category_labels.get(cat_key, cat_key|title) }}
+              {% if symptoms | selectattr('is_emergency') | list %}
+              <span class="badge bg-danger ms-2">contains emergency symptoms</span>
+              {% endif %}
+            </div>
+            <div class="symptom-list">
+              {% for s in symptoms %}
+              <label class="symptom-item {% if s.is_emergency %}symptom-item--emergency{% endif %}"
+                     data-symptom-id="{{ s.id }}">
+                <input type="checkbox" class="symptom-checkbox" value="{{ s.id }}"
+                       name="symptoms" id="sym_{{ s.id }}">
+                <div class="symptom-item-content">
+                  <i class="{{ s.icon }} symptom-icon"></i>
+                  <div class="symptom-info">
+                    <span class="symptom-name">{{ s.name }}</span>
+                    {% if s.is_emergency %}
+                    <span class="emergency-badge"><i class="bi bi-exclamation-triangle-fill"></i> Emergency</span>
+                    {% endif %}
+                    <span class="symptom-desc">{{ s.description }}</span>
+                  </div>
+                </div>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="symptom-panel-footer">
+          <div class="selected-count" id="selectedCount">0 symptom(s) selected</div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="clearAllBtn">
+              <i class="bi bi-x-circle me-1"></i> Clear All
+            </button>
+            <button type="button" class="btn btn-primary" id="checkSymptomsBtn" disabled>
+              <i class="bi bi-search-heart me-2"></i> Check Symptoms
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Results -->
+    <div class="col-lg-6">
+      <div class="results-panel" id="resultsPanel">
+        <div class="results-placeholder" id="resultsPlaceholder">
+          <div class="results-placeholder-icon">
+            <i class="bi bi-clipboard2-pulse"></i>
+          </div>
+          <h6>Select symptoms to get guidance</h6>
+          <p class="text-muted small">
+            Choose one or more symptoms from the list on the left, then click
+            "Check Symptoms" to see monitoring recommendations.
+          </p>
+        </div>
+
+        <!-- Results will be injected here -->
+        <div id="resultsContent" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Hidden CSRF token for JS -->
+<span id="csrfToken" data-token="{{ csrf_token() }}" style="display:none;"></span>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/symptom_checker.js') }}"></script>
+{% endblock %}

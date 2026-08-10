@@ -1,0 +1,648 @@
+{% extends 'base.html' %}
+{% block title %}Manage Locations{% endblock %}
+{% block page_title %}Manage Locations{% endblock %}
+
+{% macro ampm(t) -%}
+{%- if t -%}
+  {%- set p = t.split(':') -%}
+  {%- set h = p[0] | int -%}
+  {%- set m = p[1] if p | length > 1 else '00' -%}
+  {%- if h == 0 %}12:{{ m }} AM
+  {%- elif h < 12 %}{{ h }}:{{ m }} AM
+  {%- elif h == 12 %}12:{{ m }} PM
+  {%- else %}{{ h - 12 }}:{{ m }} PM
+  {%- endif -%}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro sched_rows(pfx) %}
+{% for day in days %}
+<tr id="{{ pfx }}_row_{{ day }}">
+  <td class="fw-semibold small" style="width:100px;white-space:nowrap;">{{ day }}</td>
+  <td style="width:85px;">
+    <div class="form-check mb-0">
+      <input class="form-check-input" type="checkbox" name="closed_{{ day }}"
+             id="{{ pfx }}_closed_{{ day }}"
+             onchange="toggleDay(this,'{{ pfx }}','{{ day }}')">
+      <label class="form-check-label text-danger small" for="{{ pfx }}_closed_{{ day }}">Closed</label>
+    </div>
+  </td>
+  <td id="{{ pfx }}_times_{{ day }}">
+    <div class="d-flex gap-1 align-items-center flex-wrap row-gap-1">
+      <small class="text-muted" style="width:36px;">Open</small>
+      <select name="open_hour_{{ day }}" id="{{ pfx }}_oh_{{ day }}" class="form-select form-select-sm px-1" style="width:52px;">
+        {% for h in range(1,13) %}<option value="{{ h }}" {% if h==8 %}selected{% endif %}>{{ h }}</option>{% endfor %}
+      </select>
+      <select name="open_min_{{ day }}" id="{{ pfx }}_om_{{ day }}" class="form-select form-select-sm px-1" style="width:58px;">
+        <option value="00">:00</option><option value="15">:15</option><option value="30">:30</option><option value="45">:45</option>
+      </select>
+      <select name="open_period_{{ day }}" id="{{ pfx }}_op_{{ day }}" class="form-select form-select-sm px-1" style="width:58px;">
+        <option value="AM" selected>AM</option><option value="PM">PM</option>
+      </select>
+      <span class="text-muted">—</span>
+      <small class="text-muted" style="width:38px;">Close</small>
+      <select name="close_hour_{{ day }}" id="{{ pfx }}_ch_{{ day }}" class="form-select form-select-sm px-1" style="width:52px;">
+        {% for h in range(1,13) %}<option value="{{ h }}" {% if h==5 %}selected{% endif %}>{{ h }}</option>{% endfor %}
+      </select>
+      <select name="close_min_{{ day }}" id="{{ pfx }}_cm_{{ day }}" class="form-select form-select-sm px-1" style="width:58px;">
+        <option value="00">:00</option><option value="15">:15</option><option value="30">:30</option><option value="45">:45</option>
+      </select>
+      <select name="close_period_{{ day }}" id="{{ pfx }}_cp_{{ day }}" class="form-select form-select-sm px-1" style="width:58px;">
+        <option value="AM">AM</option><option value="PM" selected>PM</option>
+      </select>
+    </div>
+  </td>
+</tr>
+{% endfor %}
+{% endmacro %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  .loc-map { height: 300px; border-radius: 8px; border: 1px solid #dee2e6; }
+  .nav-tabs .nav-link { color: #555; }
+  .nav-tabs .nav-link.active { font-weight: 600; }
+  .sched-table td { vertical-align: middle; }
+  .sched-table tr.is-closed td:not(:nth-child(1)):not(:nth-child(2)) { opacity: .35; pointer-events: none; }
+  .badge-pediatric { background: #4E97D9; color:#fff; }
+  .badge-general   { background: #5CAD5C; color:#fff; }
+  .badge-specialty { background: #9B59B6; color:#fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+  <!-- Header -->
+  <div class="page-header mb-4">
+    <div>
+      <h4 class="page-heading">Location Management</h4>
+      <p class="text-muted mb-0">Add, edit, and place clinics on the map with their weekly schedules.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('clinics.clinic_locator') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-map me-1"></i> View Map
+      </a>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+        <i class="bi bi-plus-lg me-1"></i> Add Clinic
+      </button>
+    </div>
+  </div>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'danger' if category == 'danger' else ('info' if category == 'info' else 'success') }} alert-dismissible fade show">
+      <i class="bi bi-{{ 'x-circle' if category == 'danger' else 'check-circle' }}-fill me-2"></i>{{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Clinics Table -->
+  {% if clinics %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Clinic</th>
+          <th>Type</th>
+          <th>Contact</th>
+          <th>Coordinates</th>
+          <th>Schedule</th>
+          <th style="width:100px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for clinic in clinics %}
+        {% set scheds = sched_map.get(clinic.id, {}) %}
+        <tr>
+          <td>
+            <div class="fw-semibold">{{ clinic.name }}</div>
+            {% if clinic.address %}<small class="text-muted">{{ clinic.address }}{% if clinic.city %}, {{ clinic.city }}{% endif %}</small>{% endif %}
+            {% if clinic.accepts_special_needs %}
+            <br><span class="badge bg-purple text-white" style="background:#9B59B6!important;font-size:10px;">
+              <i class="bi bi-person-heart me-1"></i>Special Needs
+            </span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge badge-{{ clinic.clinic_type or 'general' }} rounded-pill">
+              {{ clinic.clinic_type | title if clinic.clinic_type else 'General' }}
+            </span>
+          </td>
+          <td>
+            {% if clinic.phone %}<div><i class="bi bi-telephone-fill text-muted me-1"></i><small>{{ clinic.phone }}</small></div>{% endif %}
+            {% if clinic.email %}<div><i class="bi bi-envelope-fill text-muted me-1"></i><small>{{ clinic.email }}</small></div>{% endif %}
+          </td>
+          <td>
+            {% if clinic.latitude and clinic.longitude %}
+            <small class="font-monospace text-muted">
+              {{ '%.5f' | format(clinic.latitude) }}<br>
+              {{ '%.5f' | format(clinic.longitude) }}
+            </small>
+            {% else %}
+            <span class="badge bg-secondary">No pin</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if scheds %}
+              {% set weekdays = ['Monday','Tuesday','Wednesday','Thursday','Friday'] %}
+              {% set wd = scheds.get('Monday') %}
+              {% if wd and not wd.is_closed %}
+                <small class="text-success fw-semibold">Mon–Fri</small><br>
+                <small class="text-muted">{{ ampm(wd.open_time) }} – {{ ampm(wd.close_time) }}</small>
+              {% else %}
+                <small class="text-muted">See schedule</small>
+              {% endif %}
+            {% else %}
+              <span class="badge bg-light text-muted border">No schedule</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-primary" title="Edit"
+                      onclick="openEdit({{ clinic.id }})">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <form method="POST" action="{{ url_for('clinics.delete_location', clinic_id=clinic.id) }}"
+                    onsubmit="return confirm('Delete {{ clinic.name }}? This cannot be undone.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-geo-alt fs-1 d-block mb-2"></i>
+    No clinics yet. Click <strong>Add Clinic</strong> to get started.
+  </div>
+  {% endif %}
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     ADD CLINIC MODAL
+══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('clinics.add_location') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addModalLabel">
+            <i class="bi bi-plus-circle-fill me-2 text-primary"></i>Add New Clinic
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+          <!-- Tabs -->
+          <ul class="nav nav-tabs mb-3" id="addTabs">
+            <li class="nav-item">
+              <button type="button" class="nav-link active" data-bs-toggle="tab" data-bs-target="#addDetails">
+                <i class="bi bi-info-circle me-1"></i> Details
+              </button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#addMap">
+                <i class="bi bi-geo-alt me-1"></i> Map Location
+              </button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#addSched">
+                <i class="bi bi-clock me-1"></i> Schedule
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+
+            <!-- Details Tab -->
+            <div class="tab-pane fade show active" id="addDetails">
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label fw-semibold">Clinic Name <span class="text-danger">*</span></label>
+                  <input type="text" name="name" class="form-control" required placeholder="e.g. Sunshine Pediatric Clinic">
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label fw-semibold">Address</label>
+                  <input type="text" name="address" class="form-control" placeholder="Street / Barangay">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">City / Municipality</label>
+                  <input type="text" name="city" class="form-control" placeholder="City">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Phone</label>
+                  <input type="tel" name="phone" class="form-control" placeholder="+63 xxx xxx xxxx">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Email</label>
+                  <input type="email" name="email" class="form-control" placeholder="clinic@example.com">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Website</label>
+                  <input type="url" name="website" class="form-control" placeholder="https://...">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Clinic Type</label>
+                  <select name="clinic_type" class="form-select">
+                    <option value="general">General</option>
+                    <option value="pediatric">Pediatric</option>
+                    <option value="specialty">Specialty</option>
+                  </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="accepts_special_needs" id="add_sn">
+                    <label class="form-check-label fw-semibold" for="add_sn">
+                      <i class="bi bi-person-heart me-1 text-purple" style="color:#9B59B6;"></i>
+                      Accepts Special Needs Children
+                    </label>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label fw-semibold">Description</label>
+                  <textarea name="description" class="form-control" rows="3"
+                            placeholder="Brief description of services, specializations, etc."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Map Tab -->
+            <div class="tab-pane fade" id="addMap">
+              <p class="text-muted small mb-2">
+                <i class="bi bi-cursor-fill me-1 text-primary"></i>
+                Click anywhere on the map to set the clinic's pin location. The coordinates will be saved automatically.
+              </p>
+              <div id="addMapDiv" class="loc-map mb-3"></div>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Latitude</label>
+                  <input type="number" step="0.000001" name="latitude" id="add_lat"
+                         class="form-control form-control-sm" placeholder="e.g. 14.5995">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Longitude</label>
+                  <input type="number" step="0.000001" name="longitude" id="add_lng"
+                         class="form-control form-control-sm" placeholder="e.g. 120.9842">
+                </div>
+              </div>
+              <small class="text-muted">You can also type coordinates manually above.</small>
+            </div>
+
+            <!-- Schedule Tab -->
+            <div class="tab-pane fade" id="addSched">
+              <p class="text-muted small mb-2">
+                <i class="bi bi-clock me-1"></i> Set the clinic's weekly operating hours. Check <strong>Closed</strong> for days off.
+              </p>
+              <div class="table-responsive">
+                <table class="table table-sm sched-table align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Day</th>
+                      <th>Status</th>
+                      <th>Hours</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{ sched_rows('add') }}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div><!-- tab-content -->
+        </div><!-- modal-body -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i> Save Clinic
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     EDIT CLINIC MODAL
+══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <form method="POST" id="editForm" action="">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editModalLabel">
+            <i class="bi bi-pencil-square me-2 text-primary"></i>Edit Clinic
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+          <ul class="nav nav-tabs mb-3" id="editTabs">
+            <li class="nav-item">
+              <button type="button" class="nav-link active" data-bs-toggle="tab" data-bs-target="#editDetails">
+                <i class="bi bi-info-circle me-1"></i> Details
+              </button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#editMap">
+                <i class="bi bi-geo-alt me-1"></i> Map Location
+              </button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#editSched">
+                <i class="bi bi-clock me-1"></i> Schedule
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+
+            <!-- Details Tab -->
+            <div class="tab-pane fade show active" id="editDetails">
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label fw-semibold">Clinic Name <span class="text-danger">*</span></label>
+                  <input type="text" name="name" id="edit_name" class="form-control" required>
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label fw-semibold">Address</label>
+                  <input type="text" name="address" id="edit_address" class="form-control">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">City / Municipality</label>
+                  <input type="text" name="city" id="edit_city" class="form-control">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Phone</label>
+                  <input type="tel" name="phone" id="edit_phone" class="form-control">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Email</label>
+                  <input type="email" name="email" id="edit_email" class="form-control">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Website</label>
+                  <input type="url" name="website" id="edit_website" class="form-control">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Clinic Type</label>
+                  <select name="clinic_type" id="edit_clinic_type" class="form-select">
+                    <option value="general">General</option>
+                    <option value="pediatric">Pediatric</option>
+                    <option value="specialty">Specialty</option>
+                  </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="accepts_special_needs" id="edit_sn">
+                    <label class="form-check-label fw-semibold" for="edit_sn">
+                      <i class="bi bi-person-heart me-1" style="color:#9B59B6;"></i>
+                      Accepts Special Needs Children
+                    </label>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label fw-semibold">Description</label>
+                  <textarea name="description" id="edit_description" class="form-control" rows="3"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Map Tab -->
+            <div class="tab-pane fade" id="editMap">
+              <p class="text-muted small mb-2">
+                <i class="bi bi-cursor-fill me-1 text-primary"></i>
+                Click the map to move the clinic pin, or edit coordinates directly.
+              </p>
+              <div id="editMapDiv" class="loc-map mb-3"></div>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Latitude</label>
+                  <input type="number" step="0.000001" name="latitude" id="edit_lat"
+                         class="form-control form-control-sm">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Longitude</label>
+                  <input type="number" step="0.000001" name="longitude" id="edit_lng"
+                         class="form-control form-control-sm">
+                </div>
+              </div>
+            </div>
+
+            <!-- Schedule Tab -->
+            <div class="tab-pane fade" id="editSched">
+              <p class="text-muted small mb-2">
+                <i class="bi bi-clock me-1"></i> Set the clinic's weekly operating hours.
+              </p>
+              <div class="table-responsive">
+                <table class="table table-sm sched-table align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Day</th>
+                      <th>Status</th>
+                      <th>Hours</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{ sched_rows('edit') }}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div><!-- tab-content -->
+        </div><!-- modal-body -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i> Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Clinics JSON for JS -->
+<script>
+  const CLINICS_DATA = {{ clinics_json | tojson | safe }};
+  const DAYS = {{ days | tojson | safe }};
+
+  let addMap = null, addMarker = null;
+  let editMap = null, editMarker = null;
+  const PH_CENTER = [12.8797, 121.7740];
+
+  function initMap(divId, onClickCb) {
+    const map = L.map(divId).setView(PH_CENTER, 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors', maxZoom: 18
+    }).addTo(map);
+    // Prevent any Leaflet click from bubbling to the form
+    L.DomEvent.disableClickPropagation(map.getContainer());
+    map.on('click', onClickCb);
+    return map;
+  }
+
+  // ── Add Modal: init map when Map tab is first shown ──────────────────────
+  document.querySelector('#addTabs button[data-bs-target="#addMap"]')
+    .addEventListener('shown.bs.tab', () => {
+      if (!addMap) {
+        addMap = initMap('addMapDiv', (e) => {
+          const { lat, lng } = e.latlng;
+          document.getElementById('add_lat').value = lat.toFixed(6);
+          document.getElementById('add_lng').value = lng.toFixed(6);
+          if (addMarker) addMap.removeLayer(addMarker);
+          addMarker = L.marker([lat, lng]).addTo(addMap).bindPopup('New clinic location').openPopup();
+        });
+      }
+      addMap.invalidateSize();
+      // Restore marker if coords already typed
+      const lat = parseFloat(document.getElementById('add_lat').value);
+      const lng = parseFloat(document.getElementById('add_lng').value);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        if (addMarker) addMap.removeLayer(addMarker);
+        addMarker = L.marker([lat, lng]).addTo(addMap);
+        addMap.setView([lat, lng], 14);
+      }
+    });
+
+  // Sync typed coords → add map
+  ['add_lat', 'add_lng'].forEach(id =>
+    document.getElementById(id).addEventListener('change', () => {
+      const lat = parseFloat(document.getElementById('add_lat').value);
+      const lng = parseFloat(document.getElementById('add_lng').value);
+      if (!addMap || isNaN(lat) || isNaN(lng)) return;
+      if (addMarker) addMap.removeLayer(addMarker);
+      addMarker = L.marker([lat, lng]).addTo(addMap);
+      addMap.setView([lat, lng], 14);
+    })
+  );
+
+  // Clear add modal on close
+  document.getElementById('addModal').addEventListener('hidden.bs.modal', () => {
+    document.getElementById('add_lat').value = '';
+    document.getElementById('add_lng').value = '';
+    if (addMap && addMarker) { addMap.removeLayer(addMarker); addMarker = null; }
+    if (addMap) addMap.setView(PH_CENTER, 6);
+  });
+
+  // ── Edit Modal ────────────────────────────────────────────────────────────
+  function openEdit(clinicId) {
+    const clinic = CLINICS_DATA.find(c => c.id === clinicId);
+    if (!clinic) return;
+
+    document.getElementById('editForm').action = `/location/${clinicId}/edit`;
+    document.getElementById('edit_name').value        = clinic.name || '';
+    document.getElementById('edit_address').value     = clinic.address || '';
+    document.getElementById('edit_city').value        = clinic.city || '';
+    document.getElementById('edit_phone').value       = clinic.phone || '';
+    document.getElementById('edit_email').value       = clinic.email || '';
+    document.getElementById('edit_website').value     = clinic.website || '';
+    document.getElementById('edit_clinic_type').value = clinic.clinic_type || 'general';
+    document.getElementById('edit_sn').checked        = !!clinic.accepts_special_needs;
+    document.getElementById('edit_description').value = clinic.description || '';
+    document.getElementById('edit_lat').value         = clinic.latitude  != null ? clinic.latitude  : '';
+    document.getElementById('edit_lng').value         = clinic.longitude != null ? clinic.longitude : '';
+
+    DAYS.forEach(day => {
+      const sched = (clinic.schedules || {})[day] || {};
+      const closedEl = document.getElementById('edit_closed_' + day);
+      closedEl.checked = !!sched.is_closed;
+      toggleDay(closedEl, 'edit', day);
+      if (!sched.is_closed) {
+        if (sched.open_time)  setTimeSelects('edit', day, 'open',  sched.open_time);
+        if (sched.close_time) setTimeSelects('edit', day, 'close', sched.close_time);
+      }
+    });
+
+    // Reset to Details tab
+    bootstrap.Tab.getOrCreateInstance(document.querySelector('#editTabs .nav-link')).show();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
+  }
+
+  // Init edit map when Map tab is first shown (map div is visible = correct size)
+  document.querySelector('#editTabs button[data-bs-target="#editMap"]')
+    .addEventListener('shown.bs.tab', () => {
+      if (!editMap) {
+        editMap = initMap('editMapDiv', (e) => {
+          const { lat, lng } = e.latlng;
+          document.getElementById('edit_lat').value = lat.toFixed(6);
+          document.getElementById('edit_lng').value = lng.toFixed(6);
+          if (editMarker) editMap.removeLayer(editMarker);
+          editMarker = L.marker([lat, lng]).addTo(editMap).bindPopup('Clinic location').openPopup();
+        });
+      }
+      editMap.invalidateSize();
+      // Place marker at current coordinates
+      const lat = parseFloat(document.getElementById('edit_lat').value);
+      const lng = parseFloat(document.getElementById('edit_lng').value);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        if (editMarker) editMap.removeLayer(editMarker);
+        editMarker = L.marker([lat, lng]).addTo(editMap).bindPopup('Clinic location');
+        editMap.setView([lat, lng], 14);
+      } else if (editMap) {
+        editMap.setView(PH_CENTER, 6);
+      }
+    });
+
+  // Sync typed coords → edit map
+  ['edit_lat', 'edit_lng'].forEach(id =>
+    document.getElementById(id).addEventListener('change', () => {
+      const lat = parseFloat(document.getElementById('edit_lat').value);
+      const lng = parseFloat(document.getElementById('edit_lng').value);
+      if (!editMap || isNaN(lat) || isNaN(lng)) return;
+      if (editMarker) editMap.removeLayer(editMarker);
+      editMarker = L.marker([lat, lng]).addTo(editMap);
+      editMap.setView([lat, lng], 14);
+    })
+  );
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function to12h(time24) {
+    const parts = time24.split(':');
+    let h = parseInt(parts[0]) || 0;
+    const m = parts[1] || '00';
+    const period = h >= 12 ? 'PM' : 'AM';
+    if (h === 0) h = 12;
+    else if (h > 12) h -= 12;
+    const mInt = parseInt(m) || 0;
+    const snapped = ['00', '15', '30', '45'][Math.min(3, Math.round(mInt / 15))];
+    return [h, snapped, period];
+  }
+
+  function setTimeSelects(pfx, day, type, time24) {
+    const [h, m, p] = to12h(time24);
+    const selH = document.getElementById(pfx + '_' + (type === 'open' ? 'oh' : 'ch') + '_' + day);
+    const selM = document.getElementById(pfx + '_' + (type === 'open' ? 'om' : 'cm') + '_' + day);
+    const selP = document.getElementById(pfx + '_' + (type === 'open' ? 'op' : 'cp') + '_' + day);
+    if (selH) selH.value = h;
+    if (selM) selM.value = m;
+    if (selP) selP.value = p;
+  }
+
+  function toggleDay(checkbox, pfx, day) {
+    const row = document.getElementById(pfx + '_row_' + day);
+    if (!row) return;
+    if (checkbox.checked) {
+      row.classList.add('is-closed');
+      row.querySelectorAll('select').forEach(s => s.disabled = true);
+    } else {
+      row.classList.remove('is-closed');
+      row.querySelectorAll('select').forEach(s => s.disabled = false);
+    }
+  }
+</script>
+{% endblock %}
+

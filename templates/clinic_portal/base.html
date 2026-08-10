@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Clinic Portal{% endblock %} | PaPrep</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_css %}{% endblock %}
+  <style>
+    body { font-family: 'Nunito', sans-serif; background: #f0f4f8; }
+
+    /* ── Clinic sidebar ── */
+    .clinic-sidebar {
+      position: fixed; top: 0; left: 0; height: 100vh; width: 240px;
+      background: linear-gradient(160deg, #1a3a5c 0%, #0d6efd 100%);
+      color: #fff; display: flex; flex-direction: column; z-index: 1000;
+      transition: width .25s;
+    }
+    .clinic-sidebar .brand {
+      display: flex; align-items: center; gap: 10px;
+      padding: 22px 20px 18px; border-bottom: 1px solid rgba(255,255,255,.15);
+    }
+    .clinic-sidebar .brand-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #4E97D9, #9B59B6);
+      border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(78,151,217,.35);
+    }
+    .clinic-sidebar .brand-name { font-size: 16px; font-weight: 800; }
+    .clinic-sidebar .brand-sub  { font-size: 11px; opacity: .7; }
+    .clinic-sidebar .sidebar-nav { flex: 1; padding: 16px 0; overflow-y: auto; }
+    .clinic-sidebar .nav-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; opacity: .5; padding: 10px 20px 4px;
+    }
+    .clinic-sidebar .nav-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 20px; color: rgba(255,255,255,.8);
+      border-radius: 0; font-size: 14px; font-weight: 600;
+      transition: background .15s, color .15s;
+      text-decoration: none;
+    }
+    .clinic-sidebar .nav-link:hover,
+    .clinic-sidebar .nav-link.active {
+      background: rgba(255,255,255,.15); color: #fff;
+    }
+    .clinic-sidebar .nav-link .nav-icon { font-size: 18px; width: 22px; flex-shrink: 0; }
+    .clinic-sidebar .sidebar-footer {
+      padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.15);
+      font-size: 13px;
+    }
+    .clinic-sidebar .user-badge {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .clinic-sidebar .user-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(255,255,255,.25);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; flex-shrink: 0;
+    }
+    .clinic-sidebar .user-name  { font-weight: 700; font-size: 13px; line-height: 1.2; }
+    .clinic-sidebar .user-role  { font-size: 11px; opacity: .6; }
+
+    /* ── Main area ── */
+    .clinic-main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
+    .clinic-topbar {
+      height: 56px; background: #fff; border-bottom: 1px solid #e9ecef;
+      display: flex; align-items: center; padding: 0 24px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .clinic-topbar .topbar-title { font-size: 17px; font-weight: 700; flex: 1; }
+    .clinic-body { flex: 1; padding: 28px 28px; }
+    .page-heading { font-size: 22px; font-weight: 800; margin-bottom: 2px; }
+
+    /* ── Cards ── */
+    .stat-card {
+      background: #fff; border-radius: 14px; padding: 22px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06); border: 1px solid #e9ecef;
+    }
+    .stat-card .stat-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 10px;
+    }
+    .stat-card .stat-value { font-size: 28px; font-weight: 800; line-height: 1; }
+    .stat-card .stat-label { font-size: 13px; color: #6c757d; margin-top: 4px; }
+
+    @media (max-width: 768px) {
+      .clinic-sidebar { width: 0; overflow: hidden; }
+      .clinic-sidebar.open { width: 240px; }
+      .clinic-main { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- App shell for logged-in clinic users -->
+<div class="clinic-sidebar" id="clinicSidebar">
+  <div class="brand">
+    <div class="brand-icon"><img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"></div>
+    <div>
+      <div class="brand-name">PaPrep</div>
+      <div class="brand-sub">Clinic Portal</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="{{ url_for('clinic_portal.dashboard') }}"
+       class="nav-link {% if request.endpoint == 'clinic_portal.dashboard' %}active{% endif %}">
+      <i class="bi bi-speedometer2 nav-icon"></i> Dashboard
+    </a>
+    <a href="{{ url_for('clinic_portal.clinic_profile') }}"
+       class="nav-link {% if request.endpoint == 'clinic_portal.clinic_profile' %}active{% endif %}">
+      <i class="bi bi-geo-alt-fill nav-icon"></i> Clinic Profile &amp; Location
+    </a>
+    <a href="{{ url_for('clinic_portal.manage_modules') }}"
+       class="nav-link {% if request.endpoint == 'clinic_portal.manage_modules' %}active{% endif %}">
+      <i class="bi bi-book-fill nav-icon"></i> Learning Modules
+    </a>
+    <a href="{{ url_for('clinic_portal.announcements') }}"
+       class="nav-link {% if request.endpoint in ('clinic_portal.announcements',) %}active{% endif %}">
+      <i class="bi bi-megaphone-fill nav-icon"></i> Announcements
+    </a>
+    <a href="{{ url_for('chat.clinic_inbox') }}"
+       class="nav-link {% if request.endpoint == 'chat.clinic_inbox' %}active{% endif %}">
+      <i class="bi bi-chat-dots-fill nav-icon"></i> Messages
+    </a>
+    <div class="nav-section-label mt-2">Account</div>
+    <a href="{{ url_for('clinic_portal.logout') }}" class="nav-link">
+      <i class="bi bi-box-arrow-right nav-icon"></i> Sign Out
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-badge">
+      <div class="user-avatar">
+        {{ account.contact_name[0] | upper if account else 'C' }}
+      </div>
+      <div>
+        <div class="user-name">{{ account.contact_name if account else '' }}</div>
+        <div class="user-role">Clinic Staff</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="clinic-main">
+  <header class="clinic-topbar">
+    <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+    {% if account and account.clinic %}
+    <small class="text-muted">{{ account.clinic.name }}</small>
+    {% endif %}
+  </header>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="px-4 pt-3">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'danger' if category == 'error' else ('primary' if category == 'info' else category) }} alert-dismissible fade show">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <div class="clinic-body">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+<span id="csrfToken" data-token="{{ csrf_token() }}" style="display:none;"></span>
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<script>
+  if (typeof io !== 'undefined') {
+    try { window.socket = io(); } catch(e) { console.warn('Socket init failed', e); }
+  }
+</script>
+</body>
+</html>

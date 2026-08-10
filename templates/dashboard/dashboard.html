@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+  <!-- Child Profile Card -->
+  {% if active_child %}
+  <div class="child-hero-card mb-4" style="border-left: 5px solid {{ active_child.profile_color }};">
+    <div class="child-hero-left">
+      <div class="child-avatar" style="background-color: {{ active_child.profile_color }};">
+        {{ active_child.name[0].upper() }}
+      </div>
+      <div class="child-hero-info">
+        <div class="child-hero-name">{{ active_child.name }}</div>
+        <div class="child-hero-meta">
+          <span class="child-meta-badge">
+            <i class="bi bi-calendar3 me-1"></i> {{ active_child.age_display }}
+          </span>
+          <span class="child-meta-badge">
+            <i class="bi bi-layers me-1"></i> {{ active_child.age_bracket }}
+          </span>
+          {% if active_child.gender %}
+          <span class="child-meta-badge">
+            <i class="bi bi-gender-{{ active_child.gender }} me-1"></i>
+            {{ 'Boy' if active_child.gender == 'male' else 'Girl' }}
+          </span>
+          {% endif %}
+        </div>
+        {% if active_child.child_type == 'special_needs' %}
+        <div class="mt-2">
+          <span class="badge badge-sn-lg">
+            <i class="bi bi-person-heart me-1"></i>
+            Special Needs — {{ active_child.special_needs_type or 'Not specified' }}
+          </span>
+        </div>
+        {% else %}
+        <div class="mt-2">
+          <span class="badge badge-normal-lg">
+            <i class="bi bi-emoji-smile me-1"></i> Normal Development
+          </span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="child-hero-right">
+      <a href="{{ url_for('children.edit_child', child_id=active_child.id) }}"
+         class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-pencil-fill me-1"></i> Edit Profile
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Health Checklist Progress Widget -->
+  <div class="checklist-widget mb-4">
+    <div class="checklist-widget-header">
+      <div class="checklist-widget-icon"><i class="bi bi-clipboard2-heart-fill"></i></div>
+      <div>
+        <div class="checklist-widget-title">Dietary & Health Checklist</div>
+        <div class="checklist-widget-sub">Today's progress for {{ active_child.name }}</div>
+      </div>
+      <a href="{{ url_for('symptoms.health_checklist') }}" class="checklist-widget-link ms-auto">
+        {% if checklist_today_count == 0 %}Start today<i class="bi bi-arrow-right ms-1"></i>
+        {% elif checklist_today_count < checklist_total %}Continue<i class="bi bi-arrow-right ms-1"></i>
+        {% else %}View<i class="bi bi-arrow-right ms-1"></i>{% endif %}
+      </a>
+    </div>
+
+    <!-- Today's progress bar -->
+    {% set today_pct = ((checklist_today_count / checklist_total) * 100)|int if checklist_total > 0 else 0 %}
+    <div class="checklist-progress-row">
+      <div class="checklist-progress-bar-wrap">
+        <div class="checklist-progress-bar"
+             style="width:{{ today_pct }}%;
+                    background:{% if today_pct == 100 %}#10b981{% elif today_pct >= 50 %}#f59e0b{% else %}#ef4444{% endif %}">
+        </div>
+      </div>
+      <span class="checklist-progress-label">{{ checklist_today_count }}/{{ checklist_total }}</span>
+    </div>
+
+    <!-- 7-day history streak -->
+    <div class="checklist-history-strip">
+      {% for day in history_days %}
+      {% set clr = '#10b981' if day.pct == 100 else ('#f59e0b' if day.pct >= 50 else ('#ef4444' if day.count > 0 else '#e5e7eb')) %}
+      <div class="history-day {% if day.is_today %}history-day--today{% endif %}">
+        <div class="history-day-label">{{ day.label }}</div>
+        <div class="history-day-circle"
+             style="background:{{ clr }};
+                    {% if day.count == 0 %}border:2px solid #d1d5db;background:#f9fafb;{% endif %}">
+          {% if day.count > 0 %}
+            {% if day.pct == 100 %}<i class="bi bi-check-lg" style="color:#fff;font-size:.65rem;"></i>
+            {% else %}<span style="font-size:.6rem;font-weight:700;color:#fff;">{{ day.pct }}%</span>{% endif %}
+          {% endif %}
+        </div>
+        <div class="history-day-num">{{ day.day_num }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Section: Quick Actions -->
+  <h5 class="section-label mb-3">
+    <i class="bi bi-grid-1x2 me-2"></i>Your PaPrep Modules
+  </h5>
+
+  <div class="modules-grid">
+
+    <!-- Dietary & Health Checklist -->
+    <a href="{{ url_for('symptoms.health_checklist') }}" class="module-card module-card--assessment">
+      <div class="module-card-icon"><i class="bi bi-clipboard2-heart-fill"></i></div>
+      <div class="module-card-body">
+        <h5>Dietary & Health Checklist</h5>
+        <p>Track your child's daily nutrition and health habits with an age-appropriate checklist.</p>
+      </div>
+      <div class="module-card-tag">Daily</div>
+      <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+    <!-- Learning Modules -->
+    <a href="{{ url_for('modules.list_modules') }}" class="module-card module-card--parenting">
+      <div class="module-card-icon"><i class="bi bi-book-fill"></i></div>
+      <div class="module-card-body">
+        <h5>Learning Modules</h5>
+        <p>Parenting, nutrition, safety, and child health education with downloadable guides.</p>
+      </div>
+      <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+    <!-- Preparedness Assessment -->
+    <a href="{{ url_for('modules.assessment') }}" class="module-card module-card--assessment">
+      <div class="module-card-icon"><i class="bi bi-clipboard2-check-fill"></i></div>
+      <div class="module-card-body">
+        <h5>Preparedness Assessment</h5>
+        <p>Evaluate your parenting preparedness and track your progress with guided assessments.</p>
+      </div>
+      <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+    <!-- Symptom Checker -->
+    <a href="{{ url_for('symptoms.symptom_checker') }}" class="module-card module-card--symptom">
+      <div class="module-card-icon"><i class="bi bi-clipboard2-pulse-fill"></i></div>
+      <div class="module-card-body">
+        <h5>Symptom Checker</h5>
+        <p>Select symptoms and receive clear monitoring guidance. Includes medical disclaimer.</p>
+      </div>
+      <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+    <!-- Clinic Locator -->
+    <a href="{{ url_for('clinic_portal.login') }}" class="module-card module-card--clinic">
+      <div class="module-card-icon"><i class="bi bi-hospital-fill"></i></div>
+      <div class="module-card-body">
+        <h5>Find a Clinic</h5>
+        <p>Locate nearby pediatric clinics on an interactive map with schedules and availability.</p>
+      </div>
+      <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+  </div>
+
+  <!-- Quick Tips -->
+  <div class="quick-tip-card mt-4">
+    <div class="quick-tip-icon"><i class="bi bi-lightbulb-fill"></i></div>
+    <div class="quick-tip-body">
+      <strong>PaPrep Tip:</strong>
+      {% if active_child %}
+        {% set m = active_child.age_months %}
+        {% if m < 6 %}
+          Newborns sleep 14–17 hours per day in short bursts. Always place your baby on their back to sleep.
+        {% elif m < 12 %}
+          Around 6 months, your baby is ready for solid foods! Start with single-ingredient purées and introduce one new food every 2–3 days.
+        {% elif m < 24 %}
+          Toddlers need 11–14 hours of sleep per day. A consistent bedtime routine makes a world of difference.
+        {% elif m < 36 %}
+          Your 2-year-old is developing language rapidly. Reading together every day supports vocabulary and connection.
+        {% elif m < 48 %}
+          At age 3, your child's imagination is blossoming! Unstructured play is essential for creativity and development.
+        {% else %}
+          Preschool-aged children (4–5) are developing self-regulation skills. Consistent, gentle boundaries help them thrive.
+        {% endif %}
+      {% else %}
+        Create a child profile to get personalised tips for your child's age and stage.
+      {% endif %}
+    </div>
+  </div>
+
+
+</div>
+{% endblock %}

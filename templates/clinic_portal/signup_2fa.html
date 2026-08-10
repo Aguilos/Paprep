@@ -1,0 +1,288 @@
+{% extends 'clinic_portal/auth_base.html' %}
+{% block title %}Secure Your Account — PaPrep Clinic Portal{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5"
+     style="background:linear-gradient(135deg,#1a3a5c 0%,#0d6efd 100%);">
+
+  <div class="w-100 px-3" style="max-width:900px;">
+
+    <!-- Progress bar -->
+    <div class="d-flex align-items-center justify-content-center gap-2 mb-4">
+      <div class="d-flex align-items-center gap-2">
+        <div class="rounded-circle d-flex align-items-center justify-content-center"
+             style="width:32px;height:32px;background:rgba(255,255,255,0.25);color:#fff;font-weight:700;font-size:13px;">
+          <i class="bi bi-check-lg"></i>
+        </div>
+        <span class="text-white-50 small fw-600">Create Account</span>
+      </div>
+      <div style="width:40px;height:2px;background:rgba(255,255,255,0.25);border-radius:2px;"></div>
+      <div class="d-flex align-items-center gap-2">
+        <div class="rounded-circle d-flex align-items-center justify-content-center"
+             style="width:32px;height:32px;background:#fff;color:#0d6efd;font-weight:700;font-size:13px;">2</div>
+        <span class="text-white fw-700 small">Secure Account</span>
+      </div>
+      <div style="width:40px;height:2px;background:rgba(255,255,255,0.25);border-radius:2px;"></div>
+      <div class="d-flex align-items-center gap-2">
+        <div class="rounded-circle d-flex align-items-center justify-content-center"
+             style="width:32px;height:32px;background:rgba(255,255,255,0.25);color:#fff;font-weight:700;font-size:13px;">3</div>
+        <span class="text-white-50 small fw-600">Clinic Profile</span>
+      </div>
+    </div>
+
+    <!-- Main card -->
+    <div class="card border-0 shadow-lg" style="border-radius:24px;overflow:hidden;">
+
+      <!-- Top banner -->
+      <div class="p-4 text-white text-center"
+           style="background:linear-gradient(135deg,#0d47a1,#1976d2);">
+        <div class="mx-auto mb-3 d-flex align-items-center justify-content-center"
+             style="width:64px;height:64px;background:rgba(255,255,255,0.15);border-radius:20px;font-size:30px;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.25);">
+          <i class="bi bi-shield-lock-fill"></i>
+        </div>
+        <h3 class="fw-800 mb-1" style="font-family:Nunito,sans-serif;">Secure Your Clinic Account</h3>
+        <p class="mb-0 opacity-75 small">
+          Set up two-factor authentication to keep your clinic portal safe.
+          <br>This takes less than a minute.
+        </p>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="row g-0">
+
+          <!-- Left: instructions + QR -->
+          <div class="col-lg-6 p-4 p-lg-5 border-end">
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show py-2 small mb-3">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ message }}
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+              </div>
+              {% endfor %}
+            {% endwith %}
+
+            <!-- Step 1 -->
+            <div class="d-flex gap-3 mb-4">
+              <div class="flex-shrink-0 rounded-circle d-flex align-items-center justify-content-center fw-800"
+                   style="width:34px;height:34px;background:#e8f0fe;color:#0d6efd;font-size:14px;min-width:34px;">1</div>
+              <div>
+                <p class="fw-700 mb-1" style="font-family:Nunito,sans-serif;">Get an authenticator app</p>
+                <p class="text-muted small mb-2">Install one of these free apps on your phone:</p>
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="badge rounded-pill px-3 py-2"
+                        style="background:#e8f0fe;color:#0d6efd;font-weight:600;font-size:11px;">
+                    <i class="bi bi-google me-1"></i>Google Authenticator
+                  </span>
+                  <span class="badge rounded-pill px-3 py-2"
+                        style="background:#e3f2fd;color:#1565c0;font-weight:600;font-size:11px;">
+                    <i class="bi bi-microsoft me-1"></i>Microsoft Authenticator
+                  </span>
+                  <span class="badge rounded-pill px-3 py-2"
+                        style="background:#fce4ec;color:#c62828;font-weight:600;font-size:11px;">
+                    <i class="bi bi-phone me-1"></i>Authy
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2 — QR -->
+            <div class="d-flex gap-3 mb-3">
+              <div class="flex-shrink-0 rounded-circle d-flex align-items-center justify-content-center fw-800"
+                   style="width:34px;height:34px;background:#e8f0fe;color:#0d6efd;font-size:14px;min-width:34px;">2</div>
+              <div>
+                <p class="fw-700 mb-1" style="font-family:Nunito,sans-serif;">Scan this QR code</p>
+                <p class="text-muted small mb-3">Open the app → <em>Add account</em> → <em>Scan QR code</em></p>
+
+                <!-- QR frame -->
+                <div class="d-flex flex-column align-items-center">
+                  <div class="p-3 bg-white border rounded-4 shadow-sm mb-3"
+                       style="border-color:#dee2e6!important;">
+                    <img src="data:image/png;base64,{{ qr_b64 }}"
+                         alt="TOTP QR Code" style="width:168px;height:168px;display:block;">
+                  </div>
+
+                  <!-- Manual key -->
+                  <div class="w-100 rounded-3 p-3"
+                       style="background:#f8f9fa;border:1px dashed #ced4da;">
+                    <span class="text-muted d-block mb-2" style="font-size:10px;text-align:center;">
+                      Can't scan? Enter this key manually
+                    </span>
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                      <code id="secretKey" class="fw-700 user-select-all text-break"
+                            style="font-size:12px;letter-spacing:.04rem;color:#0d6efd;word-break:break-all;flex:1;">{{ secret }}</code>
+                      <button type="button" onclick="copySecret()"
+                              class="btn btn-sm btn-outline-primary flex-shrink-0 py-1 px-2"
+                              style="font-size:11px;" title="Copy key">
+                        <i class="bi bi-clipboard" id="copyIcon"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right: verify code -->
+          <div class="col-lg-6 p-4 p-lg-5 d-flex flex-column justify-content-center"
+               style="background:#fafbff;">
+
+            <div class="d-flex gap-3 mb-4">
+              <div class="flex-shrink-0 rounded-circle d-flex align-items-center justify-content-center fw-800"
+                   style="width:34px;height:34px;background:#e8f0fe;color:#0d6efd;font-size:14px;min-width:34px;">3</div>
+              <div>
+                <p class="fw-700 mb-1" style="font-family:Nunito,sans-serif;">Enter your first code</p>
+                <p class="text-muted small mb-0">
+                  Type the 6-digit code shown in your authenticator app right now to confirm the setup.
+                </p>
+              </div>
+            </div>
+
+            <!-- Code entry -->
+            <form method="POST"
+                  action="{{ url_for('clinic_portal.signup_2fa') }}"
+                  autocomplete="off"
+                  id="codeForm">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+              <!-- Individual digit boxes -->
+              <div class="d-flex justify-content-center gap-2 mb-4" id="digitBoxes">
+                {% for i in range(6) %}
+                <input type="text"
+                       class="form-control text-center fw-800 digit-box"
+                       inputmode="numeric"
+                       pattern="[0-9]"
+                       maxlength="1"
+                       style="width:48px;height:56px;font-size:24px;border-radius:12px;
+                              border:2px solid #dee2e6;transition:border-color .2s;"
+                       tabindex="{{ i + 1 }}">
+                {% endfor %}
+              </div>
+              <!-- Hidden combined input sent to server -->
+              <input type="hidden" name="code" id="hiddenCode">
+
+              <button type="submit" class="btn btn-primary w-100 btn-lg fw-700 mb-3"
+                      style="border-radius:12px;font-family:Nunito,sans-serif;"
+                      id="verifyBtn" disabled>
+                <i class="bi bi-shield-check me-2"></i> Verify &amp; Activate 2FA
+              </button>
+            </form>
+
+            <!-- Timer hint -->
+            <div class="text-center">
+              <div class="d-inline-flex align-items-center gap-2 rounded-3 px-3 py-2"
+                   style="background:#fff3cd;border:1px solid #ffc107;">
+                <i class="bi bi-clock text-warning"></i>
+                <span class="small text-warning-emphasis fw-600">
+                  Codes refresh every 30 seconds
+                </span>
+                <span class="badge bg-warning text-dark fw-700" id="timerBadge">–</span>
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="text-center">
+              <p class="text-muted small mb-1">Account: <strong>{{ account.email }}</strong></p>
+              <a href="{{ url_for('clinic_portal.signup') }}"
+                 class="text-muted small text-decoration-none">
+                <i class="bi bi-arrow-left me-1"></i>Start over
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div><!-- /card -->
+
+    <p class="text-center text-white-50 small mt-3">
+      <i class="bi bi-lock-fill me-1"></i>
+      Your secret key is stored securely and never shared.
+    </p>
+  </div>
+</div>
+
+<script>
+// ── TOTP 30-second countdown ──────────────────────────────────────────────────
+function updateTimer() {
+  const secs = 30 - (Math.floor(Date.now() / 1000) % 30);
+  document.getElementById('timerBadge').textContent = secs + 's';
+  setTimeout(updateTimer, 1000);
+}
+updateTimer();
+
+// ── Copy secret key ───────────────────────────────────────────────────────────
+function copySecret() {
+  const key = document.getElementById('secretKey').textContent.trim();
+  navigator.clipboard.writeText(key).then(() => {
+    const icon = document.getElementById('copyIcon');
+    icon.className = 'bi bi-clipboard-check';
+    setTimeout(() => { icon.className = 'bi bi-clipboard'; }, 2000);
+  });
+}
+
+// ── Individual digit-box logic ────────────────────────────────────────────────
+const boxes = document.querySelectorAll('.digit-box');
+const hiddenCode = document.getElementById('hiddenCode');
+const verifyBtn = document.getElementById('verifyBtn');
+const form = document.getElementById('codeForm');
+
+function getCode() { return [...boxes].map(b => b.value).join(''); }
+
+function syncCode() {
+  const code = getCode();
+  hiddenCode.value = code;
+  const full = code.length === 6 && /^\d{6}$/.test(code);
+  verifyBtn.disabled = !full;
+  verifyBtn.style.opacity = full ? '1' : '0.6';
+  boxes.forEach((b, i) => {
+    b.style.borderColor = b.value
+      ? (full ? '#198754' : '#0d6efd')
+      : '#dee2e6';
+  });
+}
+
+boxes.forEach((box, idx) => {
+  box.addEventListener('input', e => {
+    // Allow pasting full code into first box
+    if (box.value.length > 1) {
+      const digits = box.value.replace(/\D/g, '').slice(0, 6);
+      digits.split('').forEach((d, i) => {
+        if (boxes[i]) boxes[i].value = d;
+      });
+      box.value = box.value.replace(/\D/g, '')[0] || '';
+      const next = boxes[Math.min(digits.length, 5)];
+      if (next) next.focus();
+      syncCode(); return;
+    }
+    box.value = box.value.replace(/\D/g, '');
+    if (box.value && idx < 5) boxes[idx + 1].focus();
+    syncCode();
+  });
+
+  box.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !box.value && idx > 0) {
+      boxes[idx - 1].focus();
+    }
+  });
+
+  box.addEventListener('paste', e => {
+    e.preventDefault();
+    const pasted = (e.clipboardData || window.clipboardData)
+      .getData('text').replace(/\D/g, '').slice(0, 6);
+    pasted.split('').forEach((d, i) => { if (boxes[i]) boxes[i].value = d; });
+    boxes[Math.min(pasted.length, 5)].focus();
+    syncCode();
+  });
+});
+
+// Focus first box on load
+if (boxes[0]) boxes[0].focus();
+
+// Auto-submit when all 6 digits filled
+boxes[5] && boxes[5].addEventListener('input', () => {
+  if (getCode().length === 6) setTimeout(() => form.requestSubmit(), 300);
+});
+</script>
+{% endblock %}

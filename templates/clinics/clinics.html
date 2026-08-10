@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Find a Clinic{% endblock %}
+{% block page_title %}Find a Clinic{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+
+{% block content %}
+<div class="page-container page-container--full">
+
+  <!-- Toolbar -->
+  <div class="clinic-toolbar mb-3">
+    <div class="clinic-search">
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control" id="clinicSearch"
+               placeholder="Search by name or city…">
+      </div>
+    </div>
+    <div class="clinic-filters d-flex align-items-center gap-2">
+      <select class="form-select form-select-sm" id="typeFilter" style="width:auto;min-width:130px;">
+        <option value="">All Types</option>
+        <option value="pediatric">Pediatric</option>
+        <option value="general">General</option>
+        <option value="specialty">Specialty</option>
+      </select>
+      <div class="form-check mb-0 d-flex align-items-center gap-2" style="white-space:nowrap;">
+        <input class="form-check-input mt-0" type="checkbox" id="snFilter">
+        <label class="form-check-label small" for="snFilter">
+          <i class="bi bi-person-heart text-purple me-1"></i> Accepts Special Needs
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main layout: Map + List -->
+  <div class="clinic-layout">
+    <!-- Map -->
+    <div class="clinic-map-container">
+      <div id="clinicMap"></div>
+    </div>
+
+    <!-- List Panel -->
+    <div class="clinic-list-panel" id="clinicListPanel">
+      <div class="clinic-list-header">
+        <span id="clinicCount">Loading clinics…</span>
+      </div>
+      <div class="clinic-list" id="clinicList">
+        <!-- Clinic cards injected by JS -->
+        <div class="text-center py-4 text-muted" id="clinicListLoading">
+          <i class="bi bi-hourglass-split me-2"></i> Loading clinics…
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Clinic data for JS -->
+<script>
+  window.CLINICS_DATA = {{ clinics_json | safe }};
+</script>
+<span id="csrfToken" data-token="{{ csrf_token() }}" style="display:none;"></span>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+{% endblock %}

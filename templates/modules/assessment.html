@@ -1,0 +1,579 @@
+{% extends 'base.html' %}
+{% block title %}Preparedness Assessment{% endblock %}
+{% block page_title %}Preparedness Assessment{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Layout ─────────────────────────────────────────── */
+.asmnt-wrap { max-width: 720px; margin: 0 auto; padding-bottom: 2rem; }
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── Hub ────────────────────────────────────────────── */
+.hub-intro { margin-bottom: 1.5rem; }
+.hub-intro h4 { font-size: 1.05rem; font-weight: 700; color: #1f2937; margin-bottom: .3rem; }
+.hub-intro p  { font-size: .88rem; color: #6b7280; }
+
+.cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 1.5rem; }
+@media (max-width: 500px) { .cat-grid { grid-template-columns: 1fr; } }
+
+.cat-card {
+  background: #fff; border: 1.5px solid #e5e7eb; border-radius: 14px;
+  padding: 1.1rem 1.1rem 1rem; cursor: pointer;
+  transition: border-color .15s, box-shadow .15s; text-align: left;
+}
+.cat-card:hover { border-color: #a5b4fc; box-shadow: 0 2px 12px rgba(99,102,241,.1); }
+.cat-card.done  { border-color: #6ee7b7; }
+.cat-icon { font-size: 1.5rem; margin-bottom: .6rem; }
+.cat-name { font-size: .92rem; font-weight: 700; color: #1f2937; margin-bottom: .25rem; }
+.cat-desc { font-size: .76rem; color: #6b7280; line-height: 1.5; margin-bottom: .65rem; }
+.cat-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .7rem; padding: .2rem .55rem; border-radius: 20px;
+  background: #f3f4f6; color: #6b7280; font-weight: 600;
+}
+.cat-badge.done { background: #d1fae5; color: #065f46; }
+
+.overall-bar {
+  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px;
+  padding: .9rem 1.1rem; display: flex; align-items: center; gap: 1rem;
+}
+.overall-num  { font-size: 1.5rem; font-weight: 700; color: #1f2937; min-width: 60px; }
+.overall-label{ font-size: .75rem; color: #6b7280; }
+.ov-track { flex: 1; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+.ov-fill  { height: 100%; border-radius: 4px; background: #10b981; transition: width .4s; }
+.overall-pct { font-size: .8rem; font-weight: 600; color: #10b981; min-width: 70px; text-align: right; }
+
+/* ── Quiz screen ─────────────────────────────────────── */
+.quiz-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1.1rem; }
+.back-btn {
+  background: none; border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 5px 12px; cursor: pointer; font-size: .8rem; color: #6b7280;
+  display: flex; align-items: center; gap: 5px;
+}
+.back-btn:hover { background: #f3f4f6; }
+.quiz-cat-label { font-size: .9rem; font-weight: 700; color: #1f2937; }
+.q-progress { font-size: .8rem; color: #6b7280; margin-left: auto; }
+
+.q-track { height: 4px; background: #e5e7eb; border-radius: 2px; margin-bottom: 1.25rem; }
+.q-fill  { height: 100%; border-radius: 2px; background: #6366f1; transition: width .3s; }
+
+.q-card {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+  padding: 1.1rem 1.25rem; margin-bottom: .75rem;
+}
+.q-num  { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: #9ca3af; margin-bottom: .4rem; }
+.q-text { font-size: .95rem; color: #1f2937; line-height: 1.65; margin-bottom: .9rem; font-weight: 500; }
+.q-type { font-size: .73rem; color: #9ca3af; margin-bottom: .6rem; font-style: italic; }
+
+.opts { display: flex; flex-direction: column; gap: 7px; }
+.opt {
+  background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 10px;
+  padding: .7rem 1rem; cursor: pointer; font-size: .88rem; color: #374151;
+  text-align: left; transition: all .15s; line-height: 1.45;
+}
+.opt:hover:not(:disabled) { border-color: #a5b4fc; background: #eef2ff; }
+.opt.selected { border-color: #6366f1; background: #eef2ff; color: #4338ca; }
+.opt.correct  { border-color: #10b981; background: #d1fae5; color: #065f46; font-weight: 600; }
+.opt.wrong    { border-color: #ef4444; background: #fee2e2; color: #991b1b; }
+.opt:disabled { cursor: default; }
+.tf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.feedback {
+  margin-top: .75rem; padding: .75rem 1rem; border-radius: 10px;
+  font-size: .84rem; line-height: 1.55; display: none;
+}
+.feedback.correct { background: #d1fae5; color: #065f46; }
+.feedback.wrong   { background: #fee2e2; color: #7f1d1d; }
+
+.next-btn {
+  width: 100%; padding: .75rem; border-radius: 10px;
+  border: 1px solid #e5e7eb; background: #f9fafb;
+  font-size: .92rem; font-weight: 600; color: #1f2937;
+  cursor: pointer; margin-top: .6rem; display: none;
+  transition: background .15s;
+}
+.next-btn:hover { background: #f3f4f6; }
+
+/* ── Results screen ─────────────────────────────────── */
+.score-hero {
+  text-align: center; padding: 1.5rem; background: #f9fafb;
+  border: 1px solid #e5e7eb; border-radius: 14px; margin-bottom: 1.25rem;
+}
+.score-pct   { font-size: 3rem; font-weight: 700; color: #1f2937; }
+.score-frac  { font-size: .85rem; color: #6b7280; margin-top: .2rem; }
+.score-remark{
+  display: inline-block; margin-top: .9rem; padding: .35rem 1rem;
+  border-radius: 20px; font-size: .85rem; font-weight: 700;
+}
+.remark-pass { background: #d1fae5; color: #065f46; }
+.remark-ok   { background: #dbeafe; color: #1e40af; }
+.remark-fail { background: #fef3c7; color: #92400e; }
+
+.review-section-title { font-size: .8rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin: 1rem 0 .6rem; }
+.review-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.25rem; }
+.review-item { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: .9rem 1.1rem; }
+.review-q    { font-size: .85rem; font-weight: 600; color: #1f2937; line-height: 1.5; margin-bottom: .4rem; }
+.review-row  { display: flex; gap: 8px; font-size: .78rem; margin-top: 3px; }
+.review-your { color: #ef4444; }
+.review-ok   { color: #10b981; }
+.review-correct { color: #10b981; }
+.review-exp  { font-size: .78rem; color: #6b7280; margin-top: .35rem; line-height: 1.5; }
+
+.retry-btn, .hub-btn {
+  width: 100%; padding: .75rem; border-radius: 10px;
+  font-size: .92rem; font-weight: 600; cursor: pointer;
+  margin-bottom: .5rem; transition: background .15s;
+}
+.retry-btn { background: #eef2ff; border: 1px solid #c7d2fe; color: #4338ca; }
+.retry-btn:hover { background: #e0e7ff; }
+.hub-btn   { background: #f9fafb; border: 1px solid #e5e7eb; color: #1f2937; }
+.hub-btn:hover { background: #f3f4f6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+<div class="asmnt-wrap">
+
+<!-- ══════════════════════════════════════════════════════
+     SCREEN: HUB
+══════════════════════════════════════════════════════ -->
+<div id="screen-hub" class="screen active">
+  <div class="hub-intro">
+    <h4><i class="bi bi-clipboard2-check-fill me-2" style="color:#6366f1;"></i>Preventive Pediatric Health Care</h4>
+    <p>Based on the Philippine Pediatric Society 2018 Handbook. Choose a module below to begin your assessment.</p>
+  </div>
+  <div class="cat-grid" id="cat-grid"></div>
+  <div class="overall-bar">
+    <div>
+      <div class="overall-num" id="overall-num">0/40</div>
+      <div class="overall-label">questions answered</div>
+    </div>
+    <div class="ov-track"><div class="ov-fill" id="overall-fill" style="width:0%"></div></div>
+    <div class="overall-pct" id="overall-pct">0% correct</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCREEN: QUIZ
+══════════════════════════════════════════════════════ -->
+<div id="screen-quiz" class="screen">
+  <div class="quiz-header">
+    <button class="back-btn" onclick="goHub()">
+      <i class="bi bi-arrow-left"></i> Back
+    </button>
+    <span class="quiz-cat-label" id="quiz-cat-name"></span>
+    <span class="q-progress" id="q-progress"></span>
+  </div>
+  <div class="q-track"><div class="q-fill" id="q-fill"></div></div>
+  <div id="q-content"></div>
+  <button class="next-btn" id="next-btn" onclick="nextQ()"></button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCREEN: RESULTS
+══════════════════════════════════════════════════════ -->
+<div id="screen-results" class="screen">
+  <div class="quiz-header">
+    <button class="back-btn" onclick="goHub()">
+      <i class="bi bi-arrow-left"></i> All modules
+    </button>
+    <span class="quiz-cat-label" id="res-cat-name"></span>
+  </div>
+  <div class="score-hero">
+    <div class="score-pct" id="res-pct"></div>
+    <div class="score-frac" id="res-fraction"></div>
+    <div id="res-remark" class="score-remark"></div>
+  </div>
+  <div class="review-section-title">Question review</div>
+  <div class="review-list" id="review-list"></div>
+  <button class="retry-btn" onclick="retryQuiz()">
+    <i class="bi bi-arrow-clockwise me-1"></i> Retry this assessment
+  </button>
+  <button class="hub-btn" onclick="goHub()">Back to all modules</button>
+</div>
+
+</div><!-- /.asmnt-wrap -->
+</div><!-- /.page-container -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ── Categories ─────────────────────────────────────── */
+const CATS = [
+  {id:'parenting',  label:'Parenting',   icon:'bi-heart-fill',        color:'#ec4899',
+   desc:'Prenatal counseling, breastfeeding guidance, reading aloud, child maltreatment, anticipatory guidance'},
+  {id:'nutrition',  label:'Nutrition',   icon:'bi-apple',             color:'#10b981',
+   desc:'Breastfeeding, complementary feeding, iron/Vitamin A supplementation, deworming, food pyramid'},
+  {id:'safety',     label:'Safety',      icon:'bi-shield-check',      color:'#f59e0b',
+   desc:'Injury prevention, TIPP, lead poisoning, child protection, physical activity guidelines'},
+  {id:'childhealth',label:'Child Health',icon:'bi-heart-pulse-fill',  color:'#6366f1',
+   desc:'Immunization, newborn screening, blood pressure, growth charts, developmental surveillance'}
+];
+
+/* ── Question bank ──────────────────────────────────── */
+const QS = {
+  parenting:[
+    {q:'According to the handbook, prenatal education and counseling must include which of the following?',
+     type:'mcq',
+     opts:['Breastfeeding and newborn care procedures','Birth announcement preparation','Baby shower planning','Nursery room decoration'],
+     ans:0,
+     exp:'Prenatal counseling must include breastfeeding (Appendix 7), newborn care and procedures at birth, anticipatory guidance, prevention of smoking/alcohol, Tetanus Toxoid immunization, and maternal nutrition.'},
+    {q:'Breastfeeding must be initiated within how long after delivery of the infant?',
+     type:'mcq',
+     opts:['Within the first 30 minutes to one hour','After 2 hours of rest','After 6 hours','Only when the baby cries'],
+     ans:0,
+     exp:'Latching-on and breastfeeding must be initiated during the first 30 minutes to one hour after delivery of the infant.'},
+    {q:'True or False: According to the handbook, one of the EINC practices is early bathing of the newborn.',
+     type:'tf',ans:1,
+     exp:'False. Early bathing is listed as an UNNECESSARY intervention. The four core EINC actions are: immediate drying, early skin-to-skin contact, properly-timed cord clamping/cutting, and non-separation for early breastfeeding.'},
+    {q:'The Philippine Ambulatory Pediatrics Association recommends that pediatricians advise parents to do what during the first years of life?',
+     type:'mcq',
+     opts:['Read aloud to their children','Limit screen time to 30 minutes','Start solid foods early','Enroll children in formal schooling'],
+     ans:0,
+     exp:'The Philippine Ambulatory Pediatrics Association strongly recommends that pediatricians advise parents about the importance of reading aloud to their children during the first years of life to develop language and literacy skills.'},
+    {q:'Age-appropriate discussion and counseling should be part of clinical visits in what manner?',
+     type:'mcq',
+     opts:['Only during sick visits','An integral part of each visit','Quarterly only','Only when parents specifically request it'],
+     ans:1,
+     exp:'Annotation 20 states: "Age-appropriate discussion and counseling should be an integral part of each visit."'},
+    {q:'True or False: The World Health Organization states there is one definitive risk factor that predicts child maltreatment.',
+     type:'tf',ans:1,
+     exp:'False. The handbook explicitly states: "There is NO one risk factor that is predictive of child maltreatment."'},
+    {q:'The "5 Steps to Protect Children" referenced in the handbook was developed by which organization?',
+     type:'mcq',
+     opts:['World Health Organization','Philippine Pediatric Society','Child Protection Unit Network, Inc.','Department of Social Welfare and Development'],
+     ans:2,
+     exp:'The "5 Steps to Protect Children" (Appendix 9) was enumerated by the Child Protection Unit Network, Inc. of the UP-Philippine General Hospital.'},
+    {q:'For newborns discharged less than 48 hours after delivery, a follow-up appointment must be made for examination within how many hours of discharge?',
+     type:'mcq',
+     opts:['24 hours','48 hours','72 hours','96 hours'],
+     ans:1,
+     exp:'Annotation 3: For newborns discharged <48 hours after delivery, a definitive appointment must be made for the infant to be examined within 48 hours of discharge.'},
+    {q:'True or False: Physicians and nurses must report a child who appears to have suffered abuse to the DSWD within 48 hours from knowledge of the abuse (RA 7610).',
+     type:'tf',ans:0,
+     exp:'True. The IRR of RA 7610 Section 4 states that physicians and nurses shall report, either orally or in writing, to DSWD the examination and/or treatment of a child who appears to have suffered abuse within 48 hours from knowledge of the same.'},
+    {q:'According to the handbook, which of the following is NOT one of the four EINC core actions at birth?',
+     type:'mcq',
+     opts:['Immediate and thorough drying of the newborn','Early skin-to-skin contact between mother and newborn','Routine foot printing of the newborn','Properly-timed cord clamping and cutting'],
+     ans:2,
+     exp:'Routine foot printing is listed as an unnecessary intervention. The four core EINC actions are: immediate drying, early skin-to-skin contact, properly-timed cord clamping/cutting, and non-separation for early breastfeeding.'}
+  ],
+
+  nutrition:[
+    {q:'Exclusive breastfeeding is recommended up to how many months of age?',
+     type:'mcq',opts:['4 months','6 months','9 months','12 months'],ans:1,
+     exp:'Mothers must be encouraged to exclusively breastfeed up to six (6) months and continued on up to two (2) years and beyond.'},
+    {q:'Safe, adequate, timely and properly-fed complementary feeding using fresh, natural and indigenous food should begin at what age?',
+     type:'mcq',opts:['4 months','5 months','6 months','8 months'],ans:2,
+     exp:'Complementary feeding using fresh, natural and indigenous food shall begin at six (6) months to meet the evolving nutritional requirements of infants.'},
+    {q:'What is the correct iron supplementation for infants aged 6–11 months?',
+     type:'mcq',
+     opts:['0.3 ml once a day for 3 months','0.6 ml once a day for 3 months','1 teaspoon once a day for 3 months','1 tablet once a day'],
+     ans:1,
+     exp:'For infants 6–11 months: Drops containing 15 mg elemental iron/0.6 ml — dose is 0.6 ml once a day for 3 months.'},
+    {q:'Vitamin A supplementation for children aged 12–59 months is given at what dose and frequency?',
+     type:'mcq',
+     opts:['100,000 IU once only','200,000 IU one capsule every 6 months','200,000 IU once a year','100,000 IU every 3 months'],
+     ans:1,
+     exp:'For children 12–59 months: 200,000 I.U. — 1 capsule every 6 months.'},
+    {q:'True or False: The DOH recommends deworming for all children aged 1 to 12 years.',
+     type:'tf',ans:0,
+     exp:'True. DOH Administrative Order 2015-0054 recommends deworming for all children aged 1 to 12 years.'},
+    {q:'When using Albendazole for deworming, what is the correct dose for children 24 months and above?',
+     type:'mcq',
+     opts:['200 mg single dose every 6 months','400 mg single dose every 6 months','500 mg single dose every 6 months','600 mg single dose every 6 months'],
+     ans:1,
+     exp:'Albendazole: 24 months and above — 400 mg, single dose every 6 months. (12–23 months: 200 mg single dose every 6 months.)'},
+    {q:'True or False: Deworming may be safely administered to children with high-grade fever.',
+     type:'tf',ans:1,
+     exp:'False. Deworming must NOT be done in children with high-grade fever, severe malnutrition, profuse diarrhea, abdominal pain, serious illness, or previous hypersensitivity to antihelminthic drugs.'},
+    {q:'According to the PPS Food Pyramid for Filipino children, which of the following should form the BASE (most consumed) of a child\'s daily diet?',
+     type:'mcq',
+     opts:['Milk and dairy products','Rice, corn, bread, and other cereals','Fruits and vegetables','Meat, fish, poultry, and legumes'],
+     ans:1,
+     exp:'The base of the Philippine Food Pyramid for children is rice, corn, bread, and other cereals, which should be eaten most in the daily diet to provide energy.'},
+    {q:'According to the handbook, which nutrient must be supplemented in exclusively breastfed infants starting at 4 months?',
+     type:'mcq',
+     opts:['Calcium','Vitamin C','Vitamin D','Zinc'],
+     ans:2,
+     exp:'Exclusively breastfed infants should receive Vitamin D supplementation (400 IU/day) starting at 4 months of age until sufficient sun exposure or dietary intake is achieved.'},
+    {q:'Which of the following food types should be AVOIDED for children according to the handbook?',
+     type:'mcq',
+     opts:['Fresh fruits and vegetables','Sweetened beverages, salty chips, and oily foods','Lean meats and fish','Natural and indigenous foods'],
+     ans:1,
+     exp:'Foods that are too sweet (sweetened beverages, candies), too salty (chips, curls), or too oily (gravies, dressings) should be avoided.'}
+  ],
+
+  safety:[
+    {q:'The "TIPP" acronym used in the handbook stands for:',
+     type:'mcq',
+     opts:['Total Injury Prevention Program','The Injury Prevention Program','Targeted Immunization and Prevention Protocol','Toddler Injury Protection Plan'],
+     ans:1,
+     exp:'TIPP stands for "The Injury Prevention Program," a structured anticipatory guidance tool used during pediatric visits to counsel parents on age-appropriate safety measures.'},
+    {q:'True or False: According to the handbook, lead poisoning in children can cause permanent intellectual disability even at low blood lead levels.',
+     type:'tf',ans:0,
+     exp:'True. Even low blood lead levels (below 10 µg/dL) have been associated with decrements in IQ, learning difficulties, and behavioral problems in children.'},
+    {q:'Which age group is at highest risk for poisoning, according to pediatric safety guidelines cited in the handbook?',
+     type:'mcq',
+     opts:['Newborns 0–1 month','Infants 6–12 months','Toddlers 1–4 years','School-age children 6–12 years'],
+     ans:2,
+     exp:'Toddlers aged 1–4 years are at highest risk for accidental poisoning due to their exploratory nature and tendency to mouth objects and substances within reach.'},
+    {q:'According to the handbook, the recommended daily physical activity for school-age children (6–17 years) is:',
+     type:'mcq',
+     opts:['20 minutes of light activity','30 minutes of moderate activity','60 minutes of moderate-to-vigorous physical activity','90 minutes of any physical activity'],
+     ans:2,
+     exp:'The handbook recommends that school-age children (6–17 years) get at least 60 minutes of moderate-to-vigorous physical activity daily.'},
+    {q:'True or False: Rear-facing car seats are recommended for children under 2 years of age or until they reach the maximum height/weight for their rear-facing seat.',
+     type:'tf',ans:0,
+     exp:'True. Children should remain in rear-facing car seats as long as possible until they reach the maximum height or weight allowed for their seat, per safety guidelines cited in the handbook.'},
+    {q:'Under the Anti Child Abuse Law (RA 7610), suspected cases of child abuse may also be reported to which local body?',
+     type:'mcq',
+     opts:['Philippine National Police only','Local Barangay Council for the Protection of Children (BCPC)','School principal','Neighborhood association'],
+     ans:1,
+     exp:'Cases may be reported to the Local Barangay Council for the Protection of Children (BCPC), Local Government Unit Social Welfare Office, Crisis Intervention Unit (CIU) - DSWD-NCR, and Philippine National Police Women and Child Protection Desks (WCPDs).'},
+    {q:'True or False: Water safety education for toddlers can fully replace adult supervision near water.',
+     type:'tf',ans:1,
+     exp:'False. Water safety education is encouraged but NEVER replaces active adult supervision. Toddlers and young children must always be within arm\'s reach of a responsible adult near water.'},
+    {q:'The primary source of childhood lead exposure in the Philippines is:',
+     type:'mcq',
+     opts:['Contaminated drinking water only','Lead-based paints and contaminated soil','Foreign-made toys exclusively','Vaccinations'],
+     ans:1,
+     exp:'Lead-based paints (especially in older homes) and contaminated soil near industrial areas are among the primary sources of childhood lead exposure, along with contaminated food and folk remedies.'},
+    {q:'According to PPS guidelines, at what age should anticipatory guidance on firearm safety first be discussed with parents?',
+     type:'mcq',
+     opts:['Only if parents own firearms','At every well-child visit regardless','At age 5 only','At age 12 only'],
+     ans:1,
+     exp:'Firearm safety counseling should be raised at every well-child visit because families may acquire firearms between visits. Parents should be advised to keep guns unloaded, locked, and ammunition stored separately.'},
+    {q:'True or False: The handbook states that helmets should be worn by children when using bicycles, scooters, and skates.',
+     type:'tf',ans:0,
+     exp:'True. Helmet use is recommended for all wheeled recreational activities including bicycles, scooters, inline skates, and skateboards to prevent head injuries.'}
+  ],
+
+  childhealth:[
+    {q:'According to the PPS/DOH immunization schedule, BCG vaccine is given:',
+     type:'mcq',
+     opts:['At 6 weeks of age','At birth or as soon as possible after birth','At 2 months','Only if the mother has tuberculosis'],
+     ans:1,
+     exp:'BCG (Bacillus Calmette-Guérin) vaccine is given at birth or as soon as possible after birth to protect against severe forms of tuberculosis.'},
+    {q:'True or False: Newborn screening in the Philippines is mandatory and must be done within 48–72 hours after birth.',
+     type:'tf',ans:0,
+     exp:'True. Under RA 9288 (Newborn Screening Act), newborn screening is mandatory in the Philippines and must be done within 24–72 hours after birth (ideally at 48–72 hours).'},
+    {q:'A child\'s blood pressure should first be routinely measured at which well-child visit?',
+     type:'mcq',
+     opts:['At birth','At 2 months','At 3 years of age','Only when symptoms appear'],
+     ans:2,
+     exp:'The PPS handbook recommends that routine blood pressure measurement begin at 3 years of age at every well-child visit.'},
+    {q:'According to the handbook, developmental surveillance should occur:',
+     type:'mcq',
+     opts:['Only at the 12-month visit','Only when the parent has a concern','At every well-child visit','Only at 6, 12, and 24 months'],
+     ans:2,
+     exp:'Developmental surveillance — the ongoing monitoring of a child\'s development — should occur at every well-child preventive care visit, not just at selected ages.'},
+    {q:'True or False: The WHO growth charts are the standard used by the PPS for monitoring Filipino children\'s growth.',
+     type:'tf',ans:0,
+     exp:'True. The PPS recommends using the WHO Child Growth Standards (2006) for children from birth to 5 years and the WHO Reference (2007) for school-age children.'},
+    {q:'Oral health counseling and the first dental visit should be recommended by the pediatrician at:',
+     type:'mcq',
+     opts:['6 months after first tooth eruption or by 12 months','3 years of age','5 years of age','Only when a dental problem is suspected'],
+     ans:0,
+     exp:'The American Academy of Pediatric Dentistry and PPS recommend the first dental visit by the eruption of the first tooth or by 12 months of age, with parental oral health counseling at each visit.'},
+    {q:'True or False: Vision screening using the Snellen chart can reliably detect amblyopia in infants.',
+     type:'tf',ans:1,
+     exp:'False. Infants cannot reliably use the Snellen chart. Infant vision screening involves red reflex testing and assessment of fixation and following, not the Snellen chart.'},
+    {q:'Which condition is NOT included in the Philippine Newborn Screening panel?',
+     type:'mcq',
+     opts:['Congenital hypothyroidism','Phenylketonuria (PKU)','Congenital adrenal hyperplasia (CAH)','Down syndrome'],
+     ans:3,
+     exp:'Down syndrome (Trisomy 21) is diagnosed by chromosomal analysis (karyotyping), not through the standard newborn metabolic screening panel. The Philippine NBS panel screens for metabolic and endocrine disorders.'},
+    {q:'Hearing screening for newborns using otoacoustic emissions (OAE) or automated ABR should be done:',
+     type:'mcq',
+     opts:['At 6 months of age','Before hospital discharge or within the first month','Only if there is a family history of hearing loss','At the 2-month immunization visit'],
+     ans:1,
+     exp:'Universal newborn hearing screening should be done before hospital discharge or within the first month of life so that intervention can begin early if hearing loss is identified.'},
+    {q:'True or False: A BMI-for-age percentile at or above the 95th percentile defines obesity in children aged 2–19 years.',
+     type:'tf',ans:0,
+     exp:'True. A BMI-for-age at or above the 95th percentile defines obesity in children and adolescents aged 2–19 years according to the CDC/WHO classification used in the handbook.'}
+  ]
+};
+
+/* ── State ──────────────────────────────────────────── */
+const state = {
+  current: null,
+  qIdx: 0,
+  answers: {},
+  scores: {}
+};
+
+/* ── Hub ─────────────────────────────────────────────── */
+function renderHub() {
+  const grid = document.getElementById('cat-grid');
+  grid.innerHTML = CATS.map(c => {
+    const sc = state.scores[c.id];
+    const done = !!sc;
+    const badgeTxt = done
+      ? `<i class="bi bi-check-circle-fill me-1"></i>${sc.correct}/${sc.total} correct`
+      : `${QS[c.id].length} questions`;
+    return `
+      <button class="cat-card${done?' done':''}" onclick="startQuiz('${c.id}')">
+        <div class="cat-icon" style="color:${c.color}"><i class="bi ${c.icon}"></i></div>
+        <div class="cat-name">${c.label}</div>
+        <div class="cat-desc">${c.desc}</div>
+        <span class="cat-badge${done?' done':''}">${badgeTxt}</span>
+      </button>`;
+  }).join('');
+  updateOverall();
+}
+
+function updateOverall() {
+  let answered = 0, correct = 0;
+  const total = CATS.reduce((s,c) => s + QS[c.id].length, 0);
+  CATS.forEach(c => {
+    const sc = state.scores[c.id];
+    if (sc) { answered += sc.total; correct += sc.correct; }
+  });
+  document.getElementById('overall-num').textContent = answered + '/' + total;
+  const pct = answered > 0 ? Math.round(correct / answered * 100) : 0;
+  document.getElementById('overall-fill').style.width = (answered/total*100) + '%';
+  document.getElementById('overall-pct').textContent = answered > 0 ? pct + '% correct' : '0% correct';
+}
+
+/* ── Quiz ────────────────────────────────────────────── */
+function startQuiz(catId) {
+  state.current = catId;
+  state.qIdx = 0;
+  state.answers = {};
+  showScreen('quiz');
+  document.getElementById('quiz-cat-name').textContent =
+    CATS.find(c => c.id === catId).label;
+  renderQ();
+}
+
+function retryQuiz() { startQuiz(state.current); }
+
+function renderQ() {
+  const qs = QS[state.current];
+  const q  = qs[state.qIdx];
+  const total = qs.length;
+  document.getElementById('q-progress').textContent = `${state.qIdx+1} / ${total}`;
+  document.getElementById('q-fill').style.width = ((state.qIdx+1)/total*100) + '%';
+
+  const nextBtn = document.getElementById('next-btn');
+  nextBtn.style.display = 'none';
+  nextBtn.textContent = state.qIdx === total-1 ? 'View results →' : 'Next question →';
+
+  let optsHtml = '';
+  if (q.type === 'mcq') {
+    optsHtml = `<div class="opts">${q.opts.map((o,i) =>
+      `<button class="opt" onclick="selectOpt(${i})">${o}</button>`).join('')}</div>`;
+  } else {
+    optsHtml = `<div class="opts tf-row">
+      <button class="opt" onclick="selectOpt(0)"><i class="bi bi-check-lg me-1"></i>True</button>
+      <button class="opt" onclick="selectOpt(1)"><i class="bi bi-x-lg me-1"></i>False</button>
+    </div>`;
+  }
+
+  document.getElementById('q-content').innerHTML = `
+    <div class="q-card">
+      <div class="q-num">Question ${state.qIdx+1}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-type">${q.type === 'tf' ? 'True / False' : 'Multiple Choice'}</div>
+      ${optsHtml}
+      <div class="feedback" id="feedback"></div>
+    </div>`;
+}
+
+function selectOpt(idx) {
+  const q    = QS[state.current][state.qIdx];
+  const opts = document.querySelectorAll('.opt');
+  opts.forEach(o => o.disabled = true);
+  const isCorrect = idx === q.ans;
+  opts[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) opts[q.ans].classList.add('correct');
+
+  state.answers[state.qIdx] = {selected: idx, correct: q.ans, isCorrect};
+
+  const fb = document.getElementById('feedback');
+  fb.style.display = 'block';
+  fb.className = 'feedback ' + (isCorrect ? 'correct' : 'wrong');
+  fb.innerHTML = (isCorrect
+    ? '<strong><i class="bi bi-check-circle-fill me-1"></i>Correct!</strong> '
+    : '<strong><i class="bi bi-x-circle-fill me-1"></i>Incorrect.</strong> ') + q.exp;
+
+  document.getElementById('next-btn').style.display = 'block';
+}
+
+function nextQ() {
+  const qs = QS[state.current];
+  if (state.qIdx < qs.length - 1) {
+    state.qIdx++;
+    renderQ();
+  } else {
+    showResults();
+  }
+}
+
+/* ── Results ─────────────────────────────────────────── */
+function showResults() {
+  showScreen('results');
+  const qs  = QS[state.current];
+  const cat = CATS.find(c => c.id === state.current);
+  document.getElementById('res-cat-name').textContent = cat.label + ' — Results';
+
+  let correct = 0;
+  Object.values(state.answers).forEach(a => { if (a.isCorrect) correct++; });
+  const total = qs.length;
+  const pct   = Math.round(correct/total*100);
+
+  state.scores[state.current] = {correct, total};
+
+  document.getElementById('res-pct').textContent = pct + '%';
+  document.getElementById('res-fraction').textContent = correct + ' out of ' + total + ' correct';
+
+  const remark = document.getElementById('res-remark');
+  if (pct >= 80) {
+    remark.textContent = '🌟 Excellent — well done!';
+    remark.className = 'score-remark remark-pass';
+  } else if (pct >= 60) {
+    remark.textContent = '👍 Good — review the explanations';
+    remark.className = 'score-remark remark-ok';
+  } else {
+    remark.textContent = '📚 Needs review — try again';
+    remark.className = 'score-remark remark-fail';
+  }
+
+  const list = document.getElementById('review-list');
+  list.innerHTML = qs.map((q,i) => {
+    const a = state.answers[i] || {};
+    const ok = a.isCorrect;
+    const yourLabel = q.type==='tf'
+      ? (a.selected===0?'True':'False')
+      : (q.opts ? q.opts[a.selected] : '—');
+    const corrLabel = q.type==='tf'
+      ? (q.ans===0?'True':'False')
+      : (q.opts ? q.opts[q.ans] : '—');
+    return `
+      <div class="review-item">
+        <div class="review-q">${i+1}. ${q.q}</div>
+        ${ok
+          ? `<div class="review-row review-ok"><i class="bi bi-check-circle-fill me-1"></i>${corrLabel}</div>`
+          : `<div class="review-row review-your"><i class="bi bi-x-circle-fill me-1"></i>Your answer: ${yourLabel}</div>
+             <div class="review-row review-correct"><i class="bi bi-check-circle-fill me-1"></i>Correct: ${corrLabel}</div>`}
+        <div class="review-exp">${q.exp}</div>
+      </div>`;
+  }).join('');
+}
+
+/* ── Helpers ─────────────────────────────────────────── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+function goHub() {
+  showScreen('hub');
+  renderHub();
+}
+
+renderHub();
+</script>
+{% endblock %}

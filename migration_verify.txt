@@ -1,0 +1,10 @@
+child_profiles 2
+clinic_accounts 4
+clinic_announcements 1
+clinic_schedules 14
+clinics 2
+health_checklists 5
+learning_modules 1
+symptoms 26
+time_slots 0
+users 2

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PaPrep — The all-in-one parenting platform for children aged 0–5.">
+  <title>{% block title %}PaPrep{% endblock %} | Empowering Parents</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+{% if current_user.is_authenticated %}
+<!-- ═══════════════════════════════════════════════════
+     APP SHELL (logged-in)
+═══════════════════════════════════════════════════════ -->
+<div class="app-wrapper {% if session.get('sidebar_collapsed') %}sidebar-collapsed{% endif %}" id="appWrapper">
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="brand-icon"><img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"></div>
+        <div class="brand-text">
+          <span class="brand-name">PaPrep</span>
+        </div>
+      </div>
+      <button class="sidebar-close-btn d-lg-none" id="sidebarCloseBtn">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    {% if children %}
+    <div class="child-switcher">
+      <label class="switcher-label"><i class="bi bi-person-fill"></i> Active Child</label>
+      <select class="form-select form-select-sm child-select" id="childSelect"
+              onchange="setActiveChild(this.value)">
+        {% for c in children %}
+        <option value="{{ c.id }}" {% if c.id == active_child_id %}selected{% endif %}>
+          {{ c.name }}
+          {% if c.child_type == 'special_needs' %}⭐{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+
+    <nav class="sidebar-nav">
+      <ul>
+        <li>
+          <a href="{{ url_for('main.dashboard') }}"
+             class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+            <i class="bi bi-grid-1x2-fill nav-icon"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('modules.list_modules') }}"
+             class="nav-link {% if 'modules.' in (request.endpoint or '') and request.endpoint != 'modules.assessment' %}active{% endif %}">
+            <i class="bi bi-book-fill nav-icon"></i>
+            <span>Learning Modules</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('modules.assessment') }}"
+             class="nav-link {% if request.endpoint == 'modules.assessment' %}active{% endif %}">
+            <i class="bi bi-clipboard2-check-fill nav-icon"></i>
+            <span>Preparedness Assessment</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('symptoms.symptom_checker') }}"
+             class="nav-link {% if request.endpoint == 'symptoms.symptom_checker' %}active{% endif %}">
+            <i class="bi bi-clipboard2-pulse-fill nav-icon"></i>
+            <span>Symptom Checker</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('symptoms.health_checklist') }}"
+             class="nav-link {% if request.endpoint == 'symptoms.health_checklist' %}active{% endif %}">
+            <i class="bi bi-clipboard2-heart-fill nav-icon"></i>
+            <span>Health Checklist</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('clinics.clinic_locator') }}"
+             class="nav-link {% if 'clinics.' in (request.endpoint or '') %}active{% endif %}">
+            <i class="bi bi-hospital-fill nav-icon"></i>
+            <span>Find a Clinic</span>
+          </a>
+        </li>
+        <li class="nav-divider"></li>
+        <li>
+          <a href="{{ url_for('children.create_child') }}"
+             class="nav-link {% if request.endpoint == 'children.create_child' %}active{% endif %}">
+            <i class="bi bi-person-plus-fill nav-icon"></i>
+            <span>Add Child Profile</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('auth.logout') }}" class="nav-link nav-link-danger">
+            <i class="bi bi-box-arrow-right nav-icon"></i>
+            <span>Sign Out</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar-sm">{{ current_user.first_name[0] }}{{ current_user.last_name[0] }}</div>
+        <div class="user-info">
+          <span class="user-name">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+          <span class="user-role">Parent</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Main Content -->
+  <div class="app-main">
+    <!-- Top bar -->
+    <header class="app-topbar">
+      <button class="topbar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+        <i class="bi bi-list"></i>
+      </button>
+      <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+      <div class="topbar-actions">
+        <span class="topbar-greeting d-none d-sm-inline">Hi, {{ current_user.first_name }}!</span>
+      </div>
+    </header>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container px-4 pt-3">
+      {% for category, message in messages %}
+      <div class="alert alert-{{ 'danger' if category == 'error' else ('primary' if category == 'info' else category) }} alert-dismissible fade show" role="alert">
+        {% if category == 'success' %}<i class="bi bi-check-circle-fill me-2"></i>
+        {% elif category == 'error' %}<i class="bi bi-exclamation-circle-fill me-2"></i>
+        {% elif category == 'info' %}<i class="bi bi-info-circle-fill me-2"></i>{% endif %}
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Page content -->
+    <main class="app-content">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Floating chat bubble (parent users) -->
+    {% if current_user.is_authenticated %}
+    {% if clinic is defined %}
+    <div id="chat_bubble" class="chat-bubble" style="position:fixed;right:20px;bottom:20px;z-index:1050;">
+      <!-- This will be toggled per-clinic on clinic detail pages -->
+      <button type="button" class="btn btn-primary" onclick="toggleChat({{ clinic.id }})">
+        <i class="bi bi-chat-dots"></i>
+      </button>
+    </div>
+    {% endif %}
+    {% endif %}
+    <script>
+    function toggleChat(clinicId) {
+      const panel = document.getElementById('chat_panel_' + clinicId);
+      if (panel) {
+        panel.classList.toggle('d-none');
+      }
+    }
+    </script>
+  </div><!-- /.app-main -->
+</div><!-- /.app-wrapper -->
+
+<span id="csrfToken" data-token="{{ csrf_token() }}" style="display:none;"></span>
+<span id="currentUser" data-id="{{ current_user.id }}" style="display:none;"></span>
+
+{% else %}
+
+<nav class="navbar navbar-expand-lg public-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="{{ url_for('main.index') }}">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#4E97D9,#9B59B6);box-shadow:0 4px 16px rgba(78,151,217,.35);flex-shrink:0;">
+        <img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo" style="width:30px;height:30px;border-radius:50%;object-fit:cover;">
+      </span>
+      <span>PaPrep</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#publicNav" aria-controls="publicNav"
+            aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="publicNav">
+      <ul class="navbar-nav ms-auto align-items-center gap-2">
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('auth.login') }}">Log In</a>
+        </li>
+        <li class="nav-item">
+          <a class="btn btn-primary btn-sm px-4" href="{{ url_for('auth.signup') }}">Get Started</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Flash messages (public) -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="container mt-3">
+  {% for category, message in messages %}
+  <div class="alert alert-{{ 'danger' if category == 'error' else ('primary' if category == 'info' else category) }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+{{ self.content() }}
+
+<footer class="public-footer">
+  <div class="container text-center py-4">
+    <div class="footer-brand mb-2">
+      <img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo" style="width:24px;height:24px;border-radius:4px;object-fit:cover;margin-right:6px;"> <strong>PaPrep</strong>
+    </div>
+    <p class="mb-1 text-muted small">Empowering Parents, Nurturing Children.</p>
+    <p class="text-muted small mb-0">&copy; 2024 PaPrep. All rights reserved.</p>
+  </div>
+</footer>
+{% endif %}
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Socket.IO client -->
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<script>
+  if (typeof io !== 'undefined') {
+    try { window.socket = io(); } catch (e) { console.warn('Socket.IO init failed', e); }
+  }
+</script>
+
+<!-- Sidebar toggle logic -->
+<script>
+(function() {
+  const toggle = document.getElementById('sidebarToggle');
+  const closeBtn = document.getElementById('sidebarCloseBtn');
+  const overlay = document.getElementById('sidebarOverlay');
+  const wrapper = document.getElementById('appWrapper');
+
+  function openSidebar() {
+    if (wrapper) wrapper.classList.add('sidebar-open');
+  }
+  function closeSidebar() {
+    if (wrapper) wrapper.classList.remove('sidebar-open');
+  }
+
+  if (toggle) toggle.addEventListener('click', function() {
+    if (window.innerWidth >= 992) {
+      wrapper.classList.toggle('sidebar-collapsed');
+    } else {
+      openSidebar();
+    }
+  });
+  if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+  if (overlay) overlay.addEventListener('click', closeSidebar);
+})();
+
+function setActiveChild(childId) {
+  fetch('{{ url_for("children.set_active_child") }}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token() }}'
+    },
+    body: JSON.stringify({ child_id: parseInt(childId) })
+  }).then(r => r.json()).then(() => location.reload());
+}
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

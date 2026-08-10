@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# Database
+*.db
+*.sqlite3
+
+# Node / Next.js
+node_modules/
+next-supabase-mvp/node_modules/
+next-supabase-mvp/.next/
+.next/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / credentials
+*.json
+!package.json
+!package-lock.json
