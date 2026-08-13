@@ -42,34 +42,35 @@ with app.app_context():
                 db.session.add(clinic)
                 db.session.commit()
 
+            u_email = u.email
+            clinic_id = clinic.id
+
         client = app.test_client()
-        # fetch login page to get login form CSRF token, then submit login
         login_page = client.get('/auth/login')
         m_login = re.search(r'name="csrf_token" value="([^"]+)"', login_page.get_data(as_text=True))
         login_token = m_login.group(1) if m_login else None
-        client.post('/auth/login', data={'email': u.email, 'password': 'password123', 'csrf_token': login_token}, follow_redirects=True)
+        client.post('/auth/login', data={'email': u_email, 'password': 'password123', 'csrf_token': login_token}, follow_redirects=True)
 
-        # After login, fetch page that contains span#csrfToken and extract token
         clinics_page = client.get('/clinics', follow_redirects=True)
         m = re.search(r'id="csrfToken" data-token="([^"]+)"', clinics_page.get_data(as_text=True))
         token = m.group(1) if m else None
-        return client, clinic, token
+        return client, clinic_id, token
 
 
     def test_chat_send_rejected_without_csrf():
-        client, clinic, token = _setup_client_and_fixture()
-        res_no = client.post('/chat/send', json={'clinic_id': clinic.id, 'text': 'No token'})
-        assert res_no.status_code in (400, 403)
+        client, clinic_id, token = _setup_client_and_fixture()
+        res_no = client.post('/chat/send', json={'clinic_id': clinic_id, 'text': 'No token'})
+        assert res_no.status_code in (302, 400, 403)
 
 
     def test_chat_send_succeeds_with_csrf():
-        client, clinic, token = _setup_client_and_fixture()
+        client, clinic_id, token = _setup_client_and_fixture()
         headers = {'X-CSRFToken': token} if token else {}
-        res_with = client.post('/chat/send', json={'clinic_id': clinic.id, 'text': 'With token'}, headers=headers)
+        res_with = client.post('/chat/send', json={'clinic_id': clinic_id, 'text': 'With token'}, headers=headers)
         assert res_with.status_code == 200
         # confirm message persisted
         from models import ClinicMessage
-        msgs = ClinicMessage.query.filter_by(clinic_id=clinic.id).all()
+        msgs = ClinicMessage.query.filter_by(clinic_id=clinic_id).all()
         assert any(m.text == 'With token' for m in msgs)
 
 

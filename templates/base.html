@@ -136,8 +136,53 @@
         <i class="bi bi-list"></i>
       </button>
       <div class="topbar-title">{% block page_title %}{% endblock %}</div>
-      <div class="topbar-actions">
+      <div class="topbar-actions d-flex align-items-center gap-3">
         <span class="topbar-greeting d-none d-sm-inline">Hi, {{ current_user.first_name }}!</span>
+
+        <!-- Notification Center Bell -->
+        <div class="dropdown notification-dropdown">
+          <button class="btn btn-light btn-sm rounded-circle position-relative p-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notifBellBtn" title="Notifications">
+            <i class="bi bi-bell-fill fs-6 text-secondary"></i>
+            {% if notifications_summary and notifications_summary.unread_count > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notifBadge" style="font-size:0.65rem;">
+              {{ notifications_summary.unread_count }}
+            </span>
+            {% endif %}
+          </button>
+          <div class="dropdown-menu dropdown-menu-end shadow-lg p-0 border-0 overflow-hidden" style="width: 320px; max-height: 440px;">
+            <div class="dropdown-header bg-light d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+              <span class="fw-bold text-dark"><i class="bi bi-bell me-1"></i> Notifications</span>
+              {% if notifications_summary and notifications_summary.unread_count > 0 %}
+              <button class="btn btn-link btn-sm p-0 text-decoration-none small text-primary" onclick="markNotificationsRead(event)">Mark all read</button>
+              {% endif %}
+            </div>
+            <div class="notif-list-container" style="max-height: 360px; overflow-y: auto;">
+              {% if notifications_summary and notifications_summary.notifications %}
+                {% for n in notifications_summary.notifications %}
+                <a href="{{ n.link }}" onclick="markSingleNotifRead('{{ n.id }}')" class="dropdown-item px-3 py-2 text-wrap border-bottom {% if not n.is_read %}bg-light-subtle font-weight-bold{% endif %}" style="white-space: normal;">
+                  <div class="d-flex align-items-start gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:30px;height:30px;background:{{ n.color }}15;color:{{ n.color }};">
+                      <i class="{{ n.icon }} small"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <strong class="small text-dark">{{ n.title }}</strong>
+                        <span class="text-muted" style="font-size:0.7rem;">{{ n.time }}</span>
+                      </div>
+                      <p class="mb-0 text-secondary" style="font-size:0.78rem; line-height:1.2;">{{ n.body }}</p>
+                    </div>
+                  </div>
+                </a>
+                {% endfor %}
+              {% else %}
+                <div class="p-3 text-center text-muted small">
+                  <i class="bi bi-bell-slash d-block fs-4 text-muted mb-1"></i>
+                  No new notifications right now.
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -163,22 +208,117 @@
       {% block content %}{% endblock %}
     </main>
 
-    <!-- Floating chat bubble (parent users) -->
+    <!-- Global Floating Chat Bubble & Panel (Assistant + Live Consultation) -->
     {% if current_user.is_authenticated %}
-    {% if clinic is defined %}
-    <div id="chat_bubble" class="chat-bubble" style="position:fixed;right:20px;bottom:20px;z-index:1050;">
-      <!-- This will be toggled per-clinic on clinic detail pages -->
-      <button type="button" class="btn btn-primary" onclick="toggleChat({{ clinic.id }})">
-        <i class="bi bi-chat-dots"></i>
+    <div id="global_chat_bubble" class="chat-bubble" style="position:fixed;right:20px;bottom:20px;z-index:1050;">
+      <button type="button" class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0 overflow-hidden" style="width:56px;height:56px;background:var(--msgr-gradient);border:none;" onclick="toggleGlobalChat()">
+        <img src="/static/image/Logo.png" alt="PaPrep" style="width:36px;height:36px;object-fit:contain;filter:brightness(0) invert(1);">
       </button>
     </div>
-    {% endif %}
+
+    <div id="global_chat_panel" class="card shadow-lg position-fixed d-none border-0" style="right:20px;bottom:88px;width:360px;height:480px;z-index:1060;border-radius:18px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.18) !important;">
+      <!-- Messenger Header -->
+      <div class="card-header border-0 text-white p-3 d-flex flex-column gap-2" style="background: var(--msgr-gradient);">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <div class="messenger-avatar avatar-sm d-flex align-items-center justify-content-center p-1" style="background:rgba(255,255,255,0.25);">
+              <img src="/static/image/Logo.png" alt="PaPrep" style="width:22px;height:22px;object-fit:contain;filter:brightness(0) invert(1);">
+            </div>
+            <div>
+              <div class="fw-bold small line-height-1">PaPrep Messenger</div>
+              <div class="small text-white-50" style="font-size:11px;">
+                <span class="d-inline-block rounded-circle bg-success me-1" style="width:6px;height:6px;"></span>Active Now
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white btn-sm" onclick="toggleGlobalChat()"></button>
+        </div>
+        <div class="msgr-toggle-container">
+          <button type="button" class="msgr-toggle-btn active" id="tab-bot" onclick="switchChatTab('bot')">
+            <i class="bi bi-robot"></i> Assistant
+          </button>
+          <button type="button" class="msgr-toggle-btn" id="tab-clinic" onclick="switchChatTab('clinic')">
+            <i class="bi bi-hospital"></i> Live Clinic
+          </button>
+        </div>
+      </div>
+
+      <!-- Mode 1: PaPrep Assistant Bot -->
+      <div id="chat_view_bot" class="card-body p-2 d-flex flex-column h-100 bg-white" style="overflow:hidden;">
+        <div class="chat-messages-container flex-grow-1 overflow-auto p-2" id="bot_messages_list" style="max-height: 290px;">
+          <div class="msgr-msg-row recv">
+            <div class="messenger-avatar avatar-sm flex-shrink-0" style="width:26px;height:26px;font-size:11px;background:var(--purple);">🤖</div>
+            <div class="msgr-bubble">
+              <div>👋 <strong>Hi! I'm your PaPrep Assistant.</strong></div>
+              <div class="mt-1">Ask me about fever care, nutrition, safety, or pick a quick shortcut below!</div>
+            </div>
+          </div>
+        </div>
+        <!-- Suggestion Chips -->
+        <div class="px-2 py-1 border-top bg-light flex-shrink-0" id="bot_quick_actions">
+          <div class="d-flex flex-wrap gap-1">
+            <button class="btn btn-outline-primary btn-xs py-1 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('Fever care guidance')">🌡️ Fever</button>
+            <button class="btn btn-outline-primary btn-xs py-1 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('Nutrition tips for my child')">🍎 Nutrition</button>
+            <button class="btn btn-outline-danger btn-xs py-1 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('Emergency red flags')">🚨 Emergency</button>
+            <button class="btn btn-outline-success btn-xs py-1 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('Find a clinic nearby')">🏥 Clinics</button>
+          </div>
+        </div>
+        <form class="p-2 border-top bg-white flex-shrink-0" onsubmit="handleBotSubmit(event)">
+          <div class="messenger-input-capsule">
+            <input type="text" id="bot_input" class="messenger-input" placeholder="Ask PaPrep Assistant..." required>
+            <button type="submit" class="messenger-btn-icon"><i class="bi bi-send-fill fs-6"></i></button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Mode 2: Live Clinic Consultation -->
+      <div id="chat_view_clinic" class="card-body p-2 d-flex flex-column h-100 d-none bg-white" style="overflow:hidden;">
+        {% if clinic is defined %}
+        <div class="text-muted small px-2 py-1 border-bottom">Messaging: <strong>{{ clinic.name }}</strong></div>
+        <div class="chat-messages-container flex-grow-1 overflow-auto p-2" id="chat_list_{{ clinic.id }}" style="max-height: 310px;">
+          <!-- Loaded dynamically via chat.js -->
+        </div>
+        <form class="p-2 border-top bg-white flex-shrink-0" onsubmit="sendMessage(event, {{ clinic.id }})">
+          <div class="messenger-input-capsule">
+            <input type="text" id="chat_input_{{ clinic.id }}" class="messenger-input" placeholder="Message clinic..." oninput="handleTypingEvent({{ clinic.id }})" required>
+            <button type="submit" class="messenger-btn-icon"><i class="bi bi-send-fill fs-6"></i></button>
+          </div>
+        </form>
+        {% else %}
+        <div class="text-center p-4 text-muted small my-auto">
+          <i class="bi bi-hospital fs-1 text-primary d-block mb-2" style="color:var(--msgr-blue) !important;"></i>
+          To chat directly with clinic staff, visit a clinic profile page from <strong>Find a Clinic</strong>.
+          <div class="mt-3">
+            <a href="{{ url_for('clinics.clinic_locator') }}" class="btn btn-sm text-white rounded-pill px-3" style="background:var(--msgr-gradient);">Find a Clinic Nearby</a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
     {% endif %}
     <script>
-    function toggleChat(clinicId) {
-      const panel = document.getElementById('chat_panel_' + clinicId);
-      if (panel) {
-        panel.classList.toggle('d-none');
+    function toggleGlobalChat() {
+      const panel = document.getElementById('global_chat_panel');
+      if (panel) panel.classList.toggle('d-none');
+    }
+    function switchChatTab(tab) {
+      const botTab = document.getElementById('tab-bot');
+      const clinicTab = document.getElementById('tab-clinic');
+      const botView = document.getElementById('chat_view_bot');
+      const clinicView = document.getElementById('chat_view_clinic');
+      if (tab === 'bot') {
+        botTab.classList.add('active');
+        clinicTab.classList.remove('active');
+        botView.classList.remove('d-none');
+        clinicView.classList.add('d-none');
+      } else {
+        clinicTab.classList.add('active');
+        botTab.classList.remove('active');
+        clinicView.classList.remove('d-none');
+        botView.classList.add('d-none');
+        {% if clinic is defined %}
+        if (typeof window.loadHistory === 'function') window.loadHistory({{ clinic.id }});
+        {% endif %}
       }
     }
     </script>
@@ -252,6 +392,9 @@
     try { window.socket = io(); } catch (e) { console.warn('Socket.IO init failed', e); }
   }
 </script>
+<!-- Global PaPrep Chat & Notification Center JS -->
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+
 
 <!-- Sidebar toggle logic -->
 <script>

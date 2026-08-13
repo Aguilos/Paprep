@@ -26,10 +26,14 @@ with app.app_context():
         pass
     db.create_all()
     # Create or reuse test user and clinic
+    from models import ChildProfile
+    from datetime import date
     u = User.query.filter_by(email='testparent@example.com').first()
     if not u:
         u = User(email='testparent@example.com', first_name='Test', last_name='Parent')
         u.set_password('password123')
+        c = ChildProfile(name='Test Child', date_of_birth=date(2022, 1, 1), gender='boy')
+        u.children.append(c)
         db.session.add(u)
         db.session.commit()
 
@@ -98,14 +102,24 @@ with app.app_context():
     msgs_all = ClinicMessage.query.filter_by(clinic_id=clinic.id, user_id=u.id).order_by(ClinicMessage.created_at.asc()).all()
     print('all messages for thread:', [(m.sender, m.text) for m in msgs_all])
 
-    # Fetch history via endpoint as parent again
-    # Parent fetch history
-    res2b = client.get('/')
-    m3 = re.search(r'id="csrfToken" data-token="([^"]+)"', res2b.get_data(as_text=True))
+    # Re-login as parent user
+    login_page = client.get('/auth/login')
+    m_login = re.search(r'name="csrf_token" value="([^"]+)"', login_page.get_data(as_text=True))
+    login_csrf = m_login.group(1) if m_login else None
+    client.post('/auth/login', data={'email': u.email, 'password': 'password123', 'csrf_token': login_csrf}, follow_redirects=True)
+
+    dash_page = client.get('/dashboard', follow_redirects=True)
+    m3 = re.search(r'id="csrfToken" data-token="([^"]+)"', dash_page.get_data(as_text=True))
     token3 = m3.group(1) if m3 else None
-    with client.session_transaction() as sess:
-        sess['_user_id'] = str(u.id)
-    res3 = client.get(f'/chat/history/{clinic.id}')
-    print('history status', res3.status_code, res3.get_json())
-    if res3.status_code != 200:
-        print('history body:', res3.get_data(as_text=True))
+
+    # Test PaPrep Assistant Bot Endpoint
+    res_bot = client.post('/chat/bot', json={'text': 'fever guidance'}, headers={'X-CSRFToken': token3})
+    print('bot status', res_bot.status_code, 'bot ok:', res_bot.get_json().get('ok'))
+
+    # Test Mark Notifications Read Endpoint
+    res_notif = client.post('/api/notifications/mark-read', json={'id': 'msg_1'}, headers={'X-CSRFToken': token3})
+    print('mark read status', res_notif.status_code, 'notif ok:', res_notif.get_json().get('ok'))
+
+
+
+

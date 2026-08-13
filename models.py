@@ -324,7 +324,9 @@ class ClinicMessage(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     # 'user' or 'clinic' — who sent this message
     sender = db.Column(db.String(16), nullable=False, default='user')
-    text = db.Column(db.Text, nullable=False)
+    text = db.Column(db.Text, nullable=True)          # nullable to allow image-only messages
+    attachment_url = db.Column(db.String(512), nullable=True)  # path to uploaded file/image
+    attachment_type = db.Column(db.String(16), nullable=True)  # 'image' or 'file'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_read = db.Column(db.Boolean, default=False)
 
@@ -336,7 +338,29 @@ class ClinicMessage(db.Model):
             'clinic_id': self.clinic_id,
             'user_id': self.user_id,
             'sender': self.sender,
-            'text': self.text,
+            'text': self.text or '',
+            'attachment_url': self.attachment_url,
+            'attachment_type': self.attachment_type,
             'created_at': self.created_at.isoformat(),
             'is_read': self.is_read,
         }
+
+
+class NotificationRead(db.Model):
+    """Persistent per-user read tracking for aggregated topbar notifications."""
+    __tablename__ = 'notification_reads'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    notification_key = db.Column(db.String(120), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='notification_reads', lazy=True)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'notification_key', name='_user_notif_key_uc'),
+    )
+
+    def __repr__(self):
+        return f'<NotificationRead user={self.user_id} key={self.notification_key}>'
+

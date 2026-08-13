@@ -1,7 +1,7 @@
-from flask import Flask
+from flask import Flask, flash, redirect, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 from config import Config
 from flask_socketio import SocketIO, join_room, leave_room
 
@@ -85,17 +85,16 @@ def create_app():
     # Attach SocketIO to the app
     socketio.init_app(app)
 
-    # Socket handlers
-    @socketio.on('join')
-    def handle_join(data):
-        try:
-            cid = data.get('clinic_id')
-            uid = data.get('user_id')
-            if cid and uid:
-                room = f"chat_{cid}_{uid}"
-                join_room(room)
-        except Exception:
-            pass
+    # Friendly handler for expired/invalid CSRF tokens (avoids raw 400 page)
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        flash('Your session has expired or the form was submitted twice. Please try again.', 'warning')
+        referrer = request.referrer
+        return redirect(referrer if referrer else '/')
+
+    # Register WebSocket handlers
+    from routes.chat import register_socket_events
+    register_socket_events(socketio)
 
     @app.shell_context_processor
     def make_shell_context():

@@ -42,8 +42,14 @@ def _current_clinic_account():
 def clinic_login_required(f):
     @functools.wraps(f)
     def decorated(*args, **kwargs):
-        if not session.get('clinic_account_id'):
+        cid = session.get('clinic_account_id')
+        if not cid:
             flash('Please log in to access your clinic portal.', 'warning')
+            return redirect(url_for('clinic_portal.login'))
+        # Guard against stale sessions pointing to a deleted account
+        if not db.session.get(ClinicAccount, cid):
+            session.pop('clinic_account_id', None)
+            flash('Your session has expired. Please log in again.', 'warning')
             return redirect(url_for('clinic_portal.login'))
         return f(*args, **kwargs)
     return decorated
