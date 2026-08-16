@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+from urllib.parse import quote, unquote
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -13,7 +14,24 @@ def get_database_uri():
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
+    # Safely handle special characters in password (such as '@' or '#')
+    if database_url.startswith('postgresql://'):
+        try:
+            prefix, rest = database_url.split('://', 1)
+            if '@' in rest:
+                last_at = rest.rfind('@')
+                user_pass = rest[:last_at]
+                host_db = rest[last_at + 1:]
+                if ':' in user_pass:
+                    user, password = user_pass.split(':', 1)
+                    unquoted_pass = unquote(password)
+                    quoted_pass = quote(unquoted_pass, safe='')
+                    database_url = f"{prefix}://{user}:{quoted_pass}@{host_db}"
+        except Exception:
+            pass
+
     return database_url
+
 
 
 class Config:
