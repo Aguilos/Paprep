@@ -81,6 +81,29 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        try:
+            from sqlalchemy import text
+            migrations = [
+                "ALTER TABLE clinic_messages ADD COLUMN attachment_url VARCHAR(512)",
+                "ALTER TABLE clinic_messages ADD COLUMN attachment_type VARCHAR(16)",
+                "ALTER TABLE learning_modules ADD COLUMN clinic_account_id INTEGER",
+                "ALTER TABLE clinic_accounts ADD COLUMN totp_secret VARCHAR(32)",
+                "ALTER TABLE clinic_accounts ADD COLUMN totp_enabled BOOLEAN DEFAULT FALSE",
+            ]
+            with db.engine.connect() as conn:
+                for query in migrations:
+                    try:
+                        if db.engine.dialect.name == 'postgresql':
+                            q = query.replace("ADD COLUMN", "ADD COLUMN IF NOT EXISTS")
+                            conn.execute(text(q))
+                        else:
+                            conn.execute(text(query))
+                    except Exception:
+                        pass
+                conn.commit()
+        except Exception as e:
+            app.logger.warning(f"Schema update notice: {e}")
+
 
     # Attach SocketIO to the app
     socketio.init_app(app)
