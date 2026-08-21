@@ -43,6 +43,7 @@ firebase_credentials.json
 *.json
 !package.json
 !package-lock.json
+!vercel.json
 
 # Runtime logs / temp files
 ping.txt
