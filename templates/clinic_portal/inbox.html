@@ -81,7 +81,9 @@
         </div>
         <!-- Right header icons (Informational only, no calls) -->
         <div class="d-flex align-items-center gap-2">
-          <button class="messenger-btn-icon text-muted" title="Thread Info"><i class="bi bi-info-circle-fill fs-5"></i></button>
+          <button class="messenger-btn-icon text-muted" title="Patient Profile" onclick="populatePatientProfile()" data-bs-toggle="modal" data-bs-target="#patientProfileModal">
+            <i class="bi bi-info-circle-fill fs-5"></i>
+          </button>
         </div>
       </div>
 
@@ -121,15 +123,65 @@
   </div>
 </div>
 
+<!-- Patient Profile Modal -->
+<div class="modal fade" id="patientProfileModal" tabindex="-1" aria-labelledby="patientProfileModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-800" id="patientProfileModalLabel">Patient Profile</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body pb-4">
+        <div class="text-center mb-4">
+          <div class="user-avatar bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold mx-auto mb-3" style="width:70px;height:70px;font-size:24px;" id="modalAvatar">
+            ?
+          </div>
+          <h5 class="fw-bold mb-1" id="modalParentName">Parent Name</h5>
+          <div class="small text-muted"><i class="bi bi-envelope me-1"></i> <span id="modalParentEmail">email</span></div>
+          <div class="small text-muted" id="modalParentPhoneWrapper" style="display:none;"><i class="bi bi-telephone me-1"></i> <span id="modalParentPhone"></span></div>
+        </div>
+        
+        <h6 class="fw-bold mb-3 border-bottom pb-2">Children</h6>
+        <div id="modalChildrenContainer" class="d-flex flex-column gap-2">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-  const clinicId = {{ clinic.id }};
-  let currentUserId = null;
-  const socket = window.socket || (typeof io !== 'undefined' ? io() : null);
+  // Store full profile data for all threads
+  const profilesData = {
+    {% for t in threads %}
+      "{{ t.user.id }}": {
+        name: "{{ t.user.name }}",
+        email: "{{ t.user.email }}",
+        phone: "{{ t.user.phone or '' }}",
+        initials: "{{ t.user.name[0] | upper }}",
+        children: [
+          {% for c in t.user.children %}
+          {
+            name: "{{ c.name }}",
+            age: "{{ c.age_display }}",
+            type: "{{ c.child_type }}",
+            special: "{{ c.special_needs_type or '' }}",
+            color: "{{ c.profile_color or '#4E97D9' }}"
+          }{% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]
+      }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  };
 
   function escapeHtml(unsafe) {
     if (!unsafe) return '';
     return unsafe.replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"})[m]; });
   }
+
+  const clinicId = {{ clinic.id }};
+  let currentUserId = null;
+  const socket = window.socket || (typeof io !== 'undefined' ? io() : null);
 
   function formatTime(isoStr) {
     if (!isoStr) return '';
@@ -137,6 +189,45 @@
       const d = new Date(isoStr);
       return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } catch(e) { return ''; }
+  }
+
+  function populatePatientProfile() {
+    if (!currentUserId || !profilesData[currentUserId]) return;
+    const data = profilesData[currentUserId];
+    
+    document.getElementById('modalAvatar').textContent = data.initials;
+    document.getElementById('modalParentName').textContent = data.name;
+    document.getElementById('modalParentEmail').textContent = data.email;
+    
+    if (data.phone) {
+      document.getElementById('modalParentPhone').textContent = data.phone;
+      document.getElementById('modalParentPhoneWrapper').style.display = 'block';
+    } else {
+      document.getElementById('modalParentPhoneWrapper').style.display = 'none';
+    }
+
+    const childContainer = document.getElementById('modalChildrenContainer');
+    childContainer.innerHTML = '';
+    
+    if (data.children.length > 0) {
+      data.children.forEach(c => {
+        let badgeHtml = '';
+        if (c.type === 'special_needs') {
+          badgeHtml = `<span class="badge bg-purple text-white rounded-pill px-2 mt-1" style="background:#9B59B6; font-size:0.65rem;" title="${escapeHtml(c.special)}">Special Needs</span>`;
+        }
+        childContainer.innerHTML += `
+          <div class="d-flex align-items-center gap-3 p-2 bg-light rounded border">
+            <div style="width:12px;height:12px;border-radius:50%;background-color:${c.color};"></div>
+            <div>
+              <div class="fw-bold fs-sm mb-0">${escapeHtml(c.name)} <span class="text-muted fw-normal ms-1">(${c.age})</span></div>
+              ${badgeHtml}
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      childContainer.innerHTML = '<div class="text-muted small">No child profiles found.</div>';
+    }
   }
 
   function renderMessages(msgs) {

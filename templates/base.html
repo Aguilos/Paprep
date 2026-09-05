@@ -97,6 +97,13 @@
             <span>Find a Clinic</span>
           </a>
         </li>
+        <li>
+          <a href="{{ url_for('forum.forum_home') }}"
+             class="nav-link {% if 'forum.' in (request.endpoint or '') %}active{% endif %}">
+            <i class="bi bi-people-fill nav-icon"></i>
+            <span>Parent Forum</span>
+          </a>
+        </li>
         <li class="nav-divider"></li>
         <li>
           <a href="{{ url_for('children.create_child') }}"
@@ -263,10 +270,13 @@
             <button class="btn btn-outline-success btn-xs py-1 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('Find a clinic nearby')">🏥 Clinics</button>
           </div>
         </div>
-        <form class="p-2 border-top bg-white flex-shrink-0" onsubmit="handleBotSubmit(event)">
-          <div class="messenger-input-capsule">
+        <form class="p-2 border-top bg-white flex-shrink-0 pb-1" onsubmit="handleBotSubmit(event)">
+          <div class="messenger-input-capsule mb-1">
             <input type="text" id="bot_input" class="messenger-input" placeholder="Ask PaPrep Assistant..." required>
             <button type="submit" class="messenger-btn-icon"><i class="bi bi-send-fill fs-6"></i></button>
+          </div>
+          <div class="text-center lh-1 mt-1" style="font-size: 10px; color: #999;">
+            <i class="bi bi-robot"></i> Automated AI suggestions. Not medical advice.
           </div>
         </form>
       </div>

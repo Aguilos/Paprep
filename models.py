@@ -364,3 +364,68 @@ class NotificationRead(db.Model):
     def __repr__(self):
         return f'<NotificationRead user={self.user_id} key={self.notification_key}>'
 
+
+class ForumPost(db.Model):
+    """A parent-authored discussion post in the community forum."""
+    __tablename__ = 'forum_posts'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    # parenting | nutrition | health | safety | special_needs | general
+    category = db.Column(db.String(30), nullable=False, default='general')
+    is_pinned = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    author = db.relationship('User', backref='forum_posts', lazy=True)
+    replies = db.relationship(
+        'ForumReply', backref='post', lazy=True,
+        cascade='all, delete-orphan',
+        order_by='ForumReply.created_at'
+    )
+
+    @property
+    def reply_count(self):
+        return len(self.replies)
+
+    def __repr__(self):
+        return f'<ForumPost {self.title[:40]}>'
+
+
+class ForumReply(db.Model):
+    """A reply to a parent forum post."""
+    __tablename__ = 'forum_replies'
+
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('forum_posts.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    author = db.relationship('User', backref='forum_replies', lazy=True)
+
+    def __repr__(self):
+        return f'<ForumReply post={self.post_id} user={self.user_id}>'
+
+
+class ClinicRegistration(db.Model):
+    """Links a parent user to a clinic, required before they can message."""
+    __tablename__ = 'clinic_registrations'
+
+    id = db.Column(db.Integer, primary_key=True)
+    clinic_id = db.Column(db.Integer, db.ForeignKey('clinics.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # relations
+    clinic = db.relationship('Clinic', backref=db.backref('registrations', lazy=True, cascade='all, delete-orphan'))
+    user = db.relationship('User', backref=db.backref('clinic_registrations', lazy=True, cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.UniqueConstraint('clinic_id', 'user_id', name='_clinic_user_reg_uc'),
+    )
+
+    def __repr__(self):
+        return f'<ClinicRegistration clinic={self.clinic_id} user={self.user_id}>'

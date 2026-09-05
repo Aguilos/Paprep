@@ -1,0 +1,84 @@
+{% extends 'clinic_portal/base.html' %}
+{% block title %}Registered Patients{% endblock %}
+{% block page_title %}Registered Patients{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h4 class="page-heading">Registered Parents & Children</h4>
+  <p class="text-muted">Families who have registered with your clinic via PaPrep.</p>
+</div>
+
+<div class="card border-0 shadow-sm" style="border-radius:14px;">
+  <div class="card-header bg-white border-bottom fw-700 p-3" style="border-radius:14px 14px 0 0;">
+    <i class="bi bi-people-fill text-primary me-2"></i> Patient Directory
+  </div>
+  
+  <div class="card-body p-0">
+    {% if registrations %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light text-muted small">
+            <tr>
+              <th class="ps-4 py-3">Parent Name</th>
+              <th class="py-3">Contact</th>
+              <th class="py-3">Children</th>
+              <th class="pe-4 py-3 text-end">Registered On</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for reg in registrations %}
+            <tr>
+              <td class="ps-4 py-3">
+                <div class="d-flex align-items-center gap-3">
+                  <div class="user-avatar bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:40px;height:40px;">
+                    {{ reg.user.first_name[0] | upper }}{{ reg.user.last_name[0] | upper }}
+                  </div>
+                  <div>
+                    <div class="fw-700 text-dark">{{ reg.user.first_name }} {{ reg.user.last_name }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3">
+                <div class="small">
+                  <div><i class="bi bi-envelope text-muted me-1"></i> {{ reg.user.email }}</div>
+                  {% if reg.user.phone %}
+                  <div><i class="bi bi-telephone text-muted me-1"></i> {{ reg.user.phone }}</div>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="py-3">
+                {% if reg.user.children %}
+                  <div class="d-flex flex-column gap-1">
+                    {% for child in reg.user.children %}
+                      <div class="d-inline-flex align-items-center gap-2">
+                        <span class="badge" style="background-color: {{ child.profile_color or '#4E97D9' }};">
+                          {{ child.name }} ({{ child.age_display }})
+                        </span>
+                        {% if child.child_type == 'special_needs' %}
+                          <span class="badge bg-purple text-white rounded-pill px-2" style="background:#9B59B6; font-size:0.65rem;" title="{{ child.special_needs_type }}">Special Needs</span>
+                        {% endif %}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <span class="text-muted small">No child profiles</span>
+                {% endif %}
+              </td>
+              <td class="pe-4 py-3 text-end text-muted small">
+                {{ reg.created_at.strftime('%b %d, %Y') }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-people fs-1 d-block mb-3 opacity-50"></i>
+        <h5>No patients registered yet.</h5>
+        <p class="mb-0">When parents register with your clinic to send messages, they will appear here.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

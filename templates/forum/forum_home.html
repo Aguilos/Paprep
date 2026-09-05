@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}Parent Forum{% endblock %}
+{% block page_title %}Parent Forum{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+  <!-- Hero Banner -->
+  <div class="forum-hero mb-4">
+    <div class="forum-hero-inner">
+      <div class="forum-hero-icon"><i class="bi bi-people-fill"></i></div>
+      <div>
+        <h1 class="forum-hero-title">Parent Community Forum</h1>
+        <p class="forum-hero-subtitle">Share experiences, ask questions, and support each other.</p>
+      </div>
+    </div>
+    <a href="{{ url_for('forum.new_post') }}" class="btn forum-new-btn">
+      <i class="bi bi-pencil-fill me-2"></i>Start a Discussion
+    </a>
+  </div>
+
+  <!-- Category Filters -->
+  <div class="forum-filter-bar mb-4">
+    <a href="{{ url_for('forum.forum_home') }}"
+       class="forum-filter-chip {% if not active_category %}active{% endif %}">
+      <i class="bi bi-grid-fill me-1"></i>All Topics
+    </a>
+    {% for key, meta in categories.items() %}
+    <a href="{{ url_for('forum.forum_home', category=key) }}"
+       class="forum-filter-chip {% if active_category == key %}active{% endif %}"
+       style="--chip-color: {{ meta.color }};">
+      <i class="{{ meta.icon }} me-1"></i>{{ meta.label }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Posts List -->
+  {% if posts %}
+  <div class="forum-posts-list">
+    {% for post in posts %}
+    <a href="{{ url_for('forum.post_detail', post_id=post.id) }}" class="forum-post-card">
+      {% if post.is_pinned %}
+      <div class="forum-pinned-badge"><i class="bi bi-pin-angle-fill me-1"></i>Pinned</div>
+      {% endif %}
+      <div class="forum-post-meta-row">
+        <div class="forum-author-avatar">{{ post.author.first_name[0] }}{{ post.author.last_name[0] }}</div>
+        <div class="forum-author-info">
+          <span class="forum-author-name">{{ post.author.first_name }} {{ post.author.last_name }}</span>
+          <span class="forum-post-time">{{ post.created_at.strftime('%b %d, %Y · %I:%M %p') }}</span>
+        </div>
+        <span class="forum-category-badge" style="background: {{ categories[post.category].color }}20; color: {{ categories[post.category].color }};">
+          <i class="{{ categories[post.category].icon }} me-1"></i>{{ categories[post.category].label }}
+        </span>
+      </div>
+      <div class="forum-post-title">{{ post.title }}</div>
+      <div class="forum-post-preview">{{ post.body | truncate(140) }}</div>
+      <div class="forum-post-footer">
+        <span><i class="bi bi-chat-left-text me-1"></i>{{ post.reply_count }} repl{{ 'ies' if post.reply_count != 1 else 'y' }}</span>
+        <span class="ms-auto text-muted" style="font-size:12px;">Read more <i class="bi bi-arrow-right"></i></span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="forum-empty-state">
+    <i class="bi bi-chat-square-dots fs-1 d-block mb-3 text-muted"></i>
+    <h5 class="text-muted">No discussions yet{% if active_category %} in this category{% endif %}.</h5>
+    <p class="text-muted mb-4">Be the first to start a conversation!</p>
+    <a href="{{ url_for('forum.new_post') }}" class="btn forum-new-btn">
+      <i class="bi bi-pencil-fill me-2"></i>Start a Discussion
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Forum Styles ───────────────────────────────── */
+.forum-hero {
+  background: linear-gradient(135deg, #4E97D9 0%, #9B59B6 100%);
+  border-radius: 18px;
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #fff;
+}
+.forum-hero-inner { display: flex; align-items: center; gap: 20px; }
+.forum-hero-icon {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; flex-shrink: 0;
+}
+.forum-hero-title { font-size: 1.5rem; font-weight: 800; margin: 0; }
+.forum-hero-subtitle { font-size: 0.92rem; opacity: 0.88; margin: 0; }
+.forum-new-btn {
+  background: #fff; color: #4E97D9; border: none;
+  font-weight: 700; border-radius: 30px; padding: 10px 22px;
+  white-space: nowrap; flex-shrink: 0;
+  transition: all 0.18s;
+}
+.forum-new-btn:hover { background: #f0f7ff; color: #3a7bbf; transform: translateY(-1px); }
+
+.forum-filter-bar {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.forum-filter-chip {
+  display: inline-flex; align-items: center;
+  padding: 6px 16px; border-radius: 30px;
+  font-size: 0.82rem; font-weight: 600;
+  background: #f3f4f8; color: #555;
+  border: 1.5px solid transparent;
+  text-decoration: none; transition: all 0.16s;
+}
+.forum-filter-chip:hover { border-color: var(--chip-color, #4E97D9); color: var(--chip-color, #4E97D9); }
+.forum-filter-chip.active { background: var(--chip-color, #4E97D9); color: #fff; border-color: var(--chip-color, #4E97D9); }
+
+.forum-posts-list { display: flex; flex-direction: column; gap: 14px; }
+.forum-post-card {
+  display: block; text-decoration: none; color: inherit;
+  background: #fff; border-radius: 14px; padding: 20px 24px;
+  border: 1.5px solid #eee; transition: all 0.18s;
+  position: relative;
+}
+.forum-post-card:hover {
+  border-color: #4E97D9; box-shadow: 0 4px 18px rgba(78,151,217,0.12);
+  transform: translateY(-2px); color: inherit;
+}
+.forum-pinned-badge {
+  position: absolute; top: 12px; right: 16px;
+  font-size: 11px; color: #FF8C42; font-weight: 700;
+}
+.forum-post-meta-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.forum-author-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg,#4E97D9,#9B59B6);
+  color: #fff; font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.forum-author-info { display: flex; flex-direction: column; flex: 1; }
+.forum-author-name { font-size: 0.85rem; font-weight: 700; color: #333; }
+.forum-post-time { font-size: 0.74rem; color: #aaa; }
+.forum-category-badge {
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+  white-space: nowrap;
+}
+.forum-post-title { font-size: 1.02rem; font-weight: 800; color: #222; margin-bottom: 6px; }
+.forum-post-preview { font-size: 0.87rem; color: #666; margin-bottom: 12px; line-height: 1.5; }
+.forum-post-footer {
+  display: flex; align-items: center; font-size: 0.82rem; color: #888;
+  border-top: 1px solid #f0f0f0; padding-top: 10px;
+}
+.forum-empty-state {
+  text-align: center; padding: 64px 20px;
+}
+@media (max-width: 576px) {
+  .forum-hero { flex-direction: column; align-items: flex-start; }
+}
+</style>
+{% endblock %}

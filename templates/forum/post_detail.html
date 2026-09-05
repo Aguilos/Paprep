@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% block title %}{{ post.title }}{% endblock %}
+{% block page_title %}Parent Forum{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('forum.forum_home') }}">Parent Forum</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ post.title | truncate(50) }}</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4">
+    <!-- Main Post Column -->
+    <div class="col-lg-8">
+
+      <!-- Post Card -->
+      <div class="forum-post-detail-card mb-4">
+        <div class="fpd-header">
+          <div class="fpd-author-row">
+            <div class="forum-author-avatar-lg">
+              {{ post.author.first_name[0] }}{{ post.author.last_name[0] }}
+            </div>
+            <div>
+              <div class="fpd-author-name">{{ post.author.first_name }} {{ post.author.last_name }}</div>
+              <div class="fpd-time">{{ post.created_at.strftime('%B %d, %Y · %I:%M %p') }}</div>
+            </div>
+            <span class="forum-category-badge ms-auto" style="background: {{ categories[post.category].color }}20; color: {{ categories[post.category].color }};">
+              <i class="{{ categories[post.category].icon }} me-1"></i>{{ categories[post.category].label }}
+            </span>
+          </div>
+          <h2 class="fpd-title">{{ post.title }}</h2>
+        </div>
+        <div class="fpd-body">
+          <p style="white-space:pre-wrap; margin:0; line-height:1.75;">{{ post.body }}</p>
+        </div>
+        <div class="fpd-footer">
+          <span><i class="bi bi-chat-left-text me-1"></i>{{ post.reply_count }} repl{{ 'ies' if post.reply_count != 1 else 'y' }}</span>
+          {% if post.user_id == current_user.id or current_user.is_admin %}
+          <form method="POST" action="{{ url_for('forum.delete_post', post_id=post.id) }}"
+                class="ms-auto" onsubmit="return confirm('Delete this post and all its replies?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+              <i class="bi bi-trash me-1"></i>Delete Post
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Replies -->
+      <div id="replies">
+        <h5 class="fw-bold mb-3">
+          <i class="bi bi-chat-left-dots-fill me-2 text-primary"></i>
+          Replies ({{ post.reply_count }})
+        </h5>
+
+        {% if post.replies %}
+        <div class="forum-replies-list mb-4">
+          {% for r in post.replies %}
+          <div class="forum-reply-card">
+            <div class="forum-reply-avatar">{{ r.author.first_name[0] }}{{ r.author.last_name[0] }}</div>
+            <div class="forum-reply-body">
+              <div class="forum-reply-meta">
+                <span class="fw-700">{{ r.author.first_name }} {{ r.author.last_name }}</span>
+                <span class="text-muted small ms-2">{{ r.created_at.strftime('%b %d · %I:%M %p') }}</span>
+                {% if r.author.id == current_user.id %}
+                <span class="badge bg-primary-subtle text-primary ms-2" style="font-size:10px;">You</span>
+                {% endif %}
+              </div>
+              <p class="mb-0 mt-1" style="white-space:pre-wrap; font-size:0.9rem; line-height:1.6;">{{ r.body }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4 mb-4">
+          <i class="bi bi-chat-square fs-3 d-block mb-2"></i>
+          No replies yet. Be the first to respond!
+        </div>
+        {% endif %}
+
+        <!-- Reply Form -->
+        <div class="forum-reply-form-card">
+          <h6 class="fw-bold mb-3"><i class="bi bi-reply-fill me-2"></i>Post a Reply</h6>
+          <form method="POST" action="{{ url_for('forum.reply', post_id=post.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+              <textarea name="body" class="form-control" rows="4"
+                        placeholder="Share your thoughts, advice, or support..." required
+                        style="resize:vertical; border-radius:10px;"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary rounded-pill px-4">
+              <i class="bi bi-send-fill me-2"></i>Post Reply
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <!-- Back button -->
+      <div class="mb-3">
+        <a href="{{ url_for('forum.forum_home') }}" class="btn btn-outline-secondary rounded-pill w-100">
+          <i class="bi bi-arrow-left me-2"></i>Back to Forum
+        </a>
+      </div>
+
+      <!-- Start new discussion CTA -->
+      <div class="forum-sidebar-cta mb-3">
+        <div class="fs-4 mb-2">✍️</div>
+        <h6 class="fw-bold mb-1">Have a question?</h6>
+        <p class="text-muted small mb-3">Start your own discussion with the community.</p>
+        <a href="{{ url_for('forum.new_post') }}" class="btn forum-new-btn w-100">
+          <i class="bi bi-pencil-fill me-2"></i>Start a Discussion
+        </a>
+      </div>
+
+      <!-- Categories -->
+      <div class="forum-sidebar-categories">
+        <h6 class="fw-bold mb-3"><i class="bi bi-grid-fill me-2 text-primary"></i>Browse by Topic</h6>
+        {% for key, meta in categories.items() %}
+        <a href="{{ url_for('forum.forum_home', category=key) }}"
+           class="forum-sidebar-cat-link">
+          <span class="forum-cat-icon" style="background:{{ meta.color }}20; color:{{ meta.color }};">
+            <i class="{{ meta.icon }}"></i>
+          </span>
+          {{ meta.label }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.forum-post-detail-card {
+  background: #fff; border-radius: 16px;
+  border: 1.5px solid #eee; overflow: hidden;
+}
+.fpd-header { padding: 24px 28px 16px; border-bottom: 1px solid #f0f0f0; }
+.fpd-author-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.forum-author-avatar-lg {
+  width: 46px; height: 46px; border-radius: 50%;
+  background: linear-gradient(135deg, #4E97D9, #9B59B6);
+  color: #fff; font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.fpd-author-name { font-size: 0.95rem; font-weight: 700; color: #222; }
+.fpd-time { font-size: 0.78rem; color: #aaa; }
+.fpd-title { font-size: 1.4rem; font-weight: 800; color: #1a1a2e; margin: 0; }
+.fpd-body { padding: 20px 28px; color: #444; }
+.fpd-footer {
+  padding: 14px 28px; border-top: 1px solid #f0f0f0;
+  display: flex; align-items: center; font-size: 0.85rem; color: #888;
+}
+
+.forum-category-badge {
+  padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+}
+
+.forum-replies-list { display: flex; flex-direction: column; gap: 12px; }
+.forum-reply-card {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: #f9f9fb; border-radius: 12px; padding: 16px;
+  border: 1px solid #ececec;
+}
+.forum-reply-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, #4E97D9, #9B59B6);
+  color: #fff; font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.forum-reply-body { flex: 1; }
+.forum-reply-meta { display: flex; align-items: center; flex-wrap: wrap; }
+
+.forum-reply-form-card {
+  background: #fff; border-radius: 14px; padding: 20px 24px;
+  border: 1.5px solid #dde4f0;
+}
+
+.forum-sidebar-cta {
+  background: linear-gradient(135deg, #4E97D9, #9B59B6);
+  border-radius: 14px; padding: 20px;
+  color: #fff; text-align: center;
+}
+.forum-sidebar-cta h6, .forum-sidebar-cta p { color: #fff !important; }
+.forum-sidebar-cta .forum-new-btn { background: #fff; color: #4E97D9; }
+.forum-sidebar-cta .forum-new-btn:hover { background: #f0f7ff; }
+
+.forum-sidebar-categories {
+  background: #fff; border-radius: 14px; padding: 18px 20px;
+  border: 1.5px solid #eee;
+}
+.forum-sidebar-cat-link {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 4px; text-decoration: none; color: #444;
+  font-size: 0.88rem; font-weight: 600;
+  border-bottom: 1px solid #f5f5f5; transition: all 0.15s;
+}
+.forum-sidebar-cat-link:last-child { border-bottom: none; }
+.forum-sidebar-cat-link:hover { color: #4E97D9; padding-left: 8px; }
+.forum-cat-icon {
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.forum-new-btn {
+  background: linear-gradient(135deg,#4E97D9,#9B59B6); color: #fff;
+  border: none; font-weight: 700; border-radius: 30px; padding: 10px 22px;
+  transition: all 0.18s;
+}
+.forum-new-btn:hover { opacity: 0.9; transform: translateY(-1px); color: #fff; }
+</style>
+{% endblock %}

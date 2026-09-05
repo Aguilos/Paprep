@@ -1,4 +1,10 @@
 import os
+from dotenv import load_dotenv
+
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+env_path = os.path.join(BASE_DIR, '.env')
+load_dotenv(env_path)
+
 from datetime import timedelta
 from urllib.parse import quote, unquote
 
@@ -39,6 +45,9 @@ class Config:
         'SECRET_KEY',
         'paprep-dev-key-CHANGE-this-in-production-2024!'
     )
+    
+    # Gemini AI configuration
+    GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
     SQLALCHEMY_DATABASE_URI = get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {}

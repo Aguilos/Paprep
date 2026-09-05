@@ -8,7 +8,7 @@ from flask_socketio import SocketIO, join_room, leave_room
 db = SQLAlchemy()
 login_manager = LoginManager()
 csrf = CSRFProtect()
-socketio = SocketIO(cors_allowed_origins='*')
+socketio = SocketIO(cors_allowed_origins='*', async_mode='gevent')
 
 
 def create_app():
@@ -37,6 +37,7 @@ def create_app():
     from routes.clinics import clinics_bp
     from routes.clinic_portal import clinic_portal_bp
     from routes.chat import chat_bp
+    from routes.forum import forum_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -46,6 +47,7 @@ def create_app():
     app.register_blueprint(clinics_bp)
     app.register_blueprint(clinic_portal_bp)
     app.register_blueprint(chat_bp)
+    app.register_blueprint(forum_bp)
 
     # Context processor: inject child context into all templates
     from flask_login import current_user
@@ -122,7 +124,8 @@ def create_app():
     @app.shell_context_processor
     def make_shell_context():
         from models import (User, ChildProfile, LearningModule, Symptom,
-                            ClinicAccount, Clinic, ClinicSchedule, TimeSlot)
+                            ClinicAccount, Clinic, ClinicSchedule, TimeSlot,
+                            ClinicRegistration)
         return dict(
             db=db,
             User=User,
@@ -133,6 +136,7 @@ def create_app():
             Clinic=Clinic,
             ClinicSchedule=ClinicSchedule,
             TimeSlot=TimeSlot,
+            ClinicRegistration=ClinicRegistration,
         )
 
     return app

@@ -57,9 +57,38 @@
           </div>
           <h3 class="clinic-detail-name mt-2">{{ clinic.name }}</h3>
           <div class="mt-3">
-            <button type="button" class="btn text-white rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 shadow-sm" style="background: var(--msgr-gradient); border:none; font-weight:700;" onclick="switchChatTab('clinic'); toggleGlobalChat();">
-              <img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo" style="height: 22px; width: 22px; object-fit: contain; filter: brightness(0) invert(1);"> Message Clinic
-            </button>
+            {% if clinic.clinic_account_id %}
+              {% if is_registered %}
+                {# Clinic IS registered & User IS registered — show full Message button #}
+                <button type="button"
+                        class="btn text-white rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 shadow-sm"
+                        style="background: var(--msgr-gradient); border:none; font-weight:700;"
+                        onclick="switchChatTab('clinic'); toggleGlobalChat();">
+                  <img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo"
+                       style="height:22px;width:22px;object-fit:contain;filter:brightness(0) invert(1);">
+                  Message Clinic
+                </button>
+              {% else %}
+                {# Clinic IS registered but User IS NOT registered — show Register button #}
+                <button type="button" class="btn text-white rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 shadow-sm"
+                        style="background: linear-gradient(135deg, #FF6B35, #FF8C42); border:none; font-weight:700;"
+                        data-bs-toggle="modal" data-bs-target="#registerModal">
+                  <i class="bi bi-person-plus-fill"></i> Register
+                </button>
+                <div class="small text-muted mt-2">
+                  <i class="bi bi-info-circle"></i> Register with this clinic to send messages and share your profile.
+                </div>
+              {% endif %}
+            {% else %}
+            {# Clinic NOT registered — show a locked/unregistered state #}
+            <div class="before-msg-gate">
+              <i class="bi bi-lock-fill before-msg-lock"></i>
+              <div>
+                <div class="before-msg-title">Messaging Unavailable</div>
+                <div class="before-msg-sub">This clinic hasn't registered on PaPrep yet. Once they register, you'll be able to message them directly.</div>
+              </div>
+            </div>
+            {% endif %}
           </div>
         </div>
 
@@ -189,16 +218,123 @@
           <i class="bi bi-arrow-left me-2"></i> Back to Clinic Locator
         </a>
       </div>
+
+      {% if clinic_modules %}
+      {# Learning Modules published by this registered clinic #}
+      <div class="slots-card mt-4">
+        <div class="slots-header" style="background:linear-gradient(90deg,#4E97D9,#9B59B6);">
+          <i class="bi bi-book-fill me-2"></i> Learning Modules from {{ clinic.name }}
+        </div>
+        <div class="slots-body p-3">
+          <div class="d-flex flex-column gap-2">
+            {% for mod in clinic_modules %}
+            <a href="{{ url_for('modules.module_detail', module_id=mod.id) }}"
+               class="clinic-module-row">
+              <div class="clinic-module-icon">
+                <i class="{{ mod.icon }}"></i>
+              </div>
+              <div class="flex-grow-1">
+                <div class="clinic-module-title">{{ mod.title }}</div>
+                {% if mod.description %}
+                <div class="clinic-module-desc">{{ mod.description | truncate(80) }}</div>
+                {% endif %}
+              </div>
+              <i class="bi bi-chevron-right text-muted"></i>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="slots-note">
+          <i class="bi bi-info-circle me-1"></i>
+          <small>These modules are provided by {{ clinic.name }}. <a href="{{ url_for('modules.list_modules') }}">Browse all modules →</a></small>
+        </div>
+      </div>
+      {% endif %}
+
     </div>
 
   </div>
 </div>
+
+{% if clinic.clinic_account_id and not is_registered %}
+<!-- Registration Confirmation Modal -->
+<div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-800" id="registerModalLabel">Register with Clinic</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <div style="width:64px;height:64px;background:linear-gradient(135deg,#FF6B35,#FF8C42);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:white;font-size:28px;">
+            <i class="bi bi-hospital"></i>
+          </div>
+          <h5 class="fw-bold">{{ clinic.name }}</h5>
+          <p class="text-muted small">By registering, you are connecting your PaPrep account with this clinic.</p>
+        </div>
+        
+        <div class="bg-light rounded p-3 mb-4 border">
+          <p class="mb-2 fw-600 fs-sm"><i class="bi bi-shield-check text-success me-2"></i> Information to be shared:</p>
+          <ul class="small text-muted mb-0 ps-4">
+            <li>Your name and contact details</li>
+            <li>Your children's profiles (including age and any special needs flags)</li>
+          </ul>
+        </div>
+        
+        <form action="{{ url_for('clinics.register', clinic_id=clinic.id) }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary rounded-pill py-2 fw-bold" style="background: linear-gradient(135deg, #FF6B35, #FF8C42); border:none;">
+              Confirm Registration
+            </button>
+            <button type="button" class="btn btn-light rounded-pill py-2 fw-bold text-muted" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 {% endblock %}
 
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* Before-Message Gate */
+.before-msg-gate {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: #fff8f0; border: 1.5px solid #f7c48a;
+  border-radius: 12px; padding: 12px 16px;
+}
+.before-msg-lock {
+  font-size: 22px; color: #FF8C42; flex-shrink: 0; margin-top: 2px;
+}
+.before-msg-title { font-weight: 700; font-size: 0.9rem; color: #c0672a; }
+.before-msg-sub   { font-size: 0.8rem; color: #888; margin-top: 2px; line-height: 1.4; }
+/* Clinic Module Row */
+.clinic-module-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 10px;
+  background: #f8f9ff; border: 1px solid #e8ecf8;
+  text-decoration: none; color: inherit;
+  transition: all 0.16s;
+}
+.clinic-module-row:hover {
+  background: #eef3ff; border-color: #4E97D9;
+  color: inherit; transform: translateX(3px);
+}
+.clinic-module-icon {
+  width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+  background: linear-gradient(135deg,#4E97D9,#9B59B6);
+  color: #fff; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+}
+.clinic-module-title { font-weight: 700; font-size: 0.88rem; color: #222; }
+.clinic-module-desc  { font-size: 0.78rem; color: #888; }
+</style>
 {% endblock %}
   <script>
     // Attach click handlers to all chat bubble triggers

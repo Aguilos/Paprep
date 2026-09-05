@@ -553,3 +553,23 @@ def disable_2fa():
     db.session.commit()
     flash('Two-factor authentication has been disabled.', 'info')
     return redirect(url_for('clinic_portal.dashboard'))
+
+
+# ── Patients ──────────────────────────────────────────────────────────────────
+
+@clinic_portal_bp.route('/patients')
+@clinic_login_required
+def patients():
+    account = _current_clinic_account()
+    if not account.clinic:
+        return redirect(url_for('clinic_portal.setup_clinic'))
+        
+    # Get all users registered to this clinic
+    from models import ClinicRegistration
+    registrations = ClinicRegistration.query.filter_by(clinic_id=account.clinic.id).order_by(ClinicRegistration.created_at.desc()).all()
+    
+    return render_template('clinic_portal/patients.html',
+                           account=account,
+                           clinic=account.clinic,
+                           registrations=registrations)
+

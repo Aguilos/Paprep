@@ -214,7 +214,25 @@ def clinic_inbox():
         user = User.query.get(uid)
         last_msg = ClinicMessage.query.filter_by(clinic_id=clinic.id, user_id=uid).order_by(ClinicMessage.created_at.desc()).first()
         unread_count = ClinicMessage.query.filter_by(clinic_id=clinic.id, user_id=uid, sender='user', is_read=False).count()
-        users.append({'user': {'id': user.id, 'name': f'{user.first_name} {user.last_name}', 'email': user.email}, 'last': last_msg.to_dict() if last_msg else None, 'unread_count': unread_count})
+        children_data = [{
+            'name': c.name,
+            'age_display': c.age_display,
+            'child_type': c.child_type,
+            'special_needs_type': c.special_needs_type,
+            'profile_color': c.profile_color
+        } for c in user.children]
+        
+        users.append({
+            'user': {
+                'id': user.id, 
+                'name': f'{user.first_name} {user.last_name}', 
+                'email': user.email,
+                'phone': user.phone,
+                'children': children_data
+            }, 
+            'last': last_msg.to_dict() if last_msg else None, 
+            'unread_count': unread_count
+        })
     account = ClinicAccount.query.get(clinic_account_id)
     return render_template('clinic_portal/inbox.html', account=account, clinic=clinic, threads=users)
 
@@ -398,7 +416,8 @@ def register_socket_events(sio):
 # ---------------------------------------------------------------------------
 
 def match_bot_intent(text):
-    text = text.lower()
+    original_text = text
+    text_lower = text.lower()
 
     nav_shortcuts = [
         {'label': 'Nutrition Tracker', 'url': url_for('symptoms.health_checklist'), 'icon': 'bi-apple'},
@@ -406,123 +425,69 @@ def match_bot_intent(text):
         {'label': 'Find a Clinic', 'url': url_for('clinics.clinic_locator'), 'icon': 'bi-hospital'},
         {'label': 'Learning Modules', 'url': url_for('modules.list_modules'), 'icon': 'bi-book'},
     ]
+    default_actions = [
+        "Fever care guidance",
+        "Nutrition tips for my child",
+        "Vaccination schedule",
+        "Medication safety"
+    ]
 
-    # 1. Emergency / Safety
-    if any(k in text for k in ['emergency', 'seizure', 'breathing', 'convulsion', '911', '112', 'unconscious', 'emergency room', 'er visit', 'er room', 'danger', 'bleeding']):
-
+    # ── Hard-stop: Life-threatening emergency keywords ─────────────────────
+    # These always return the immediate safety alert regardless of AI status.
+    emergency_keywords = [
+        'emergency', 'seizure', 'convulsion', '911', '112',
+        'unconscious', 'not breathing', 'stopped breathing', 'danger', 'bleeding heavily'
+    ]
+    if any(k in text_lower for k in emergency_keywords):
         reply = (
-            "🚨 **Emergency Alert**: If your child is experiencing difficulty breathing, seizures, loss of consciousness, "
-            "or severe trauma, please **call emergency services (911 / 112)** or proceed to the nearest Emergency Room immediately.\n\n"
+            "🚨 **Emergency Alert**: If your child is experiencing difficulty breathing, seizures, "
+            "loss of consciousness, or severe trauma, please **call emergency services (911 / 112)** "
+            "or proceed to the nearest Emergency Room immediately.\n\n"
             "For non-emergency symptom triage, use our Symptom Checker."
         )
         shortcuts = [
             {'label': 'Symptom Checker', 'url': url_for('symptoms.symptom_checker'), 'icon': 'bi-clipboard2-pulse'},
             {'label': 'Find Nearest Clinic', 'url': url_for('clinics.clinic_locator'), 'icon': 'bi-hospital'},
         ]
-        actions = ["What are red flag symptoms?", "Fever guidance", "Find a clinic"]
-        return reply, shortcuts, actions
+        return reply, shortcuts, ["What are red flag symptoms?", "Fever guidance", "Find a clinic"]
 
-    # 2. Fever care & guidance
-    elif any(k in text for k in ['fever', 'temperature', 'hot', 'feverish', 'high temp']):
-        reply = (
-            "🌡️ **Fever Care Guidance**:\n"
-            "• **Mild Fever (37.5°C - 38.5°C)**: Offer plenty of fluids, dress lightly, and monitor temperature every 4 hours.\n"
-            "• **High Fever (above 38.5°C)**: Consult your pediatrician within 24 hours. For infants under 3 months, any fever requires immediate medical evaluation.\n"
-            "• **Urgent Signs**: Seek emergency care if accompanied by a rash, wheezing, or lethargy."
-        )
-        shortcuts = [
-            {'label': 'Check Symptoms', 'url': url_for('symptoms.symptom_checker'), 'icon': 'bi-clipboard2-pulse'},
-            {'label': 'Daily Health Checklist', 'url': url_for('symptoms.health_checklist'), 'icon': 'bi-clipboard2-heart'},
-        ]
-        actions = ["Nutrition tips", "Emergency red flags", "Contact a clinic"]
-        return reply, shortcuts, actions
+    # ── All other queries → Gemini AI ──────────────────────────────────────
+    from config import Config
+    gemini_key = getattr(Config, 'GEMINI_API_KEY', None)
 
-    # 3. Nutrition & Feeding
-    elif any(k in text for k in ['nutrition', 'food', 'diet', 'feed', 'breastfeeding', 'formula', 'water', 'snack', 'eating', 'meal', 'fruit']):
-        reply = (
-            "🍎 **Child Nutrition Tips**:\n"
-            "• **0–12 Months**: Breast milk or formula is primary. Introduce soft purees/solids around 6 months.\n"
-            "• **1–5 Years**: Provide balanced meals with protein, grains, fruits/vegetables, dairy, and adequate hydration. Avoid sugary junk foods.\n"
-            "• Track daily meals and hydration on your child's Health Checklist!"
-        )
-        shortcuts = [
-            {'label': 'Log Today\'s Meals', 'url': url_for('symptoms.health_checklist'), 'icon': 'bi-apple'},
-            {'label': 'Nutrition Guides', 'url': url_for('modules.list_modules', category='nutrition'), 'icon': 'bi-book'},
-        ]
-        actions = ["Fever care", "Daily checklist", "Find a clinic"]
-        return reply, shortcuts, actions
+    if gemini_key:
+        try:
+            import warnings
+            warnings.filterwarnings('ignore')
+            import google.generativeai as genai
+            genai.configure(api_key=gemini_key)
 
-    # 4. Clinic / Doctor / Consultation
-    elif any(k in text for k in ['clinic', 'doctor', 'pediatrician', 'consult', 'appointment', 'hospital', 'nearby', 'map', 'find']):
-        reply = (
-            "🏥 **Clinic & Online Consultation**:\n"
-            "PaPrep helps you discover nearby pediatric clinics with geolocation maps, operating hours, phone numbers, and direct live consultation messaging with clinic staff."
-        )
-        shortcuts = [
-            {'label': 'Find Nearby Clinics', 'url': url_for('clinics.clinic_locator'), 'icon': 'bi-hospital'},
-        ]
-        actions = ["Symptom guidance", "Nutrition tips", "Emergency help"]
-        return reply, shortcuts, actions
+            model = genai.GenerativeModel('gemini-3.6-flash')
 
-    # 5. Checklist / Daily monitoring
-    elif any(k in text for k in ['checklist', 'daily', 'monitor', 'sleep', 'hygiene', 'bath', 'teeth', 'play', 'log']):
-        reply = (
-            "📋 **Daily Health & Dietary Checklist**:\n"
-            "Track your child's daily meals, hydration, sleep, active play, and health signs tailored to their exact age bracket (0–12m, 1–2y, 2–3y, 3–4y, 4–5y)."
-        )
-        shortcuts = [
-            {'label': 'Open Health Checklist', 'url': url_for('symptoms.health_checklist'), 'icon': 'bi-clipboard2-heart'},
-        ]
-        actions = ["Nutrition tips", "Fever guidance", "Symptom checker"]
-        return reply, shortcuts, actions
+            system_prompt = (
+                "You are the PaPrep Assistant, a warm, empathetic, and knowledgeable AI parenting companion "
+                "built into the PaPrep app — a platform for parents of children aged 0-5 years. "
+                "You help parents with questions about child health, nutrition, development, safety, and well-being. "
+                "Keep answers concise (3-5 sentences or bullet points), friendly, and practical. "
+                "Use markdown formatting (bold, bullets) to improve readability. "
+                "IMPORTANT: You are an AI assistant. Always remind parents to consult their pediatrician "
+                "or a registered clinic for serious medical concerns."
+            )
 
-    # 6. Vaccination Schedule & Immunizations
-    elif any(k in text for k in ['vaccine', 'vaccination', 'shot', 'immunization', 'hepb', 'dtap', 'polio', 'booster', 'vax']):
-        reply = (
-            "💉 **Vaccination Schedule & Immunizations**:\n"
-            "• **Birth - 2 Months**: BCG, Hepatitis B, DTaP, IPV (Polio), Hib, PCV.\n"
-            "• **4 - 6 Months**: DTaP, IPV, Hib, PCV 2nd & 3rd doses, Rotavirus.\n"
-            "• **12 Months+**: MMR (Measles, Mumps, Rubella), Varicella, Hepatitis A, annual Flu shot.\n\n"
-            "📌 *Note*: This is general reference guidance. Actual vaccine schedules must be confirmed with your pediatrician or health clinic."
-        )
-        shortcuts = [
-            {'label': 'Find Nearby Clinic', 'url': url_for('clinics.clinic_locator'), 'icon': 'bi-hospital'},
-            {'label': 'Learning Modules', 'url': url_for('modules.list_modules', category='health'), 'icon': 'bi-book'},
-        ]
-        actions = ["Medication safety", "Fever care guidance", "Find a clinic"]
-        return reply, shortcuts, actions
+            response = model.generate_content(f"{system_prompt}\n\nParent's question: {original_text}")
+            reply = response.text
+            return reply, nav_shortcuts, default_actions
 
-    # 7. Medication & Dosing Safety
-    elif any(k in text for k in ['medicine', 'medication', 'dose', 'dosage', 'paracetamol', 'ibuprofen', 'calpol', 'tempra', 'syrup', 'drops']):
-        reply = (
-            "💊 **Medication & Dosing Safety**:\n"
-            "• **Safety First**: Pediatric medication dosing depends strictly on your child's **weight and exact age**, not just age alone.\n"
-            "• **Always Confirm**: Always check with a licensed pediatrician or pharmacist for exact dosage instructions before administering any medicine.\n"
-            "• **Never Give Aspirin**: Aspirin should never be given to infants or children due to the risk of severe complications (Reye's syndrome).\n\n"
-            "Need specific guidance? Connect directly with clinic staff via Live Clinic chat!"
-        )
-        shortcuts = [
-            {'label': 'Find a Clinic', 'url': url_for('clinics.clinic_locator'), 'icon': 'bi-hospital'},
-            {'label': 'Symptom Checker', 'url': url_for('symptoms.symptom_checker'), 'icon': 'bi-clipboard2-pulse'},
-        ]
-        actions = ["Vaccination schedule", "Fever care guidance", "Emergency red flags"]
-        return reply, shortcuts, actions
+        except Exception as e:
+            print(f"Gemini API Error: {e}")
 
-    # Default / Greeting
-    else:
-        reply = (
-            "👋 **Hi! I'm your PaPrep Assistant.**\n"
-            "I can answer parenting questions regarding nutrition, fever care, vaccine schedules, medication safety, or direct you to key app features.\n\n"
-            "Select a topic below or type your question!"
-        )
-        shortcuts = nav_shortcuts
-        actions = [
-            "Fever care guidance",
-            "Nutrition tips for my child",
-            "Vaccination schedule",
-            "Medication safety"
-        ]
-        return reply, shortcuts, actions
+    # ── Fallback if API is unavailable ─────────────────────────────────────
+    reply = (
+        "👋 **Hi! I'm your PaPrep Assistant.**\n"
+        "I'm having a little trouble connecting right now. Please try again in a moment, "
+        "or choose a topic below to get started!"
+    )
+    return reply, nav_shortcuts, default_actions
 
 
 
