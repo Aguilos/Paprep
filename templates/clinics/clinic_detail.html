@@ -59,17 +59,24 @@
           <div class="mt-3">
             {% if clinic.clinic_account_id %}
               {% if is_registered %}
-                {# Clinic IS registered & User IS registered — show full Message button #}
-                <button type="button"
+                <div class="d-flex flex-wrap gap-2">
+                  <button type="button"
                         class="btn text-white rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 shadow-sm"
                         style="background: var(--msgr-gradient); border:none; font-weight:700;"
                         onclick="switchChatTab('clinic'); toggleGlobalChat();">
-                  <img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo"
+                    <img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo"
                        style="height:22px;width:22px;object-fit:contain;filter:brightness(0) invert(1);">
-                  Message Clinic
-                </button>
+                    Message Clinic
+                  </button>
+                  <form method="POST" action="{{ url_for('clinics.unregister', clinic_id=clinic.id) }}"
+                        onsubmit="return confirm('Are you sure you want to unregister from {{ clinic.name }}?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-danger rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2">
+                      <i class="bi bi-person-dash-fill"></i> Unregister
+                    </button>
+                  </form>
+                </div>
               {% else %}
-                {# Clinic IS registered but User IS NOT registered — show Register button #}
                 <button type="button" class="btn text-white rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 shadow-sm"
                         style="background: linear-gradient(135deg, #FF6B35, #FF8C42); border:none; font-weight:700;"
                         data-bs-toggle="modal" data-bs-target="#registerModal">

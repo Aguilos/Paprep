@@ -48,6 +48,22 @@
             </button>
           </form>
           {% endif %}
+          <form method="POST" action="{{ url_for('forum.report_content') }}" class="ms-auto"
+                onsubmit="return confirm('Report this post to the PaPrep team?')">
+            <input type="hidden" name="post_id" value="{{ post.id }}">
+            <input type="hidden" name="reason" value="Community guideline concern">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+              <i class="bi bi-flag me-1"></i>Report
+            </button>
+          </form>
+          {% if current_user.is_admin %}
+          <form method="POST" action="{{ url_for('forum.hide_post', post_id=post.id) }}" class="ms-2"
+                onsubmit="return confirm('Hide this post from the community?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-warning rounded-pill px-3">Hide</button>
+          </form>
+          {% endif %}
         </div>
       </div>
 
@@ -72,6 +88,13 @@
                 {% endif %}
               </div>
               <p class="mb-0 mt-1" style="white-space:pre-wrap; font-size:0.9rem; line-height:1.6;">{{ r.body }}</p>
+              <form method="POST" action="{{ url_for('forum.report_content') }}" class="mt-2"
+                    onsubmit="return confirm('Report this reply to the PaPrep team?')">
+                <input type="hidden" name="reply_id" value="{{ r.id }}">
+                <input type="hidden" name="reason" value="Community guideline concern">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-link btn-sm p-0 text-muted"><i class="bi bi-flag me-1"></i>Report</button>
+              </form>
             </div>
           </div>
           {% endfor %}

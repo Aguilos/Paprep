@@ -15,6 +15,7 @@ class User(UserMixin, db.Model):
     first_name = db.Column(db.String(60), nullable=False)
     last_name = db.Column(db.String(60), nullable=False)
     phone = db.Column(db.String(20))
+    role = db.Column(db.String(30), nullable=False, default='Parent')
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -376,6 +377,7 @@ class ForumPost(db.Model):
     # parenting | nutrition | health | safety | special_needs | general
     category = db.Column(db.String(30), nullable=False, default='general')
     is_pinned = db.Column(db.Boolean, default=False)
+    is_hidden = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -403,6 +405,7 @@ class ForumReply(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     body = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_hidden = db.Column(db.Boolean, default=False, nullable=False)
 
     author = db.relationship('User', backref='forum_replies', lazy=True)
 
@@ -417,11 +420,14 @@ class ClinicRegistration(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     clinic_id = db.Column(db.Integer, db.ForeignKey('clinics.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    child_id = db.Column(db.Integer, db.ForeignKey('child_profiles.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    registered_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     # relations
     clinic = db.relationship('Clinic', backref=db.backref('registrations', lazy=True, cascade='all, delete-orphan'))
     user = db.relationship('User', backref=db.backref('clinic_registrations', lazy=True, cascade='all, delete-orphan'))
+    child = db.relationship('ChildProfile', backref='clinic_registrations', lazy=True)
 
     __table_args__ = (
         db.UniqueConstraint('clinic_id', 'user_id', name='_clinic_user_reg_uc'),
@@ -429,3 +435,18 @@ class ClinicRegistration(db.Model):
 
     def __repr__(self):
         return f'<ClinicRegistration clinic={self.clinic_id} user={self.user_id}>'
+
+
+class ForumReport(db.Model):
+    """A parent report for forum content awaiting moderation."""
+    __tablename__ = 'forum_reports'
+
+    id = db.Column(db.Integer, primary_key=True)
+    reporter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('forum_posts.id'), nullable=True)
+    reply_id = db.Column(db.Integer, db.ForeignKey('forum_replies.id'), nullable=True)
+    reason = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_resolved = db.Column(db.Boolean, default=False, nullable=False)
+
+    reporter = db.relationship('User', backref='forum_reports', lazy=True)

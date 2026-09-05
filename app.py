@@ -91,6 +91,11 @@ def create_app():
                 "ALTER TABLE learning_modules ADD COLUMN clinic_account_id INTEGER",
                 "ALTER TABLE clinic_accounts ADD COLUMN totp_secret VARCHAR(32)",
                 "ALTER TABLE clinic_accounts ADD COLUMN totp_enabled BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE users ADD COLUMN role VARCHAR(30) DEFAULT 'Parent'",
+                "ALTER TABLE clinic_registrations ADD COLUMN child_id INTEGER",
+                "ALTER TABLE clinic_registrations ADD COLUMN registered_at DATETIME",
+                "ALTER TABLE forum_posts ADD COLUMN is_hidden BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE forum_replies ADD COLUMN is_hidden BOOLEAN DEFAULT FALSE",
             ]
             with db.engine.connect() as conn:
                 for query in migrations:
@@ -125,7 +130,7 @@ def create_app():
     def make_shell_context():
         from models import (User, ChildProfile, LearningModule, Symptom,
                             ClinicAccount, Clinic, ClinicSchedule, TimeSlot,
-                            ClinicRegistration)
+                            ClinicRegistration, ForumPost, ForumReply, ForumReport)
         return dict(
             db=db,
             User=User,
@@ -137,6 +142,9 @@ def create_app():
             ClinicSchedule=ClinicSchedule,
             TimeSlot=TimeSlot,
             ClinicRegistration=ClinicRegistration,
+            ForumPost=ForumPost,
+            ForumReply=ForumReply,
+            ForumReport=ForumReport,
         )
 
     return app

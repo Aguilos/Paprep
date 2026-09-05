@@ -1,5 +1,5 @@
 import json
-from flask import Blueprint, render_template, abort, redirect, url_for, flash
+from flask import Blueprint, render_template, abort, redirect, url_for, flash, session
 from flask_login import login_required, current_user
 from models import Clinic, ClinicSchedule, ClinicAnnouncement, LearningModule, ClinicRegistration
 from utils import today_pht
@@ -66,9 +66,32 @@ def register(clinic_id):
     ).first()
     
     if not existing:
-        reg = ClinicRegistration(clinic_id=clinic.id, user_id=current_user.id)
+        active_child_id = session.get('active_child_id')
+        active_child = next(
+            (child for child in current_user.children if child.id == active_child_id),
+            current_user.children[0] if current_user.children else None,
+        )
+        reg = ClinicRegistration(
+            clinic_id=clinic.id,
+            user_id=current_user.id,
+            child_id=active_child.id if active_child else None,
+        )
         db.session.add(reg)
         db.session.commit()
-        flash(f'You have successfully registered with {clinic.name}. You can now message them.', 'success')
+        flash(f"You're now registered with {clinic.name}.", 'success')
         
+    return redirect(url_for('clinics.clinic_detail', clinic_id=clinic.id))
+
+
+@clinics_bp.route('/<int:clinic_id>/unregister', methods=['POST'])
+@login_required
+def unregister(clinic_id):
+    clinic = Clinic.query.get_or_404(clinic_id)
+    registration = ClinicRegistration.query.filter_by(
+        clinic_id=clinic.id, user_id=current_user.id
+    ).first()
+    if registration:
+        db.session.delete(registration)
+        db.session.commit()
+        flash(f"You're no longer registered with {clinic.name}.", 'success')
     return redirect(url_for('clinics.clinic_detail', clinic_id=clinic.id))

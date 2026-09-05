@@ -97,13 +97,15 @@
             <span>Find a Clinic</span>
           </a>
         </li>
+        {% if (current_user.role or '').lower() == 'parent' %}
         <li>
           <a href="{{ url_for('forum.forum_home') }}"
              class="nav-link {% if 'forum.' in (request.endpoint or '') %}active{% endif %}">
             <i class="bi bi-people-fill nav-icon"></i>
-            <span>Parent Forum</span>
+            <span>Parent Community</span>
           </a>
         </li>
+        {% endif %}
         <li class="nav-divider"></li>
         <li>
           <a href="{{ url_for('children.create_child') }}"
