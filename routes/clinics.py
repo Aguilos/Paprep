@@ -1,4 +1,5 @@
 import json
+from functools import wraps
 from flask import Blueprint, render_template, abort, redirect, url_for, flash, session
 from flask_login import login_required, current_user
 from models import Clinic, ClinicSchedule, ClinicAnnouncement, LearningModule, ClinicRegistration
@@ -6,6 +7,15 @@ from utils import today_pht
 from app import db
 
 clinics_bp = Blueprint('clinics', __name__, url_prefix='/clinics')
+
+
+def parent_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if (current_user.role or '').lower() != 'parent':
+            abort(403)
+        return view(*args, **kwargs)
+    return wrapped
 
 
 @clinics_bp.route('/')
@@ -55,6 +65,7 @@ def clinic_detail(clinic_id):
 
 @clinics_bp.route('/<int:clinic_id>/register', methods=['POST'])
 @login_required
+@parent_required
 def register(clinic_id):
     clinic = Clinic.query.get_or_404(clinic_id)
     if not clinic.clinic_account_id:
@@ -85,6 +96,7 @@ def register(clinic_id):
 
 @clinics_bp.route('/<int:clinic_id>/unregister', methods=['POST'])
 @login_required
+@parent_required
 def unregister(clinic_id):
     clinic = Clinic.query.get_or_404(clinic_id)
     registration = ClinicRegistration.query.filter_by(
