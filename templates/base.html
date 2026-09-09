@@ -219,16 +219,14 @@
 
     <!-- Global Floating Chat Bubble & Panel (Assistant + Live Consultation) -->
     {% if current_user.is_authenticated %}
-    <!-- Modal Backdrop for Chat -->
-    <div id="global_chat_backdrop" class="d-none" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1055;" onclick="toggleGlobalChat()"></div>
-
     <div id="global_chat_bubble" class="chat-bubble" style="position:fixed;right:20px;bottom:20px;z-index:1050;">
       <button type="button" class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0 overflow-hidden" style="width:56px;height:56px;background:var(--msgr-gradient);border:none;" onclick="toggleGlobalChat()">
         <img src="/static/image/Logo.png" alt="PaPrep" style="width:36px;height:36px;object-fit:contain;filter:brightness(0) invert(1);">
       </button>
     </div>
 
-    <div id="global_chat_panel" class="card shadow-lg position-fixed d-none border-0 global-chat-panel" style="bottom:88px;height:480px;z-index:1060;border-radius:18px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.18) !important;">
+    <div id="global_chat_backdrop" class="global-chat-backdrop d-none" onclick="toggleGlobalChat()"></div>
+    <div id="global_chat_panel" class="card shadow-lg position-fixed d-none border-0 global-chat-panel" role="dialog" aria-modal="true" aria-label="PaPrep Messenger">
       <!-- Messenger Header -->
       <div class="card-header border-0 text-white p-3 d-flex flex-column gap-2" style="background: var(--msgr-gradient);">
         <div class="d-flex justify-content-between align-items-center">
@@ -315,10 +313,12 @@
     function toggleGlobalChat() {
       const panel = document.getElementById('global_chat_panel');
       const backdrop = document.getElementById('global_chat_backdrop');
-      if (panel) {
-        panel.classList.toggle('d-none');
-        if (backdrop) backdrop.classList.toggle('d-none');
-      }
+      const bubble = document.getElementById('global_chat_bubble');
+      if (!panel) return;
+      const isOpening = panel.classList.contains('d-none');
+      panel.classList.toggle('d-none', !isOpening);
+      if (backdrop) backdrop.classList.toggle('d-none', !isOpening);
+      if (bubble) bubble.classList.toggle('d-none', isOpening);
     }
     function switchChatTab(tab) {
       const botTab = document.getElementById('tab-bot');

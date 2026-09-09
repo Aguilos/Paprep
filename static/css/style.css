@@ -411,8 +411,20 @@ a:hover { color: var(--primary-dark); }
 .btn-xs { font-size: 0.72rem; padding: 2px 8px; line-height: 1.2; }
 .global-chat-panel {
   right: 20px;
+  bottom: 88px;
   width: min(360px, calc(100vw - 24px));
-  max-height: calc(100vh - 120px);
+  height: min(480px, calc(100vh - 112px));
+  max-height: calc(100vh - 112px);
+  z-index: 1060;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18) !important;
+}
+.global-chat-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1055;
+  background: rgba(15, 23, 42, .42);
 }
 .bot-chip-row,
 #bot_quick_actions > div,
@@ -425,27 +437,15 @@ a:hover { color: var(--primary-dark); }
   white-space: normal;
   max-width: 100%;
 }
-
-/* Mobile: Chat panel takes full width, slides from bottom */
 @media (max-width: 576px) {
   .global-chat-panel {
-    right: 0 !important;
-    left: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 70vh !important;
-    border-radius: 20px 20px 0 0 !important;
-    max-height: 70vh;
-    animation: slideUpChat 0.3s ease-out;
-  }
-  
-  @keyframes slideUpChat {
-    from {
-      transform: translateY(100%);
-    }
-    to {
-      transform: translateY(0);
-    }
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 18px 18px 0 0;
   }
 }
   transition: transform var(--transition), box-shadow var(--transition);
@@ -1737,7 +1737,7 @@ a:hover { color: var(--primary-dark); }
 .msgr-toggle-btn.active {
   background: #FFFFFF !important;
   color: #0084FF !important; /* Deep Messenger Blue for active tab */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7), 0 2px 6px rgba(0, 0, 0, 0.15) !important;
 }
 
 
