@@ -38,7 +38,9 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>`;
     } else {
       row.innerHTML = `
-        <div class="messenger-avatar avatar-sm flex-shrink-0" style="width:26px;height:26px;font-size:11px;background:#0084FF;">C</div>
+        <div class="messenger-avatar avatar-sm flex-shrink-0 bot-avatar" style="width:28px;height:28px;background:rgba(255,255,255,0.25);border:1.5px solid rgba(0,132,255,0.2);">
+          <img src="/static/image/Logo.png" alt="PaPrep" style="width:18px;height:18px;object-fit:contain;filter:none;">
+        </div>
         <div class="msgr-bubble">
           ${bodyHtml}
           <div class="msgr-time">${timeStr}</div>
@@ -146,7 +148,9 @@ document.addEventListener('DOMContentLoaded', function() {
             typingRow = document.createElement('div');
             typingRow.className = 'msgr-msg-row recv typing-indicator-row';
             typingRow.innerHTML = `
-              <div class="messenger-avatar avatar-sm flex-shrink-0" style="width:24px;height:24px;font-size:10px;background:#0084FF;">C</div>
+              <div class="messenger-avatar avatar-sm flex-shrink-0 bot-avatar" style="width:28px;height:28px;background:rgba(255,255,255,0.25);border:1.5px solid rgba(0,132,255,0.2);">
+                <img src="/static/image/Logo.png" alt="PaPrep" style="width:18px;height:18px;object-fit:contain;filter:none;">
+              </div>
               <div class="msgr-bubble text-muted fst-italic" style="padding:6px 12px;font-size:12px;">
                 <span class="spinner-grow spinner-grow-sm me-1" role="status" style="width:8px;height:8px;"></span>Typing...
               </div>`;

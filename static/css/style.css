@@ -1841,3 +1841,10 @@ a:hover { color: var(--primary-dark); }
     max-height: 70vh;
   }
 }
+
+/* Bot message logo avatar */
+.bot-avatar {
+  background: linear-gradient(135deg, rgba(0,132,255,0.12), rgba(0,198,255,0.18)) !important;
+  border: 1.5px solid rgba(0, 132, 255, 0.25) !important;
+  overflow: hidden;
+}
