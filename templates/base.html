@@ -256,8 +256,8 @@
       <div id="chat_view_bot" class="card-body p-2 d-flex flex-column h-100 bg-white" style="overflow:hidden;">
         <div class="chat-messages-container flex-grow-1 overflow-auto p-2" id="bot_messages_list" style="max-height: 290px;">
           <div class="msgr-msg-row recv">
-            <div class="messenger-avatar avatar-sm flex-shrink-0 bot-avatar" style="width:28px;height:28px;background:rgba(255,255,255,0.25);border:1.5px solid rgba(0,132,255,0.2);">
-              <img src="/static/image/Logo.png" alt="PaPrep" style="width:18px;height:18px;object-fit:contain;filter:none;">
+            <div class="messenger-avatar avatar-sm flex-shrink-0 bot-avatar">
+              <img src="/static/image/Logo.png" alt="PaPrep">
             </div>
             <div class="msgr-bubble">
               <div>👋 <strong>Hi! I'm your PaPrep Assistant.</strong></div>
@@ -318,7 +318,13 @@
       if (!panel) return;
       const isOpening = panel.classList.contains('d-none');
       panel.classList.toggle('d-none', !isOpening);
-      if (backdrop) backdrop.classList.toggle('d-none', !isOpening);
+      if (backdrop) {
+        backdrop.classList.toggle('d-none', !isOpening);
+        if (!backdrop._bound) {
+          backdrop.addEventListener('click', toggleGlobalChat);
+          backdrop._bound = true;
+        }
+      }
       if (launcher) {
         launcher.dataset.state = isOpening ? 'open' : 'closed';
         launcher.setAttribute('aria-expanded', String(isOpening));
@@ -435,7 +441,7 @@
   }
 
   if (toggle) toggle.addEventListener('click', function() {
-    if (window.innerWidth >= 992) {
+    if (window.innerWidth > 1024) {
       wrapper.classList.toggle('sidebar-collapsed');
     } else {
       openSidebar();

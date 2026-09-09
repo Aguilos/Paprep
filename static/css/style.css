@@ -418,47 +418,98 @@ a:hover { color: var(--primary-dark); }
 .chat-msg.assistant { background: var(--gray-100); color: var(--text); margin-right: auto; border-left: 3px solid var(--primary); }
 .chat-bubble .btn { border-radius: 50%; width:54px; height:54px; display:flex;align-items:center;justify-content:center; }
 .chat-launcher-btn {
-  width: 56px; height: 56px;
-  background: var(--msgr-gradient); border: none; color: #fff;
-  transition: transform 0.25s cubic-bezier(.4,0,.2,1),
-              box-shadow 0.2s ease;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--msgr-gradient);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(0, 132, 255, 0.45);
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  overflow: hidden;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.chat-launcher-btn:hover { box-shadow: 0 6px 20px rgba(78,151,217,.45); }
-.chat-launcher-btn[data-state="open"] { transform: rotate(135deg); }
+.chat-launcher-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(0, 132, 255, 0.55);
+}
+.chat-launcher-btn:active {
+  transform: scale(0.94);
+}
 
-/* Icon cross-fade */
+/* Upright brand logo icon inside launcher - remains upright at all times */
 .chat-launcher-btn .icon-chat,
-.chat-launcher-btn .icon-close {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.chat-launcher-btn img.icon-chat {
+  width: 34px !important;
+  height: 34px !important;
+  object-fit: contain !important;
+  filter: brightness(0) invert(1) !important;
+  transform: none !important;
+  display: block;
+  transition: transform 0.25s ease;
 }
-.chat-launcher-btn .icon-chat  { opacity: 1; transform: scale(1) rotate(0deg); }
-.chat-launcher-btn .icon-close { opacity: 0; transform: scale(0.6) rotate(-135deg); font-size: 1.35rem; }
-.chat-launcher-btn[data-state="open"] .icon-chat  { opacity: 0; transform: scale(0.6) rotate(135deg); }
-.chat-launcher-btn[data-state="open"] .icon-close { opacity: 1; transform: scale(1) rotate(135deg); }
+
 .notification-dropdown .dropdown-menu { box-shadow: 0 10px 30px rgba(0,0,0,.15); border-radius: 12px; }
 .notif-list-container::-webkit-scrollbar { width: 5px; }
 .notif-list-container::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 4px; }
 .btn-xs { font-size: 0.72rem; padding: 2px 8px; line-height: 1.2; }
+
+/* Global floating chat panel */
 .global-chat-panel {
   right: 20px;
   bottom: 88px;
-  width: min(360px, calc(100vw - 24px));
-  height: min(480px, calc(100vh - 112px));
-  max-height: calc(100vh - 112px);
+  width: min(370px, calc(100vw - 32px));
+  height: 540px;
+  max-height: calc(100vh - 110px);
   z-index: 1060;
   border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.18) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2) !important;
+  display: flex;
+  flex-direction: column;
+  animation: chatPanelIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+@keyframes chatPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Backdrop only active on small mobile screens to prevent dimming/blocking desktop and tablet */
 .global-chat-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1055;
-  background: rgba(15, 23, 42, .42);
+  display: none !important;
 }
+
+@media (max-width: 576px) {
+  .global-chat-backdrop {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    z-index: 1055;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+  }
+  .global-chat-panel {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 20px 20px 0 0;
+  }
+}
+
 .bot-chip-row,
 #bot_quick_actions > div,
 #bot_messages_list .border-top {
@@ -470,17 +521,30 @@ a:hover { color: var(--primary-dark); }
   white-space: normal;
   max-width: 100%;
 }
-@media (max-width: 576px) {
-  .global-chat-panel {
-    right: 0;
-    bottom: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    max-height: 100vh;
-    border-radius: 18px 18px 0 0;
-  }
+
+/* Bot message logo avatar - high-contrast PaPrep Messenger gradient circle */
+.bot-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  border-radius: 50% !important;
+  background: var(--msgr-gradient) !important;
+  box-shadow: 0 2px 6px rgba(0, 132, 255, 0.3) !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  overflow: hidden !important;
 }
+.bot-avatar img {
+  width: 18px !important;
+  height: 18px !important;
+  object-fit: contain !important;
+  filter: brightness(0) invert(1) !important;
+  display: block !important;
+}
+
 .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 .feature-card--parenting { border-top-color: var(--primary); }
 .feature-card--health { border-top-color: var(--purple); }
@@ -1463,7 +1527,7 @@ a:hover { color: var(--primary-dark); }
 /* ═══════════════════════════════════════════════════════════
    RESPONSIVE
 ═══════════════════════════════════════════════════════════ */
-@media (max-width: 991px) {
+@media (max-width: 1024px) {
   .app-sidebar {
     transform: translateX(-100%);
   }
@@ -1762,89 +1826,3 @@ a:hover { color: var(--primary-dark); }
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7), 0 2px 6px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   FLOATING CHAT LAUNCHER + PANEL
-═══════════════════════════════════════════════════════════ */
-
-/* Floating launcher button */
-.chat-launcher-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: none;
-  background: var(--msgr-gradient);
-  box-shadow: 0 4px 20px rgba(0, 132, 255, 0.45);
-  cursor: pointer;
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
-  overflow: hidden;
-  position: relative;
-}
-.chat-launcher-btn:hover {
-  transform: scale(1.07);
-  box-shadow: 0 6px 24px rgba(0, 132, 255, 0.55);
-}
-
-/* The logo icon inside the launcher */
-.chat-launcher-btn .icon-chat {
-  display: block;
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
-  transform: rotate(0deg) scale(1);
-  opacity: 1;
-}
-
-/* When open: rotate the same icon 135deg to signal "close" */
-.chat-launcher-btn[data-state="open"] .icon-chat {
-  transform: rotate(135deg) scale(0.85);
-  opacity: 0.85;
-}
-
-/* Global chat panel (floating messenger card) */
-.global-chat-panel {
-  right: 20px;
-  bottom: 88px;
-  width: 360px;
-  max-height: 540px;
-  border-radius: 16px;
-  overflow: hidden;
-  z-index: 1060;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
-  display: flex;
-  flex-direction: column;
-  animation: chatPanelIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes chatPanelIn {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Backdrop behind panel on mobile */
-.global-chat-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.25);
-  z-index: 1055;
-  backdrop-filter: blur(2px);
-}
-
-@media (max-width: 480px) {
-  .global-chat-panel {
-    right: 8px;
-    bottom: 80px;
-    width: calc(100vw - 16px);
-    max-height: 70vh;
-  }
-}
-
-/* Bot message logo avatar */
-.bot-avatar {
-  background: linear-gradient(135deg, rgba(0,132,255,0.12), rgba(0,198,255,0.18)) !important;
-  border: 1.5px solid rgba(0, 132, 255, 0.25) !important;
-  overflow: hidden;
-}
