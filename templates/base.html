@@ -219,17 +219,17 @@
 
     <!-- Global Floating Chat Bubble & Panel (Assistant + Live Consultation) -->
     {% if current_user.is_authenticated %}
-    <div id="global_chat_bubble" class="chat-bubble" style="position:fixed;right:20px;bottom:20px;z-index:1050;">
-      <button type="button" class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0 overflow-hidden" style="width:56px;height:56px;background:var(--msgr-gradient);border:none;" onclick="toggleGlobalChat()">
-        <img src="/static/image/Logo.png" alt="PaPrep" style="width:36px;height:36px;object-fit:contain;filter:brightness(0) invert(1);">
+    <div id="global_chat_bubble" class="chat-bubble" style="position:fixed;right:20px;bottom:20px;z-index:1065;">
+      <button type="button" class="btn btn-primary chat-launcher-btn rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0 overflow-hidden" data-state="closed" aria-expanded="false" aria-controls="global_chat_panel" onclick="toggleGlobalChat()">
+        <img class="icon-chat" src="/static/image/Logo.png" alt="Toggle PaPrep Messenger" style="width:36px;height:36px;object-fit:contain;filter:brightness(0) invert(1);">
       </button>
     </div>
 
-    <div id="global_chat_backdrop" class="global-chat-backdrop d-none" onclick="toggleGlobalChat()"></div>
+    <div id="global_chat_backdrop" class="global-chat-backdrop d-none"></div>
     <div id="global_chat_panel" class="card shadow-lg position-fixed d-none border-0 global-chat-panel" role="dialog" aria-modal="true" aria-label="PaPrep Messenger">
       <!-- Messenger Header -->
       <div class="card-header border-0 text-white p-3 d-flex flex-column gap-2" style="background: var(--msgr-gradient);">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
           <div class="d-flex align-items-center gap-2">
             <div class="messenger-avatar avatar-sm d-flex align-items-center justify-content-center p-1" style="background:rgba(255,255,255,0.25);">
               <img src="/static/image/Logo.png" alt="PaPrep" style="width:22px;height:22px;object-fit:contain;filter:brightness(0) invert(1);">
@@ -241,7 +241,6 @@
               </div>
             </div>
           </div>
-          <button type="button" class="btn-close btn-close-white btn-sm" onclick="toggleGlobalChat()"></button>
         </div>
         <div class="msgr-toggle-container">
           <button type="button" class="msgr-toggle-btn active" id="tab-bot" onclick="switchChatTab('bot')">
@@ -313,12 +312,15 @@
     function toggleGlobalChat() {
       const panel = document.getElementById('global_chat_panel');
       const backdrop = document.getElementById('global_chat_backdrop');
-      const bubble = document.getElementById('global_chat_bubble');
+      const launcher = document.querySelector('.chat-launcher-btn');
       if (!panel) return;
       const isOpening = panel.classList.contains('d-none');
       panel.classList.toggle('d-none', !isOpening);
       if (backdrop) backdrop.classList.toggle('d-none', !isOpening);
-      if (bubble) bubble.classList.toggle('d-none', isOpening);
+      if (launcher) {
+        launcher.dataset.state = isOpening ? 'open' : 'closed';
+        launcher.setAttribute('aria-expanded', String(isOpening));
+      }
     }
     function switchChatTab(tab) {
       const botTab = document.getElementById('tab-bot');
