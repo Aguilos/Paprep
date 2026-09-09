@@ -219,6 +219,9 @@
 
     <!-- Global Floating Chat Bubble & Panel (Assistant + Live Consultation) -->
     {% if current_user.is_authenticated %}
+    <!-- Modal Backdrop for Chat -->
+    <div id="global_chat_backdrop" class="d-none" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1055;" onclick="toggleGlobalChat()"></div>
+
     <div id="global_chat_bubble" class="chat-bubble" style="position:fixed;right:20px;bottom:20px;z-index:1050;">
       <button type="button" class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0 overflow-hidden" style="width:56px;height:56px;background:var(--msgr-gradient);border:none;" onclick="toggleGlobalChat()">
         <img src="/static/image/Logo.png" alt="PaPrep" style="width:36px;height:36px;object-fit:contain;filter:brightness(0) invert(1);">
@@ -311,7 +314,11 @@
     <script>
     function toggleGlobalChat() {
       const panel = document.getElementById('global_chat_panel');
-      if (panel) panel.classList.toggle('d-none');
+      const backdrop = document.getElementById('global_chat_backdrop');
+      if (panel) {
+        panel.classList.toggle('d-none');
+        if (backdrop) backdrop.classList.toggle('d-none');
+      }
     }
     function switchChatTab(tab) {
       const botTab = document.getElementById('tab-bot');
