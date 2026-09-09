@@ -58,16 +58,16 @@
           <h3 class="clinic-detail-name mt-2">{{ clinic.name }}</h3>
           <div class="mt-3">
             {% if clinic.clinic_account_id and (current_user.role or '').lower() == 'parent' %}
-              {% if is_registered %}
-                <div class="d-flex flex-wrap gap-2">
-                  <button type="button"
-                        class="btn text-white rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 shadow-sm"
-                        style="background: var(--msgr-gradient); border:none; font-weight:700;"
-                        onclick="switchChatTab('clinic'); toggleGlobalChat();">
-                    <img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo"
-                       style="height:22px;width:22px;object-fit:contain;filter:brightness(0) invert(1);">
-                    Message Clinic
-                  </button>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button"
+                      class="btn text-white rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 shadow-sm"
+                      style="background: var(--msgr-gradient); border:none; font-weight:700;"
+                      onclick="switchChatTab('clinic'); toggleGlobalChat();">
+                  <img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo"
+                     style="height:22px;width:22px;object-fit:contain;filter:brightness(0) invert(1);">
+                  Message Clinic
+                </button>
+                {% if is_registered %}
                   <form method="POST" action="{{ url_for('clinics.unregister', clinic_id=clinic.id) }}"
                         onsubmit="return confirm('Are you sure you want to unregister from {{ clinic.name }}?')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -75,16 +75,18 @@
                       <i class="bi bi-person-dash-fill"></i> Unregister from Clinic
                     </button>
                   </form>
-                </div>
-              {% else %}
-                <button type="button" class="btn text-white rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 shadow-sm"
-                        style="background: linear-gradient(135deg, #FF6B35, #FF8C42); border:none; font-weight:700;"
-                        data-bs-toggle="modal" data-bs-target="#registerModal">
-                  <i class="bi bi-person-plus-fill"></i> Register for Clinic
-                </button>
-                <div class="small text-muted mt-2">
-                  <i class="bi bi-info-circle"></i> Register for this clinic to send messages and share your profile.
-                </div>
+                {% else %}
+                  <button type="button" class="btn text-white rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 shadow-sm"
+                          style="background: linear-gradient(135deg, #FF6B35, #FF8C42); border:none; font-weight:700;"
+                          data-bs-toggle="modal" data-bs-target="#registerModal">
+                    <i class="bi bi-person-plus-fill"></i> Register for Clinic
+                  </button>
+                {% endif %}
+              </div>
+              {% if not is_registered %}
+              <div class="small text-muted mt-2">
+                <i class="bi bi-info-circle"></i> Register for this clinic to share your profile.
+              </div>
               {% endif %}
             {% else %}
             {# Clinic NOT registered — show a locked/unregistered state #}

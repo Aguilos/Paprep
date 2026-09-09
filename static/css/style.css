@@ -409,6 +409,24 @@ a:hover { color: var(--primary-dark); }
 .notif-list-container::-webkit-scrollbar { width: 5px; }
 .notif-list-container::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 4px; }
 .btn-xs { font-size: 0.72rem; padding: 2px 8px; line-height: 1.2; }
+.global-chat-panel {
+  right: 20px;
+  width: min(360px, calc(100vw - 24px));
+}
+.bot-chip-row,
+#bot_quick_actions > div,
+#bot_messages_list .border-top {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.bot-chip-row .btn,
+#bot_quick_actions .btn {
+  white-space: normal;
+  max-width: 100%;
+}
+@media (max-width: 576px) {
+  .global-chat-panel { right: 12px; }
+}
   transition: transform var(--transition), box-shadow var(--transition);
 }
 .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }

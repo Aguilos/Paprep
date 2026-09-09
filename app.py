@@ -8,7 +8,7 @@ from flask_socketio import SocketIO, join_room, leave_room
 db = SQLAlchemy()
 login_manager = LoginManager()
 csrf = CSRFProtect()
-socketio = SocketIO(cors_allowed_origins='*', async_mode='gevent')
+socketio = SocketIO(cors_allowed_origins='*')
 
 
 def create_app():

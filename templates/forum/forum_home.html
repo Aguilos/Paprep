@@ -48,8 +48,9 @@
           <span class="forum-author-name">{{ post.author.first_name }} {{ post.author.last_name }}</span>
           <span class="forum-post-time">{{ post.created_at.strftime('%b %d, %Y · %I:%M %p') }}</span>
         </div>
-        <span class="forum-category-badge" style="background: {{ categories[post.category].color }}20; color: {{ categories[post.category].color }};">
-          <i class="{{ categories[post.category].icon }} me-1"></i>{{ categories[post.category].label }}
+        {% set category = categories.get(post.category, categories['general']) %}
+        <span class="forum-category-badge" style="background: {{ category.color }}20; color: {{ category.color }};">
+          <i class="{{ category.icon }} me-1"></i>{{ category.label }}
         </span>
       </div>
       <div class="forum-post-title">{{ post.title }}</div>

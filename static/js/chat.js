@@ -261,17 +261,40 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         body: JSON.stringify({ text })
       });
-      const data = await res.json();
+      const responseBody = await res.text();
+      let data = {};
+      try {
+        data = responseBody ? JSON.parse(responseBody) : {};
+      } catch (parseError) {
+        console.error('[PaPrep Assistant] Invalid JSON response', {
+          status: res.status,
+          body: responseBody,
+          error: parseError
+        });
+      }
       if (document.getElementById('bot_typing')) {
         document.getElementById('bot_typing').remove();
       }
 
       if (res.ok && data.ok) {
+        if (data.degraded) {
+          console.warn('[PaPrep Assistant] Backend returned fallback response', data);
+        }
         renderBotReply(data);
       } else {
+        console.error('[PaPrep Assistant] Request failed', {
+          url: '/chat/bot',
+          status: res.status,
+          statusText: res.statusText,
+          body: data || responseBody
+        });
         renderBotError();
       }
     } catch (e) {
+      console.error('[PaPrep Assistant] Network or fetch error', {
+        url: '/chat/bot',
+        error: e
+      });
       if (document.getElementById('bot_typing')) {
         document.getElementById('bot_typing').remove();
       }

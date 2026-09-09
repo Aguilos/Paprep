@@ -225,7 +225,7 @@
       </button>
     </div>
 
-    <div id="global_chat_panel" class="card shadow-lg position-fixed d-none border-0" style="right:20px;bottom:88px;width:360px;height:480px;z-index:1060;border-radius:18px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.18) !important;">
+    <div id="global_chat_panel" class="card shadow-lg position-fixed d-none border-0 global-chat-panel" style="bottom:88px;height:480px;z-index:1060;border-radius:18px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.18) !important;">
       <!-- Messenger Header -->
       <div class="card-header border-0 text-white p-3 d-flex flex-column gap-2" style="background: var(--msgr-gradient);">
         <div class="d-flex justify-content-between align-items-center">
@@ -265,7 +265,7 @@
         </div>
         <!-- Suggestion Chips -->
         <div class="px-2 py-1 border-top bg-light flex-shrink-0" id="bot_quick_actions">
-          <div class="d-flex flex-wrap gap-1">
+          <div class="d-flex flex-wrap gap-1 bot-chip-row">
             <button class="btn btn-outline-primary btn-xs py-1 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('Fever care guidance')">🌡️ Fever</button>
             <button class="btn btn-outline-primary btn-xs py-1 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('Nutrition tips for my child')">🍎 Nutrition</button>
             <button class="btn btn-outline-danger btn-xs py-1 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('Emergency red flags')">🚨 Emergency</button>

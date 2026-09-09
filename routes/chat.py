@@ -454,6 +454,7 @@ def match_bot_intent(text):
     # ── All other queries → Gemini AI ──────────────────────────────────────
     from config import Config
     gemini_key = getattr(Config, 'GEMINI_API_KEY', None)
+    gemini_model = getattr(Config, 'GEMINI_MODEL', 'gemini-1.5-flash')
 
     if gemini_key:
         try:
@@ -462,7 +463,7 @@ def match_bot_intent(text):
             import google.generativeai as genai
             genai.configure(api_key=gemini_key)
 
-            model = genai.GenerativeModel('gemini-3.6-flash')
+            model = genai.GenerativeModel(gemini_model)
 
             system_prompt = (
                 "You are the PaPrep Assistant, a warm, empathetic, and knowledgeable AI parenting companion "
@@ -479,7 +480,13 @@ def match_bot_intent(text):
             return reply, nav_shortcuts, default_actions
 
         except Exception as e:
-            print(f"Gemini API Error: {e}")
+            current_app.logger.exception(
+                'Gemini assistant request failed (model=%s)', gemini_model
+            )
+    else:
+        current_app.logger.error(
+            'Gemini assistant unavailable: GEMINI_API_KEY is not configured'
+        )
 
     # ── Fallback if API is unavailable ─────────────────────────────────────
     reply = (
@@ -500,11 +507,13 @@ def bot_reply():
         return jsonify({'error': 'Message text is required'}), 400
 
     reply_text, shortcuts, actions = match_bot_intent(text)
+    degraded = reply_text.startswith("👋 **Hi! I'm your PaPrep Assistant.**") and 'trouble connecting' in reply_text
 
     return jsonify({
         'ok': True,
         'sender': 'assistant',
         'text': reply_text,
+        'degraded': degraded,
         'shortcuts': shortcuts,
         'actions': actions,
         'created_at': datetime.utcnow().isoformat()

@@ -120,10 +120,11 @@ def reply(post_id):
 
 @forum_bp.route('/<int:post_id>/delete', methods=['POST'])
 @login_required
-@parent_required
 def delete_post(post_id):
     """Delete own forum post."""
     post = ForumPost.query.get_or_404(post_id)
+    if (current_user.role or '').lower() != 'parent' and not current_user.is_admin:
+        abort(403)
     if post.user_id != current_user.id and not current_user.is_admin:
         abort(403)
     db.session.delete(post)
@@ -156,7 +157,6 @@ def report_content():
 
 @forum_bp.route('/<int:post_id>/hide', methods=['POST'])
 @login_required
-@parent_required
 def hide_post(post_id):
     if not current_user.is_admin:
         abort(403)
