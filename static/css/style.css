@@ -398,6 +398,7 @@ a:hover { color: var(--primary-dark); }
   box-shadow: var(--shadow);
   height: 100%;
   border-top: 4px solid transparent;
+}
 
 /* Chat widget & Assistant */
 .chat-msg { margin: 8px 0; padding: 8px 10px; border-radius: 10px; max-width: 85%; }
