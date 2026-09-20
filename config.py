@@ -51,7 +51,12 @@ class Config:
     GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.6-flash')
     SQLALCHEMY_DATABASE_URI = get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {}
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,   # Discard stale connections before use
+        'pool_recycle': 1800,    # Recycle connections every 30 min
+        'pool_size': 10,         # Max persistent connections in pool
+        'max_overflow': 20,      # Extra connections allowed under load
+    }
 
     if SQLALCHEMY_DATABASE_URI.startswith('postgresql'):
         if 'sslmode=' not in SQLALCHEMY_DATABASE_URI:
