@@ -4,7 +4,10 @@ import json
 from flask import Blueprint, render_template, redirect, url_for, session, jsonify, request
 from flask_login import login_required, current_user
 
-from models import HealthChecklist, ClinicAnnouncement, ClinicMessage, Clinic, NotificationRead
+from models import (
+    HealthChecklist, ClinicAnnouncement, ClinicMessage, Clinic,
+    NotificationRead, ParentChildResource, Newsletter,
+)
 from app import db
 from utils import today_pht
 
@@ -183,11 +186,28 @@ def dashboard():
             'is_today': d == today,
         })
 
+    age_months = active_child.age_months
+    resource_query = ParentChildResource.query.filter(
+        ParentChildResource.target_age_min_months <= age_months,
+        ParentChildResource.target_age_max_months >= age_months,
+    )
+    if active_child.child_type != 'special_needs':
+        resource_query = resource_query.filter_by(is_special_needs=False)
+    resources = resource_query.order_by(
+        ParentChildResource.created_at.desc(), ParentChildResource.id.desc()
+    ).limit(6).all()
+
+    newsletters = Newsletter.query.filter_by(
+        child_id=active_child.id, is_published=True
+    ).order_by(Newsletter.created_at.desc(), Newsletter.id.desc()).all()
+
     return render_template('dashboard/dashboard.html',
                            active_child=active_child,
                            checklist_today_count=checklist_today_count,
                            checklist_total=checklist_total,
                            history_days=history_days,
+                           resources=resources,
+                           newsletters=newsletters,
                            page_title='Dashboard')
 
 

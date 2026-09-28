@@ -89,6 +89,7 @@ def create_app():
                 "ALTER TABLE clinic_messages ADD COLUMN attachment_url VARCHAR(512)",
                 "ALTER TABLE clinic_messages ADD COLUMN attachment_type VARCHAR(16)",
                 "ALTER TABLE learning_modules ADD COLUMN clinic_account_id INTEGER",
+                "ALTER TABLE parent_child_resources ADD COLUMN clinic_account_id INTEGER",
                 "ALTER TABLE clinic_accounts ADD COLUMN totp_secret VARCHAR(32)",
                 "ALTER TABLE clinic_accounts ADD COLUMN totp_enabled BOOLEAN DEFAULT FALSE",
                 "ALTER TABLE users ADD COLUMN role VARCHAR(30) DEFAULT 'Parent'",
@@ -128,7 +129,7 @@ def create_app():
 
     @app.shell_context_processor
     def make_shell_context():
-        from models import (User, ChildProfile, LearningModule, Symptom,
+        from models import (User, ChildProfile, LearningModule, FeverReading,
                             ClinicAccount, Clinic, ClinicSchedule, TimeSlot,
                             ClinicRegistration, ForumPost, ForumReply, ForumReport)
         return dict(
@@ -136,7 +137,7 @@ def create_app():
             User=User,
             ChildProfile=ChildProfile,
             LearningModule=LearningModule,
-            Symptom=Symptom,
+            FeverReading=FeverReading,
             ClinicAccount=ClinicAccount,
             Clinic=Clinic,
             ClinicSchedule=ClinicSchedule,

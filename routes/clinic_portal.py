@@ -6,16 +6,21 @@ completely separate from the parent-user login.
 import os
 import base64
 import functools
-from datetime import date
+import hashlib
+import secrets
+from datetime import date, datetime
 from io import BytesIO
+from urllib.parse import urlparse
 import pyotp
 import qrcode
 
 from flask import (Blueprint, render_template, request, redirect,
-                   url_for, flash, session, abort, send_file, Response)
+                   url_for, flash, session, abort, send_file, Response, current_app)
 from werkzeug.utils import secure_filename
 from app import db
-from models import ClinicAccount, Clinic, ClinicSchedule, LearningModule, ClinicAnnouncement
+from models import (ClinicAccount, Clinic, ClinicSchedule, LearningModule,
+                    ClinicAnnouncement, ParentChildResource, PasswordResetToken,
+                    ClinicRegistration, ChildProfile, Newsletter, NewsletterMedia)
 
 clinic_portal_bp = Blueprint('clinic_portal', __name__, url_prefix='/clinic')
 
@@ -60,6 +65,56 @@ def _parse_float(val):
         return float(val) if val else None
     except (TypeError, ValueError):
         return None
+
+def _parse_int(val, default=0):
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return default
+
+
+def _clinic_child_registration(account, child_id):
+    """Return a valid clinic-child registration, or None for unrelated children."""
+    registration = ClinicRegistration.query.filter_by(
+        clinic_id=account.clinic.id,
+        child_id=child_id,
+    ).first()
+    if not registration or not registration.child:
+        return None
+    if registration.child.user_id != registration.user_id:
+        return None
+    return registration
+
+
+def _newsletter_media_from_form(form):
+    media = []
+    types = form.getlist('media_type')
+    sources = form.getlist('media_source')
+    captions = form.getlist('media_caption')
+    if len(types) > 10:
+        raise ValueError('A newsletter can contain at most 10 media attachments.')
+    for index, (media_type, source) in enumerate(zip(types, sources)):
+        media_type = media_type.strip().lower()
+        source = source.strip()
+        caption = captions[index].strip() if index < len(captions) else ''
+        if not source:
+            continue
+        parsed = urlparse(source)
+        if parsed.scheme not in ('http', 'https') or not parsed.netloc:
+            raise ValueError('Media sources must be valid http(s) URLs.')
+        if media_type == 'video':
+            from models import youtube_embed_url
+            if not youtube_embed_url(source):
+                raise ValueError('Video attachments must use a YouTube URL.')
+        elif media_type != 'image':
+            raise ValueError('Media type must be image or video.')
+        media.append(NewsletterMedia(media_type=media_type, source=source, caption=caption or None))
+    return media
+
+
+def _replace_newsletter_media(newsletter, form):
+    newsletter.media.clear()
+    newsletter.media.extend(_newsletter_media_from_form(form))
 
 
 def _ampm_to_24h(hour, minute, period):
@@ -123,6 +178,50 @@ def login():
         flash(f'Welcome back, {account.contact_name}!', 'success')
         return redirect(url_for('clinic_portal.dashboard'))
     return render_template('clinic_portal/login.html')
+
+
+@clinic_portal_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    reset_url = None
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        account = ClinicAccount.query.filter_by(email=email).first() if email else None
+        if account:
+            raw_token = secrets.token_urlsafe(32)
+            token = PasswordResetToken(
+                token_hash=hashlib.sha256(raw_token.encode()).hexdigest(),
+                clinic_account_id=account.id,
+                expires_at=datetime.utcnow() + current_app.config['PASSWORD_RESET_TOKEN_TTL'],
+            )
+            db.session.add(token)
+            db.session.commit()
+            reset_url = url_for('clinic_portal.reset_password', token=raw_token, _external=True)
+        flash('If an account matches that email, a password reset link is ready.', 'info')
+    return render_template('clinic_portal/forgot_password.html', reset_url=reset_url)
+
+
+@clinic_portal_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    token_record = PasswordResetToken.query.filter_by(
+        token_hash=hashlib.sha256(token.encode()).hexdigest(), used_at=None
+    ).first()
+    if not token_record or token_record.expires_at < datetime.utcnow() or not token_record.clinic_account_id:
+        flash('This password reset link is invalid or expired.', 'error')
+        return redirect(url_for('clinic_portal.forgot_password'))
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        confirm = request.form.get('confirm_password', '')
+        if len(password) < MIN_PASSWORD_LENGTH:
+            flash(f'Password must be at least {MIN_PASSWORD_LENGTH} characters.', 'error')
+        elif password != confirm:
+            flash('Passwords do not match.', 'error')
+        else:
+            token_record.clinic_account.set_password(password)
+            token_record.used_at = datetime.utcnow()
+            db.session.commit()
+            flash('Your password has been reset. You can now log in.', 'success')
+            return redirect(url_for('clinic_portal.login'))
+    return render_template('clinic_portal/reset_password.html')
 
 
 @clinic_portal_bp.route('/signup', methods=['GET', 'POST'])
@@ -308,11 +407,51 @@ def manage_modules():
         return redirect(url_for('clinic_portal.setup_clinic'))
     modules = LearningModule.query.filter_by(clinic_account_id=account.id)\
                                   .order_by(LearningModule.id.desc()).all()
+    resources = ParentChildResource.query.filter_by(clinic_account_id=account.id)\
+                                         .order_by(ParentChildResource.id.desc()).all()
     return render_template('clinic_portal/manage_modules.html',
                            account=account,
                            clinic=account.clinic,
                            modules=modules,
+                           resources=resources,
                            category_meta=CATEGORY_META)
+
+
+@clinic_portal_bp.route('/resources/add', methods=['POST'])
+@clinic_login_required
+def add_resource():
+    account = _current_clinic_account()
+    if not account.clinic:
+        return redirect(url_for('clinic_portal.setup_clinic'))
+    title = request.form.get('title', '').strip()
+    url = request.form.get('url', '').strip()
+    resource_type = request.form.get('resource_type', 'link')
+    if not title or not url:
+        flash('Resource title and URL are required.', 'error')
+        return redirect(url_for('clinic_portal.manage_modules'))
+    if resource_type not in ('video', 'link'):
+        resource_type = 'link'
+    min_age = _parse_int(request.form.get('target_age_min_months'), 0)
+    max_age = _parse_int(request.form.get('target_age_max_months'), 60)
+    if min_age < 0 or max_age < min_age:
+        flash('Please provide a valid age range.', 'error')
+        return redirect(url_for('clinic_portal.manage_modules'))
+    resource = ParentChildResource(
+        title=title,
+        description=request.form.get('description', '').strip(),
+        url=url,
+        thumbnail_url=request.form.get('thumbnail_url', '').strip() or None,
+        resource_type=resource_type,
+        category=request.form.get('category', 'parenting').strip() or 'parenting',
+        target_age_min_months=min_age,
+        target_age_max_months=max_age,
+        is_special_needs='is_special_needs' in request.form,
+        clinic_account_id=account.id,
+    )
+    db.session.add(resource)
+    db.session.commit()
+    flash(f'Resource "{resource.title}" added.', 'success')
+    return redirect(url_for('clinic_portal.manage_modules'))
 
 
 @clinic_portal_bp.route('/modules/add', methods=['POST'])
@@ -572,4 +711,100 @@ def patients():
                            account=account,
                            clinic=account.clinic,
                            registrations=registrations)
+
+
+# ── Child newsletters ────────────────────────────────────────────────────────
+
+@clinic_portal_bp.route('/newsletters')
+@clinic_login_required
+def newsletters():
+    account = _current_clinic_account()
+    if not account.clinic:
+        return redirect(url_for('clinic_portal.setup_clinic'))
+    registrations = ClinicRegistration.query.filter(
+        ClinicRegistration.clinic_id == account.clinic.id,
+        ClinicRegistration.child_id.isnot(None),
+    ).order_by(ClinicRegistration.created_at.desc()).all()
+    entries = Newsletter.query.filter_by(clinic_id=account.clinic.id).order_by(
+        Newsletter.updated_at.desc(), Newsletter.id.desc()
+    ).all()
+    return render_template('clinic_portal/newsletters.html',
+                           account=account, clinic=account.clinic,
+                           registrations=registrations, newsletters=entries)
+
+
+@clinic_portal_bp.route('/newsletters/add', methods=['POST'])
+@clinic_login_required
+def add_newsletter():
+    account = _current_clinic_account()
+    if not account.clinic:
+        return redirect(url_for('clinic_portal.setup_clinic'))
+    child_id = _parse_int(request.form.get('child_id'), 0)
+    registration = _clinic_child_registration(account, child_id)
+    if not registration:
+        abort(403)
+    title = request.form.get('title', '').strip()
+    body = request.form.get('body', '').strip()
+    if not title or not body:
+        flash('Newsletter title and body are required.', 'error')
+        return redirect(url_for('clinic_portal.newsletters'))
+    try:
+        media = _newsletter_media_from_form(request.form)
+    except ValueError as error:
+        flash(str(error), 'error')
+        return redirect(url_for('clinic_portal.newsletters'))
+    newsletter = Newsletter(
+        title=title,
+        body=body,
+        child_id=child_id,
+        clinic_id=account.clinic.id,
+        is_published=request.form.get('action') == 'publish',
+    )
+    newsletter.media.extend(media)
+    db.session.add(newsletter)
+    db.session.commit()
+    flash(f'Newsletter "{title}" saved.', 'success')
+    return redirect(url_for('clinic_portal.newsletters'))
+
+
+@clinic_portal_bp.route('/newsletters/<int:newsletter_id>/edit', methods=['POST'])
+@clinic_login_required
+def edit_newsletter(newsletter_id):
+    account = _current_clinic_account()
+    newsletter = Newsletter.query.filter_by(
+        id=newsletter_id, clinic_id=account.clinic.id
+    ).first_or_404()
+    if not _clinic_child_registration(account, newsletter.child_id):
+        abort(403)
+    title = request.form.get('title', '').strip()
+    body = request.form.get('body', '').strip()
+    if not title or not body:
+        flash('Newsletter title and body are required.', 'error')
+        return redirect(url_for('clinic_portal.newsletters'))
+    try:
+        _replace_newsletter_media(newsletter, request.form)
+    except ValueError as error:
+        flash(str(error), 'error')
+        return redirect(url_for('clinic_portal.newsletters'))
+    newsletter.title = title
+    newsletter.body = body
+    newsletter.is_published = request.form.get('action') == 'publish'
+    db.session.commit()
+    flash(f'Newsletter "{title}" updated.', 'success')
+    return redirect(url_for('clinic_portal.newsletters'))
+
+
+@clinic_portal_bp.route('/newsletters/<int:newsletter_id>/toggle', methods=['POST'])
+@clinic_login_required
+def toggle_newsletter(newsletter_id):
+    account = _current_clinic_account()
+    newsletter = Newsletter.query.filter_by(
+        id=newsletter_id, clinic_id=account.clinic.id
+    ).first_or_404()
+    if not _clinic_child_registration(account, newsletter.child_id):
+        abort(403)
+    newsletter.is_published = not newsletter.is_published
+    db.session.commit()
+    flash('Newsletter published.' if newsletter.is_published else 'Newsletter unpublished.', 'success')
+    return redirect(url_for('clinic_portal.newsletters'))
 

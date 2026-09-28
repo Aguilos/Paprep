@@ -1,0 +1,133 @@
+{% extends 'clinic_portal/base.html' %}
+{% block title %}Child Newsletters{% endblock %}
+{% block page_title %}Child Newsletters{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="page-heading mb-0">Child Newsletters</h4>
+    <p class="text-muted small mb-0">Write updates only for children registered with your clinic.</p>
+  </div>
+  {% if registrations %}
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addNewsletterModal">
+    <i class="bi bi-plus-lg me-1"></i> New Newsletter
+  </button>
+  {% endif %}
+</div>
+
+{% if newsletters %}
+<div class="d-flex flex-column gap-3">
+  {% for newsletter in newsletters %}
+  <article class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="d-flex justify-content-between gap-3">
+        <div>
+          <div class="small text-muted mb-1">{{ newsletter.child.name }} · {{ newsletter.updated_at.strftime('%b %d, %Y') }}</div>
+          <h5 class="mb-2">{{ newsletter.title }}</h5>
+          <p class="mb-0" style="white-space:pre-wrap;">{{ newsletter.body }}</p>
+          {% if newsletter.media %}
+          <div class="d-flex flex-column gap-2 mt-3">
+            {% for media in newsletter.media %}
+            <div class="small text-muted"><i class="bi bi-{{ 'image' if media.media_type == 'image' else 'play-btn' }} me-1"></i>{{ media.media_type|title }} attached{% if media.caption %}: {{ media.caption }}{% endif %}</div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        <div class="text-end flex-shrink-0">
+          <span class="badge {% if newsletter.is_published %}bg-success{% else %}bg-secondary{% endif %}">{{ 'Published' if newsletter.is_published else 'Draft' }}</span>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#editNewsletter{{ newsletter.id }}" title="Edit"><i class="bi bi-pencil"></i></button>
+            <form method="POST" action="{{ url_for('clinic_portal.toggle_newsletter', newsletter_id=newsletter.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-outline-secondary" type="submit" title="{{ 'Unpublish' if newsletter.is_published else 'Publish' }}"><i class="bi {% if newsletter.is_published %}bi-eye-slash{% else %}bi-eye{% endif %}"></i></button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 text-muted bg-white rounded shadow-sm">
+  <i class="bi bi-envelope-paper fs-1 d-block mb-3"></i>
+  <h5>No child newsletters yet.</h5>
+  <p class="mb-0">Create a newsletter for a registered child to publish a clinic-authored update.</p>
+</div>
+{% endif %}
+
+{% if registrations %}
+<div class="modal fade" id="addNewsletterModal" tabindex="-1">
+  <div class="modal-dialog modal-lg"><div class="modal-content">
+    <form method="POST" action="{{ url_for('clinic_portal.add_newsletter') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header"><h5 class="modal-title">New Child Newsletter</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <label class="form-label fw-semibold">Child</label>
+        <select name="child_id" class="form-select mb-3" required>{% for registration in registrations %}<option value="{{ registration.child.id }}">{{ registration.child.name }} ({{ registration.user.first_name }} {{ registration.user.last_name }})</option>{% endfor %}</select>
+        <label class="form-label fw-semibold">Title</label><input name="title" class="form-control mb-3" required>
+        <label class="form-label fw-semibold">Body</label><textarea name="body" class="form-control" rows="7" required></textarea>
+        <label class="form-label fw-semibold mt-3">Images and videos <small class="text-muted">(optional URL-only attachments)</small></label>
+        <div id="newMediaRows"></div>
+        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="addMediaRow('newMediaRows')"><i class="bi bi-plus-lg me-1"></i>Add media</button>
+        <div class="media-preview mt-3" data-preview-for="newMediaRows"></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-outline-secondary" name="action" value="draft">Save Draft</button><button class="btn btn-primary" name="action" value="publish">Publish</button></div>
+    </form>
+  </div></div>
+</div>
+{% endif %}
+
+{% for newsletter in newsletters %}
+<div class="modal fade" id="editNewsletter{{ newsletter.id }}" tabindex="-1">
+  <div class="modal-dialog modal-lg"><div class="modal-content">
+    <form method="POST" action="{{ url_for('clinic_portal.edit_newsletter', newsletter_id=newsletter.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header"><h5 class="modal-title">Edit Newsletter</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><label class="form-label fw-semibold">Title</label><input name="title" value="{{ newsletter.title }}" class="form-control mb-3" required><label class="form-label fw-semibold">Body</label><textarea name="body" class="form-control" rows="7" required>{{ newsletter.body }}</textarea><label class="form-label fw-semibold mt-3">Images and videos <small class="text-muted">(optional URL-only attachments)</small></label><div id="editMediaRows{{ newsletter.id }}">{% for media in newsletter.media %}<div class="media-row d-flex gap-2 mb-2"><select name="media_type" class="form-select" style="max-width:110px"><option value="image" {% if media.media_type == 'image' %}selected{% endif %}>Image</option><option value="video" {% if media.media_type == 'video' %}selected{% endif %}>Video</option></select><input name="media_source" value="{{ media.source }}" class="form-control" type="url" required><input name="media_caption" value="{{ media.caption or '' }}" class="form-control" placeholder="Caption"><button type="button" class="btn btn-outline-danger" onclick="this.closest('.media-row').remove()" title="Remove"><i class="bi bi-x-lg"></i></button></div>{% endfor %}</div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="addMediaRow('editMediaRows{{ newsletter.id }}')"><i class="bi bi-plus-lg me-1"></i>Add media</button><div class="media-preview mt-3" data-preview-for="editMediaRows{{ newsletter.id }}"></div></div>
+      <div class="modal-footer"><button class="btn btn-outline-secondary" name="action" value="draft">Save as Draft</button><button class="btn btn-primary" name="action" value="publish">Publish</button></div>
+    </form>
+  </div></div>
+</div>
+{% endfor %}
+<script>
+function addMediaRow(containerId) {
+  const container = document.getElementById(containerId);
+  const row = document.createElement('div');
+  row.className = 'media-row d-flex gap-2 mb-2';
+  row.innerHTML = '<select name="media_type" class="form-select" style="max-width:110px"><option value="image">Image</option><option value="video">Video</option></select><input name="media_source" class="form-control" type="url" placeholder="https://..." required><input name="media_caption" class="form-control" placeholder="Caption"><button type="button" class="btn btn-outline-danger" title="Remove"><i class="bi bi-x-lg"></i></button>';
+  row.querySelector('button').addEventListener('click', () => row.remove());
+  container.appendChild(row);
+}
+
+function updateMediaPreview(container) {
+  const preview = document.querySelector('[data-preview-for="' + container.id + '"]');
+  if (!preview) return;
+  preview.replaceChildren();
+  container.querySelectorAll('.media-row').forEach(function (row) {
+    const type = row.querySelector('[name="media_type"]').value;
+    const source = row.querySelector('[name="media_source"]').value.trim();
+    if (!source) return;
+    if (type === 'image') {
+      const image = document.createElement('img');
+      image.src = source; image.alt = 'Media preview'; image.className = 'newsletter-author-preview-image';
+      preview.appendChild(image);
+    } else {
+      const match = source.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/);
+      if (match) {
+        const frame = document.createElement('iframe');
+        frame.src = 'https://www.youtube.com/embed/' + match[1]; frame.title = 'Video preview'; frame.allowFullscreen = true; frame.className = 'newsletter-author-preview-video';
+        preview.appendChild(frame);
+      }
+    }
+  });
+}
+
+document.addEventListener('input', function (event) {
+  if (event.target.name === 'media_source' || event.target.name === 'media_type') {
+    const container = event.target.closest('[id^="newMediaRows"], [id^="editMediaRows"]');
+    if (container) updateMediaPreview(container);
+  }
+});
+</script>
+{% endblock %}

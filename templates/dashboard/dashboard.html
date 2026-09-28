@@ -100,6 +100,91 @@
     </div>
   </div>
 
+  <!-- Parent & Child Resources -->
+  <section class="dashboard-resource-section mb-4">
+    <div class="dashboard-section-heading">
+      <div>
+        <h5 class="section-label mb-1"><i class="bi bi-collection-play me-2"></i>Parent &amp; Child Resources</h5>
+        <p class="text-muted small mb-0">Curated resources for {{ active_child.name }}'s current stage.</p>
+      </div>
+      <a href="{{ url_for('modules.list_modules') }}" class="small fw-semibold">Browse modules <i class="bi bi-arrow-right"></i></a>
+    </div>
+    {% if resources %}
+    <div class="resource-widget-grid">
+      {% for resource in resources %}
+      <article class="dashboard-resource-card">
+        {% if resource.resource_type == 'video' and resource.embed_url %}
+        <div class="resource-video-wrap">
+          <iframe src="{{ resource.embed_url }}" title="{{ resource.title }}" loading="lazy" allowfullscreen></iframe>
+        </div>
+        {% elif resource.thumbnail_url %}
+        <img src="{{ resource.thumbnail_url }}" alt="" class="resource-thumbnail">
+        {% endif %}
+        <div class="dashboard-resource-body">
+          <span class="resource-type-label"><i class="bi bi-{{ 'play-btn' if resource.resource_type == 'video' else 'link-45deg' }} me-1"></i>{{ resource.category|title }}</span>
+          <h6>{{ resource.title }}</h6>
+          <p>{{ resource.description }}</p>
+          <a href="{{ resource.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
+            {{ 'Watch video' if resource.resource_type == 'video' else 'Open resource' }} <i class="bi bi-box-arrow-up-right ms-1"></i>
+          </a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="dashboard-empty-resource">Resources for this age group will appear here as they are added.</div>
+    {% endif %}
+  </section>
+
+  <!-- Child Newsletter -->
+  <section class="child-newsletter-section mb-4">
+    <div class="dashboard-section-heading">
+      <div>
+        <h5 class="section-label mb-1"><i class="bi bi-envelope-paper me-2"></i>{{ active_child.name }}'s Newsletter</h5>
+        <p class="text-muted small mb-0">Updates written by clinics monitoring {{ active_child.name }}.</p>
+      </div>
+    </div>
+    <div class="newsletter-feed">
+      {% for newsletter in newsletters %}
+      <article class="newsletter-item">
+        <header class="newsletter-post-header">
+          <span class="newsletter-icon newsletter-icon--announcement" aria-hidden="true">
+            <i class="bi bi-hospital"></i>
+          </span>
+          <span class="newsletter-author">
+            <strong>{{ newsletter.clinic.name }}</strong>
+            <small><i class="bi bi-patch-check-fill" aria-hidden="true"></i> Verified clinic · {{ newsletter.created_at.strftime('%b %d') }}</small>
+          </span>
+        </header>
+        <div class="newsletter-content">
+          <h6 class="newsletter-title">{{ newsletter.title }}</h6>
+          <div class="newsletter-body-wrap">
+            <span class="newsletter-body-text">{{ newsletter.body }}</span>
+            <button type="button" class="newsletter-read-more" aria-expanded="false">See more</button>
+          </div>
+        </div>
+        {% if newsletter.media %}
+        <div class="newsletter-media-preview">
+          {% for media in newsletter.media %}
+          {% if media.media_type == 'image' %}<img src="{{ media.source }}" alt="{{ media.caption or newsletter.title }}" loading="lazy">{% elif media.embed_url %}<div class="newsletter-video-frame"><iframe src="{{ media.embed_url|replace('www.youtube.com', 'www.youtube-nocookie.com') }}?enablejsapi=1&amp;origin={{ request.host_url.rstrip('/')|urlencode }}&amp;widget_referrer={{ request.url|urlencode }}" title="{{ media.caption or newsletter.title }}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe><a class="newsletter-video-fallback" href="{{ media.source }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Video not visible? Watch on YouTube</a></div>{% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+        <footer class="newsletter-engagement" aria-label="Newsletter engagement">
+          <button type="button" class="newsletter-engagement-action">
+            <i class="bi bi-hand-thumbs-up" aria-hidden="true"></i> Helpful
+          </button>
+          <button type="button" class="newsletter-engagement-action">
+            <i class="bi bi-chat-left-text" aria-hidden="true"></i> Comment
+          </button>
+        </footer>
+      </article>
+      {% else %}
+      <div class="dashboard-empty-resource">No clinic-authored newsletters are available for {{ active_child.name }} yet.</div>
+      {% endfor %}
+    </div>
+  </section>
+
   <!-- Section: Quick Actions -->
   <h5 class="section-label mb-3">
     <i class="bi bi-grid-1x2 me-2"></i>Your PaPrep Modules
@@ -138,12 +223,12 @@
       <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
     </a>
 
-    <!-- Symptom Checker -->
-    <a href="{{ url_for('symptoms.symptom_checker') }}" class="module-card module-card--symptom">
-      <div class="module-card-icon"><i class="bi bi-clipboard2-pulse-fill"></i></div>
+    <!-- Fever Tracker -->
+    <a href="{{ url_for('symptoms.fever_tracker') }}" class="module-card module-card--symptom">
+      <div class="module-card-icon"><i class="bi bi-thermometer-half"></i></div>
       <div class="module-card-body">
-        <h5>Symptom Checker</h5>
-        <p>Select symptoms and receive clear monitoring guidance. Includes medical disclaimer.</p>
+        <h5>Fever Tracker</h5>
+        <p>Log your child's temperature, review history, and receive threshold-based guidance.</p>
       </div>
       <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
     </a>
@@ -188,4 +273,15 @@
 
 
 </div>
+
+<script>
+  document.querySelectorAll('.newsletter-read-more').forEach(function (button) {
+    button.addEventListener('click', function () {
+      const bodyWrap = button.closest('.newsletter-body-wrap');
+      const expanded = bodyWrap.classList.toggle('is-expanded');
+      button.textContent = expanded ? 'See less' : 'See more';
+      button.setAttribute('aria-expanded', String(expanded));
+    });
+  });
+</script>
 {% endblock %}

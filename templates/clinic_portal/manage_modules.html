@@ -20,6 +20,37 @@
   </button>
 </div>
 
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h5 class="page-heading mb-0">Videos &amp; Links</h5>
+    <p class="text-muted small mb-0">Add resources that match children’s age and support needs.</p>
+  </div>
+  <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addResourceModal">
+    <i class="bi bi-link-45deg me-1"></i> Add Resource
+  </button>
+</div>
+{% if resources %}
+<div class="table-responsive mb-4">
+  <table class="table table-hover align-middle bg-white rounded shadow-sm">
+    <thead class="table-light"><tr><th>Title</th><th>Type</th><th>Age Range</th><th>Support</th></tr></thead>
+    <tbody>
+      {% for resource in resources %}
+      <tr>
+        <td><div class="fw-600">{{ resource.title }}</div><small class="text-muted">{{ resource.category|title }}</small></td>
+        <td>{{ resource.resource_type|title }}</td>
+        <td>{{ resource.target_age_min_months }}–{{ resource.target_age_max_months }} months</td>
+        <td>{{ 'Special needs' if resource.is_special_needs else 'All families' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="text-center py-4 text-muted bg-white rounded shadow-sm mb-4">
+  No resources yet. Add a video or link to make it available on parent dashboards.
+</div>
+{% endif %}
+
 {% if modules %}
 <div class="table-responsive">
   <table class="table table-hover align-middle bg-white rounded shadow-sm">
@@ -84,6 +115,27 @@
   No modules yet. Click <strong>Add Module</strong> to create your first one.
 </div>
 {% endif %}
+
+<div class="modal fade" id="addResourceModal" tabindex="-1">
+  <div class="modal-dialog modal-lg"><div class="modal-content">
+    <form method="POST" action="{{ url_for('clinic_portal.add_resource') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header"><h5 class="modal-title">Add Video or Link</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><div class="row g-3">
+        <div class="col-12"><label class="form-label fw-semibold">Title</label><input name="title" class="form-control" required></div>
+        <div class="col-md-8"><label class="form-label fw-semibold">URL</label><input name="url" type="url" class="form-control" required></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Type</label><select name="resource_type" class="form-select"><option value="link">Link</option><option value="video">Video</option></select></div>
+        <div class="col-12"><label class="form-label fw-semibold">Description</label><textarea name="description" class="form-control" rows="2"></textarea></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Category</label><input name="category" value="parenting" class="form-control"></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Minimum age (months)</label><input name="target_age_min_months" type="number" min="0" value="0" class="form-control"></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Maximum age (months)</label><input name="target_age_max_months" type="number" min="0" value="60" class="form-control"></div>
+        <div class="col-12"><label class="form-label fw-semibold">Thumbnail URL <small class="text-muted">(optional)</small></label><input name="thumbnail_url" type="url" class="form-control"></div>
+        <div class="col-12 form-check ms-2"><input name="is_special_needs" type="checkbox" class="form-check-input" id="resourceSpecialNeeds"><label class="form-check-label" for="resourceSpecialNeeds">Special-needs resource</label></div>
+      </div></div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="submit">Save Resource</button></div>
+    </form>
+  </div></div>
+</div>
 
 <!-- ── ADD MODULE MODAL ────────────────────────────────────── -->
 <div class="modal fade" id="addModuleModal" tabindex="-1">

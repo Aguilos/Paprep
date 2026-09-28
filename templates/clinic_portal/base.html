@@ -131,6 +131,10 @@
        class="nav-link {% if request.endpoint == 'clinic_portal.patients' %}active{% endif %}">
       <i class="bi bi-people-fill nav-icon"></i> Registered Patients
     </a>
+    <a href="{{ url_for('clinic_portal.newsletters') }}"
+       class="nav-link {% if request.endpoint == 'clinic_portal.newsletters' %}active{% endif %}">
+      <i class="bi bi-envelope-paper-fill nav-icon"></i> Child Newsletters
+    </a>
     <a href="{{ url_for('chat.clinic_inbox') }}"
        class="nav-link {% if request.endpoint == 'chat.clinic_inbox' %}active{% endif %}">
       <i class="bi bi-chat-dots-fill nav-icon"></i> Messages

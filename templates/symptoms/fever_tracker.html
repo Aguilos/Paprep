@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Fever Tracker{% endblock %}
+{% block page_title %}Fever Tracker{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <div class="disclaimer-banner">
+    <div class="disclaimer-icon"><i class="bi bi-shield-exclamation"></i></div>
+    <div class="disclaimer-text"><strong>Medical Disclaimer:</strong> {{ disclaimer }}</div>
+  </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-lg-5">
+      <section class="symptom-panel">
+        <div class="symptom-panel-header"><i class="bi bi-thermometer-half me-2"></i><h5 class="mb-0">Log a temperature for {{ active_child.name }}</h5></div>
+        <form method="POST" class="symptom-panel-body">
+          <div class="mb-3"><label class="form-label fw-semibold">Temperature</label><div class="input-group"><input type="number" name="value" class="form-control" min="30" max="113" step="0.1" required placeholder="e.g. 38.2"><select name="unit" class="form-select" style="max-width:90px"><option value="C">°C</option><option value="F">°F</option></select></div></div>
+          <div class="mb-3"><label class="form-label fw-semibold">Method <small class="text-muted">(optional)</small></label><select name="method" class="form-select"><option value="">Not specified</option><option value="oral">Oral</option><option value="ear">Ear</option><option value="forehead">Forehead</option><option value="armpit">Armpit</option></select></div>
+          <div class="mb-3"><label class="form-label fw-semibold">Date and time</label><input type="datetime-local" name="recorded_at" class="form-control"></div>
+          <button class="btn btn-primary w-100" type="submit"><i class="bi bi-plus-circle me-2"></i>Save Reading</button>
+        </form>
+      </section>
+    </div>
+
+    <div class="col-lg-7">
+      <section class="results-panel">
+        <div class="d-flex align-items-center gap-2 mb-3"><i class="bi bi-activity text-primary"></i><h5 class="mb-0">Latest guidance</h5><span class="badge severity-{{ guidance.severity }} ms-auto">{{ guidance.severity|title }}</span></div>
+        <h6>{{ guidance.title }}</h6><p>{{ guidance.message }}</p>
+        {% if guidance.actions %}<ul class="rec-actions">{% for action in guidance.actions %}<li>{{ action }}</li>{% endfor %}</ul>{% endif %}
+        <div class="rec-disclaimer"><strong>Medical Disclaimer:</strong> {{ disclaimer }}</div>
+      </section>
+    </div>
+  </div>
+
+  <section class="symptom-panel mt-4">
+    <div class="symptom-panel-header"><i class="bi bi-clock-history me-2"></i><h5 class="mb-0">Temperature history</h5></div>
+    {% if readings %}
+    <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Date and time</th><th>Reading</th><th>Method</th></tr></thead><tbody>{% for reading in readings %}<tr><td>{{ reading.recorded_at.strftime('%b %d, %Y %I:%M %p') }}</td><td class="fw-bold">{{ reading.display_value }}</td><td>{{ reading.method|title if reading.method else 'Not specified' }}</td></tr>{% endfor %}</tbody></table></div>
+    {% else %}<div class="dashboard-empty-resource">No temperature readings yet for {{ active_child.name }}. Add the first reading above.</div>{% endif %}
+  </section>
+</div>
+{% endblock %}

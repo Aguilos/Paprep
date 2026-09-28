@@ -65,6 +65,7 @@ class Config:
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = None
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+    PASSWORD_RESET_TOKEN_TTL = timedelta(minutes=30)
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads', 'modules')

@@ -3,7 +3,7 @@ from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash, session, jsonify)
 from flask_login import login_required, current_user
 from app import db
-from models import ChildProfile
+from models import ChildProfile, HealthChecklist, FeverReading, ClinicRegistration, NotificationRead, Newsletter
 
 children_bp = Blueprint('children', __name__, url_prefix='/children')
 
@@ -142,6 +142,39 @@ def edit_child(child_id):
                            profile_colors=PROFILE_COLORS,
                            form_data={},
                            editing=True)
+
+
+@children_bp.route('/<int:child_id>/delete', methods=['POST'])
+@login_required
+def delete_child(child_id):
+    child = ChildProfile.query.filter_by(
+        id=child_id, user_id=current_user.id
+    ).first_or_404()
+
+    # These records are not covered by the child relationship cascade.
+    HealthChecklist.query.filter_by(child_id=child.id).delete(synchronize_session=False)
+    FeverReading.query.filter_by(child_id=child.id).delete(synchronize_session=False)
+    ClinicRegistration.query.filter_by(child_id=child.id).delete(synchronize_session=False)
+    Newsletter.query.filter_by(child_id=child.id).delete(synchronize_session=False)
+    NotificationRead.query.filter(
+        NotificationRead.user_id == current_user.id,
+        NotificationRead.notification_key.like(f'checklist_{child.id}_%')
+    ).delete(synchronize_session=False)
+
+    was_active = session.get('active_child_id') == child.id
+    child_name = child.name
+    db.session.delete(child)
+    db.session.commit()
+
+    if was_active:
+        remaining = ChildProfile.query.filter_by(user_id=current_user.id).order_by(ChildProfile.id).first()
+        if remaining:
+            session['active_child_id'] = remaining.id
+        else:
+            session.pop('active_child_id', None)
+
+    flash(f'{child_name}\'s profile and related records were deleted.', 'info')
+    return redirect(url_for('main.dashboard'))
 
 
 # API: set active child

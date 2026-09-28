@@ -155,9 +155,20 @@
           </button>
           {% if editing %}
           <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+          <button type="submit" form="deleteChildForm" class="btn btn-outline-danger btn-lg">
+            <i class="bi bi-trash me-2"></i>Delete Profile
+          </button>
           {% endif %}
         </div>
       </form>
+
+      {% if editing %}
+      <form method="POST" action="{{ url_for('children.delete_child', child_id=child.id) }}"
+            id="deleteChildForm"
+            onsubmit="return confirm('Delete this child profile and all related checklist history? This cannot be undone.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      </form>
+      {% endif %}
 
     </div>
   </div>

@@ -421,7 +421,7 @@ def match_bot_intent(text):
 
     nav_shortcuts = [
         {'label': 'Nutrition Tracker', 'url': url_for('symptoms.health_checklist'), 'icon': 'bi-apple'},
-        {'label': 'Symptom Checker', 'url': url_for('symptoms.symptom_checker'), 'icon': 'bi-clipboard2-pulse'},
+        {'label': 'Fever Tracker', 'url': url_for('symptoms.fever_tracker'), 'icon': 'bi-thermometer-half'},
         {'label': 'Find a Clinic', 'url': url_for('clinics.clinic_locator'), 'icon': 'bi-hospital'},
         {'label': 'Learning Modules', 'url': url_for('modules.list_modules'), 'icon': 'bi-book'},
     ]
@@ -436,20 +436,149 @@ def match_bot_intent(text):
     # These always return the immediate safety alert regardless of AI status.
     emergency_keywords = [
         'emergency', 'seizure', 'convulsion', '911', '112',
-        'unconscious', 'not breathing', 'stopped breathing', 'danger', 'bleeding heavily'
+        'unconscious', 'not breathing', 'trouble breathing', 'difficulty breathing',
+        'breathing difficulty', 'stopped breathing', 'danger', 'bleeding heavily',
+        'clinic asap', 'hospital asap', 'urgent clinic'
     ]
     if any(k in text_lower for k in emergency_keywords):
         reply = (
             "🚨 **Emergency Alert**: If your child is experiencing difficulty breathing, seizures, "
             "loss of consciousness, or severe trauma, please **call emergency services (911 / 112)** "
             "or proceed to the nearest Emergency Room immediately.\n\n"
-            "For non-emergency symptom triage, use our Symptom Checker."
+            "For temperature monitoring, use our Fever Tracker."
         )
         shortcuts = [
-            {'label': 'Symptom Checker', 'url': url_for('symptoms.symptom_checker'), 'icon': 'bi-clipboard2-pulse'},
+            {'label': 'Fever Tracker', 'url': url_for('symptoms.fever_tracker'), 'icon': 'bi-thermometer-half'},
             {'label': 'Find Nearest Clinic', 'url': url_for('clinics.clinic_locator'), 'icon': 'bi-hospital'},
         ]
         return reply, shortcuts, ["What are red flag symptoms?", "Fever guidance", "Find a clinic"]
+
+    # ── Lightweight navigation intent detection ────────────────────────────
+    # Return one route-backed shortcut for clear "find/go to/show me" requests
+    # before sending the message to Gemini. The existing client renders these
+    # shortcuts as clickable buttons for both REST and Socket.IO responses.
+    navigation_intents = [
+        (
+            ('clinic', 'hospital', 'pediatrician', 'doctor', 'checkup', 'check-up'),
+            ('find', 'nearest', 'nearby', 'closest', 'locat', 'where is', 'where can i take', 'go to', 'show me', 'near me'),
+            'Find a Clinic',
+            'clinics.clinic_locator',
+            'bi-hospital',
+            "Here is the PaPrep clinic locator so you can find a nearby clinic.",
+            {},
+        ),
+        (
+            ('fever', 'temperature', 'temp', 'health concern'),
+            ('check', 'checker', 'show me', 'go to', 'use', 'where is', 'what do i do', 'should i', 'worried', 'concerned'),
+            'Fever Tracker',
+            'symptoms.fever_tracker',
+            'bi-thermometer-half',
+            "You can use the PaPrep Fever Tracker here.",
+            {},
+        ),
+        (
+            ('add child', 'add my child', 'add a child', 'create child', 'create a child', 'child profile', 'new child', 'register my child', "kid's account", 'kids account'),
+            ('add', 'create', 'register', 'new', 'set up', 'how do i', 'where is', 'go to', 'show me'),
+            'Add Child Profile',
+            'children.create_child',
+            'bi-person-plus',
+            "You can add a child profile from this page.",
+            {},
+        ),
+        (
+            ('health checklist', 'daily checklist', 'nutrition tracker', 'meal tracker', "child's health", 'child health', 'what should i be checking'),
+            ('check', 'track', 'show me', 'go to', 'where is', 'use', 'what should', 'how do i'),
+            'Health Checklist',
+            'symptoms.health_checklist',
+            'bi-clipboard2-heart',
+            "Here is the age-appropriate health checklist for your child.",
+            {},
+        ),
+        (
+            ('special needs', 'special-needs', 'asd', 'down syndrome', 'adhd'),
+            ('learn', 'learning', 'module', 'show me', 'go to', 'where is', 'about'),
+            'Special Needs Modules',
+            'modules.list_modules',
+            'bi-person-heart',
+            "Here are the PaPrep learning modules for special-needs support.",
+            {'category': 'special_needs'},
+        ),
+        (
+            ('nutrition', 'feeding', 'food', 'deworming'),
+            ('learn', 'learning', 'module', 'show me', 'go to', 'where is', 'about', 'tips'),
+            'Nutrition Modules',
+            'modules.list_modules',
+            'bi-apple',
+            "Here are the PaPrep learning modules about nutrition and feeding.",
+            {'category': 'nutrition'},
+        ),
+        (
+            ('safety', 'injury prevention', 'childproof', 'childproof my house'),
+            ('learn', 'learning', 'module', 'show me', 'go to', 'where is', 'about', 'how do i', 'tips'),
+            'Safety Modules',
+            'modules.list_modules',
+            'bi-shield-check',
+            "Here are the PaPrep learning modules about child safety.",
+            {'category': 'safety'},
+        ),
+        (
+            ('child health', 'immunization', 'vaccine schedule', 'vaccination schedule'),
+            ('learn', 'learning', 'module', 'show me', 'go to', 'where is', 'about', 'schedule', 'tips'),
+            'Child Health Modules',
+            'modules.list_modules',
+            'bi-heart-pulse-fill',
+            "Here are the PaPrep learning modules about child health and immunization.",
+            {'category': 'health'},
+        ),
+        (
+            ('parenting', 'development', 'sleep training'),
+            ('learn', 'learning', 'module', 'show me', 'go to', 'where is', 'about', 'schedule', 'tips'),
+            'Learning Modules',
+            'modules.list_modules',
+            'bi-book',
+            "Here are the PaPrep learning modules for parenting and child health.",
+            {},
+        ),
+    ]
+    for keywords, intent_words, label, endpoint, icon, reply, values in navigation_intents:
+        has_destination = any(keyword in text_lower for keyword in keywords)
+        has_navigation_intent = any(word in text_lower for word in intent_words)
+        if has_destination and has_navigation_intent:
+            return reply, [{
+                'label': label,
+                'url': url_for(endpoint, **values),
+                'icon': icon,
+            }], []
+
+    # Topic questions may not be navigation requests, but can still benefit
+    # from a relevant in-app destination alongside the Gemini/fallback answer.
+    topic_shortcuts = []
+
+    def add_topic_shortcut(label, endpoint, icon, values=None):
+        topic_shortcuts.append({
+            'label': label,
+            'url': url_for(endpoint, **(values or {})),
+            'icon': icon,
+        })
+
+    if any(k in text_lower for k in ('clinic', 'hospital', 'pediatrician', 'doctor', 'checkup', 'check-up')):
+        add_topic_shortcut('Find a Clinic', 'clinics.clinic_locator', 'bi-hospital')
+    elif any(k in text_lower for k in ('fever', 'temperature', 'temp', 'health concern')):
+        add_topic_shortcut('Fever Tracker', 'symptoms.fever_tracker', 'bi-thermometer-half')
+    elif any(k in text_lower for k in ('add child', 'add my child', 'child profile', 'new child', 'register my child', "kid's account", 'kids account')):
+        add_topic_shortcut('Add Child Profile', 'children.create_child', 'bi-person-plus')
+    elif any(k in text_lower for k in ('health checklist', 'daily checklist', 'nutrition tracker', 'meal tracker', "child's health", 'what should i be checking')):
+        add_topic_shortcut('Health Checklist', 'symptoms.health_checklist', 'bi-clipboard2-heart')
+    elif any(k in text_lower for k in ('special needs', 'special-needs', 'asd', 'down syndrome', 'adhd')):
+        add_topic_shortcut('Special Needs Modules', 'modules.list_modules', 'bi-person-heart', {'category': 'special_needs'})
+    elif any(k in text_lower for k in ('vaccine', 'vaccination', 'immunization')):
+        add_topic_shortcut('Child Health Modules', 'modules.list_modules', 'bi-heart-pulse-fill', {'category': 'health'})
+    elif any(k in text_lower for k in ('nutrition', 'feeding', 'deworming')):
+        add_topic_shortcut('Nutrition Modules', 'modules.list_modules', 'bi-apple', {'category': 'nutrition'})
+    elif any(k in text_lower for k in ('safety', 'safe', 'injury prevention', 'childproof')):
+        add_topic_shortcut('Safety Modules', 'modules.list_modules', 'bi-shield-check', {'category': 'safety'})
+    elif any(k in text_lower for k in ('parenting', 'development', 'sleep training')):
+        add_topic_shortcut('Learning Modules', 'modules.list_modules', 'bi-book')
 
     # ── All other queries → Gemini AI ──────────────────────────────────────
     from config import Config
@@ -477,7 +606,7 @@ def match_bot_intent(text):
 
             response = model.generate_content(f"{system_prompt}\n\nParent's question: {original_text}")
             reply = response.text
-            return reply, nav_shortcuts, default_actions
+            return reply, topic_shortcuts, default_actions
 
         except Exception as e:
             current_app.logger.exception(
@@ -494,7 +623,7 @@ def match_bot_intent(text):
         "I'm having a little trouble connecting right now. Please try again in a moment, "
         "or choose a topic below to get started!"
     )
-    return reply, nav_shortcuts, default_actions
+    return reply, topic_shortcuts, default_actions
 
 
 

@@ -6,6 +6,18 @@ from app import db
 from utils import today_pht
 
 
+def youtube_embed_url(url):
+    if 'youtube.com/watch' in url and 'v=' in url:
+        video_id = url.split('v=', 1)[1].split('&', 1)[0]
+        return f'https://www.youtube.com/embed/{video_id}'
+    if 'youtu.be/' in url:
+        video_id = url.split('youtu.be/', 1)[1].split('?', 1)[0]
+        return f'https://www.youtube.com/embed/{video_id}'
+    if 'youtube.com/embed/' in url:
+        return url
+    return None
+
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
@@ -32,6 +44,21 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f'<User {self.email}>'
+
+
+class PasswordResetToken(db.Model):
+    __tablename__ = 'password_reset_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    token_hash = db.Column(db.String(64), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    clinic_account_id = db.Column(db.Integer, db.ForeignKey('clinic_accounts.id'), nullable=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='password_reset_tokens')
+    clinic_account = db.relationship('ClinicAccount', backref='password_reset_tokens')
 
 
 class ChildProfile(db.Model):
@@ -113,26 +140,32 @@ class LearningModule(db.Model):
         return f'<Module {self.title}>'
 
 
-class Symptom(db.Model):
-    __tablename__ = 'symptoms'
+class ParentChildResource(db.Model):
+    """Curated videos and external resources shown on the parent dashboard."""
+    __tablename__ = 'parent_child_resources'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    category = db.Column(db.String(30))
-    icon = db.Column(db.String(60), default='bi-circle')
-    is_emergency = db.Column(db.Boolean, default=False)
-    sort_order = db.Column(db.Integer, default=0)
+    url = db.Column(db.String(500), nullable=False)
+    thumbnail_url = db.Column(db.String(500), nullable=True)
+    resource_type = db.Column(db.String(10), nullable=False, default='link')
+    category = db.Column(db.String(30), nullable=False, default='parenting')
+    target_age_min_months = db.Column(db.Integer, nullable=False, default=0)
+    target_age_max_months = db.Column(db.Integer, nullable=False, default=60)
+    is_special_needs = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # NULL = system resource, set = clinic-owned resource
+    clinic_account_id = db.Column(db.Integer, db.ForeignKey('clinic_accounts.id'), nullable=True)
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'category': self.category,
-            'icon': self.icon,
-            'is_emergency': self.is_emergency,
-        }
+    @property
+    def embed_url(self):
+        if self.resource_type != 'video':
+            return None
+        return youtube_embed_url(self.url) or self.url
+
+    def __repr__(self):
+        return f'<Resource {self.title}>'
 
 
 class ClinicAccount(UserMixin, db.Model):
@@ -268,6 +301,29 @@ class HealthChecklist(db.Model):
 
     def __repr__(self):
         return f'<HealthChecklist child={self.child_id} date={self.date}>'
+
+
+class FeverReading(db.Model):
+    """A manually logged temperature reading for one child."""
+    __tablename__ = 'fever_readings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    child_id = db.Column(db.Integer, db.ForeignKey('child_profiles.id'), nullable=False)
+    value = db.Column(db.Float, nullable=False)
+    unit = db.Column(db.String(2), nullable=False, default='C')
+    value_celsius = db.Column(db.Float, nullable=False)
+    method = db.Column(db.String(20), nullable=True)
+    recorded_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    child = db.relationship('ChildProfile', backref=db.backref('fever_readings', lazy=True, cascade='all, delete-orphan'))
+
+    @property
+    def display_value(self):
+        return f'{self.value:.1f}°{self.unit}'
+
+    def __repr__(self):
+        return f'<FeverReading child={self.child_id} value={self.display_value}>'
 
 
 class ClinicAnnouncement(db.Model):
@@ -435,6 +491,50 @@ class ClinicRegistration(db.Model):
 
     def __repr__(self):
         return f'<ClinicRegistration clinic={self.clinic_id} user={self.user_id}>'
+
+
+class Newsletter(db.Model):
+    """A clinic-authored update published for one registered child."""
+    __tablename__ = 'newsletters'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    child_id = db.Column(db.Integer, db.ForeignKey('child_profiles.id'), nullable=False)
+    clinic_id = db.Column(db.Integer, db.ForeignKey('clinics.id'), nullable=False)
+    is_published = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    child = db.relationship('ChildProfile', backref=db.backref('newsletters', lazy=True, cascade='all, delete-orphan'))
+    clinic = db.relationship('Clinic', backref=db.backref('newsletters', lazy=True, cascade='all, delete-orphan'))
+
+    def __repr__(self):
+        return f'<Newsletter {self.title} child={self.child_id} clinic={self.clinic_id}>'
+
+
+class NewsletterMedia(db.Model):
+    """External image or video URL attached to a clinic newsletter."""
+    __tablename__ = 'newsletter_media'
+
+    id = db.Column(db.Integer, primary_key=True)
+    newsletter_id = db.Column(db.Integer, db.ForeignKey('newsletters.id'), nullable=False)
+    media_type = db.Column(db.String(10), nullable=False)
+    source = db.Column(db.String(1000), nullable=False)
+    caption = db.Column(db.String(300), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    newsletter = db.relationship(
+        'Newsletter',
+        backref=db.backref('media', lazy=True, cascade='all, delete-orphan', order_by='NewsletterMedia.id'),
+    )
+
+    @property
+    def embed_url(self):
+        return youtube_embed_url(self.source)
+
+    def __repr__(self):
+        return f'<NewsletterMedia newsletter={self.newsletter_id} type={self.media_type}>'
 
 
 class ForumReport(db.Model):
