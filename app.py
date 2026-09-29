@@ -97,6 +97,23 @@ def create_app():
                 "ALTER TABLE clinic_registrations ADD COLUMN registered_at DATETIME",
                 "ALTER TABLE forum_posts ADD COLUMN is_hidden BOOLEAN DEFAULT FALSE",
                 "ALTER TABLE forum_replies ADD COLUMN is_hidden BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE diarrhea_episodes ADD COLUMN episodes_per_day INTEGER DEFAULT 1",
+                "ALTER TABLE diarrhea_episodes ADD COLUMN consistency VARCHAR(20) DEFAULT 'loose'",
+                "ALTER TABLE diarrhea_episodes ADD COLUMN blood_present BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE diarrhea_episodes ADD COLUMN dehydration_signs VARCHAR(20) DEFAULT 'none'",
+                "ALTER TABLE diarrhea_episodes ADD COLUMN duration_days INTEGER DEFAULT 1",
+                "ALTER TABLE diarrhea_episodes ADD COLUMN recorded_at TIMESTAMP",
+                "ALTER TABLE diarrhea_episodes ADD COLUMN created_at TIMESTAMP",
+                "ALTER TABLE respiratory_episodes ADD COLUMN symptom_type VARCHAR(30) DEFAULT 'cough'",
+                "ALTER TABLE respiratory_episodes ADD COLUMN severity VARCHAR(20) DEFAULT 'mild'",
+                "ALTER TABLE respiratory_episodes ADD COLUMN duration_days INTEGER DEFAULT 1",
+                "ALTER TABLE respiratory_episodes ADD COLUMN fever_present BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE respiratory_episodes ADD COLUMN wheezing BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE respiratory_episodes ADD COLUMN difficulty_breathing BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE respiratory_episodes ADD COLUMN recorded_at TIMESTAMP",
+                "ALTER TABLE respiratory_episodes ADD COLUMN created_at TIMESTAMP",
+                "ALTER TABLE fever_readings ADD COLUMN recorded_at TIMESTAMP",
+                "ALTER TABLE fever_readings ADD COLUMN created_at TIMESTAMP",
             ]
             with db.engine.connect() as conn:
                 for query in migrations:
