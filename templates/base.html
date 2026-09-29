@@ -84,6 +84,20 @@
           </a>
         </li>
         <li>
+          <a href="{{ url_for('symptoms.cough_cold_tracker') }}"
+             class="nav-link {% if request.endpoint == 'symptoms.cough_cold_tracker' %}active{% endif %}">
+            <i class="bi bi-lungs nav-icon"></i>
+            <span>Cough & Colds</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('symptoms.diarrhea_tracker') }}"
+             class="nav-link {% if request.endpoint == 'symptoms.diarrhea_tracker' %}active{% endif %}">
+            <i class="bi bi-droplet-half nav-icon"></i>
+            <span>Diarrhea Tracker</span>
+          </a>
+        </li>
+        <li>
           <a href="{{ url_for('symptoms.health_checklist') }}"
              class="nav-link {% if request.endpoint == 'symptoms.health_checklist' %}active{% endif %}">
             <i class="bi bi-clipboard2-heart-fill nav-icon"></i>

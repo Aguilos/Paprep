@@ -130,6 +130,7 @@ def create_app():
     @app.shell_context_processor
     def make_shell_context():
         from models import (User, ChildProfile, LearningModule, FeverReading,
+                    RespiratoryEpisode, DiarrheaEpisode,
                             ClinicAccount, Clinic, ClinicSchedule, TimeSlot,
                             ClinicRegistration, ForumPost, ForumReply, ForumReport)
         return dict(
@@ -138,6 +139,8 @@ def create_app():
             ChildProfile=ChildProfile,
             LearningModule=LearningModule,
             FeverReading=FeverReading,
+            RespiratoryEpisode=RespiratoryEpisode,
+            DiarrheaEpisode=DiarrheaEpisode,
             ClinicAccount=ClinicAccount,
             Clinic=Clinic,
             ClinicSchedule=ClinicSchedule,

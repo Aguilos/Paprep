@@ -10,6 +10,7 @@ WTForms==3.2.2
 psycopg2-binary==2.9.12
 pyotp==2.9.0
 qrcode==8.2
+Pillow
 flask-socketio
 gevent
 gevent-websocket

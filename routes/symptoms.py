@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 
 from app import db
-from models import FeverReading, HealthChecklist
+from models import FeverReading, HealthChecklist, RespiratoryEpisode, DiarrheaEpisode
 
 symptoms_bp = Blueprint('symptoms', __name__)
 
@@ -14,6 +14,10 @@ FEVER_DISCLAIMER = (
     "guidance only. It is NOT a substitute for professional medical advice, diagnosis, "
     "or treatment. Contact your child's pediatrician for medical advice. In an emergency, "
     "call emergency services (911 / 112) or go to the nearest emergency room immediately."
+)
+GUIDANCE_ATTRIBUTION = (
+    "Placeholder attribution pending review by a pediatric clinician: NHS Healthier Together "
+    "symptom guidance (fever, cough/cold, and diarrhoea/vomiting); last reviewed: pending."
 )
 
 
@@ -71,6 +75,31 @@ def _reading_guidance(child, readings):
     }
 
 
+def _respiratory_guidance(episode):
+    if episode.difficulty_breathing:
+        return {'severity': 'emergency', 'title': 'Emergency breathing warning', 'message': 'Difficulty breathing needs immediate medical assessment. Do not wait for symptoms to improve.', 'actions': ['Call emergency services (911 / 112)', 'Go to the nearest Emergency Room', 'Keep your child upright and supervised', 'Seek immediate help for blue lips, pauses in breathing, or unusual unresponsiveness']}
+    if episode.wheezing or episode.severity == 'severe' or episode.duration_days >= 7:
+        return {'severity': 'high', 'title': 'High priority cough/cold symptoms', 'message': 'Wheezing, severe symptoms, or symptoms lasting 7 days or more need prompt medical advice.', 'actions': ['Contact your pediatrician or clinic today', 'Offer fluids and keep your child comfortable', 'Monitor breathing and record worsening symptoms', 'Seek emergency care if breathing becomes difficult']}
+    if episode.fever_present or episode.severity == 'moderate' or episode.duration_days >= 3:
+        return {'severity': 'monitor', 'title': 'Monitor cough/cold symptoms', 'message': 'Continue close monitoring and contact a clinician if symptoms worsen, fever persists, or your child is not drinking normally.', 'actions': ['Offer fluids and rest', 'Recheck temperature if your child feels hot', 'Avoid smoke and other irritants', 'Seek urgent help if wheezing or breathing difficulty develops']}
+    return {'severity': 'general', 'title': 'General cough/cold care', 'message': 'Mild, short-lived symptoms without breathing concerns can usually be monitored at home.', 'actions': ['Offer fluids and rest', 'Use age-appropriate comfort measures', 'Contact a clinician if symptoms worsen or last longer than expected']}
+
+
+def _diarrhea_guidance(episode):
+    if episode.blood_present or episode.dehydration_signs == 'severe':
+        return {'severity': 'emergency', 'title': 'Emergency diarrhea warning', 'message': 'Blood in stool or severe dehydration signs need immediate medical assessment.', 'actions': ['Call emergency services (911 / 112) or go to the nearest Emergency Room', 'Do not wait for the diarrhea to stop', 'Offer oral rehydration solution if your child is alert and able to drink', 'Seek immediate help for unusual sleepiness, inability to drink, or very little urine']}
+    if episode.dehydration_signs == 'moderate' or episode.episodes_per_day >= 6 or episode.duration_days >= 3:
+        return {'severity': 'high', 'title': 'High priority diarrhea symptoms', 'message': 'Frequent diarrhea, dehydration signs, or symptoms lasting 3 days or more need prompt medical advice.', 'actions': ['Contact your pediatrician or clinic today', 'Give frequent small sips of oral rehydration solution', 'Track wet diapers or urination and stool frequency', 'Seek emergency care if blood or severe dehydration develops']}
+    if episode.dehydration_signs == 'mild' or episode.episodes_per_day >= 3 or episode.duration_days >= 2:
+        return {'severity': 'monitor', 'title': 'Monitor diarrhea symptoms', 'message': 'Continue hydration monitoring and contact a clinician if symptoms increase, persist, or your child drinks or urinates less.', 'actions': ['Offer frequent fluids or oral rehydration solution', 'Continue age-appropriate feeding', 'Track stool frequency and urination', 'Seek urgent help for worsening dehydration']}
+    return {'severity': 'general', 'title': 'General diarrhea care', 'message': 'A short episode without blood or dehydration signs can be monitored while maintaining fluids.', 'actions': ['Offer frequent fluids', 'Continue normal feeding as tolerated', 'Watch for dehydration, blood, or increasing frequency']}
+
+
+def _parse_recorded_at(form):
+    value = form.get('recorded_at', '').strip()
+    return datetime.fromisoformat(value) if value else datetime.utcnow()
+
+
 @symptoms_bp.route('/fever-tracker', methods=['GET', 'POST'])
 @login_required
 def fever_tracker():
@@ -106,7 +135,7 @@ def fever_tracker():
         return redirect(url_for('symptoms.fever_tracker'))
 
     readings = FeverReading.query.filter_by(child_id=child.id).order_by(FeverReading.recorded_at.desc(), FeverReading.id.desc()).limit(30).all()
-    return render_template('symptoms/fever_tracker.html', active_child=child, readings=readings, guidance=_reading_guidance(child, readings), disclaimer=FEVER_DISCLAIMER, page_title='Fever Tracker')
+    return render_template('symptoms/fever_tracker.html', active_child=child, readings=readings, guidance=_reading_guidance(child, readings), disclaimer=FEVER_DISCLAIMER, guidance_source=GUIDANCE_ATTRIBUTION, page_title='Fever Tracker')
 
 
 @symptoms_bp.route('/api/fever/readings', methods=['GET', 'POST'])
@@ -131,6 +160,74 @@ def fever_readings_api():
     db.session.add(reading)
     db.session.commit()
     return jsonify({'ok': True, 'id': reading.id}), 201
+
+
+@symptoms_bp.route('/cough-cold-tracker', methods=['GET', 'POST'])
+@login_required
+def cough_cold_tracker():
+    child = _active_child()
+    if not child:
+        return redirect(url_for('children.create_child'))
+    if request.method == 'POST':
+        try:
+            symptom_type = request.form['symptom_type']
+            severity = request.form['severity']
+            duration_days = int(request.form['duration_days'])
+            if symptom_type not in ('cough', 'runny/stuffy nose', 'sore throat', 'other'):
+                raise ValueError
+            if severity not in ('mild', 'moderate', 'severe') or duration_days < 1 or duration_days > 365:
+                raise ValueError
+            recorded_at = _parse_recorded_at(request.form)
+        except (KeyError, TypeError, ValueError):
+            flash('Enter valid cough/cold details.', 'error')
+            return redirect(url_for('symptoms.cough_cold_tracker'))
+        episode = RespiratoryEpisode(
+            child_id=child.id, symptom_type=symptom_type, severity=severity,
+            duration_days=duration_days, fever_present='fever_present' in request.form,
+            wheezing='wheezing' in request.form,
+            difficulty_breathing='difficulty_breathing' in request.form,
+            recorded_at=recorded_at,
+        )
+        db.session.add(episode)
+        db.session.commit()
+        flash('Cough/cold episode saved.', 'success')
+        return redirect(url_for('symptoms.cough_cold_tracker'))
+    episodes = RespiratoryEpisode.query.filter_by(child_id=child.id).order_by(RespiratoryEpisode.recorded_at.desc(), RespiratoryEpisode.id.desc()).limit(30).all()
+    return render_template('symptoms/cough_cold_tracker.html', active_child=child, episodes=episodes, guidance=_respiratory_guidance(episodes[0]) if episodes else {'severity': 'general', 'title': 'No cough/cold episodes yet', 'message': 'Log an episode to receive monitoring guidance.', 'actions': []}, disclaimer=FEVER_DISCLAIMER, guidance_source=GUIDANCE_ATTRIBUTION, page_title='Cough & Colds Tracker')
+
+
+@symptoms_bp.route('/diarrhea-tracker', methods=['GET', 'POST'])
+@login_required
+def diarrhea_tracker():
+    child = _active_child()
+    if not child:
+        return redirect(url_for('children.create_child'))
+    if request.method == 'POST':
+        try:
+            episodes_per_day = int(request.form['episodes_per_day'])
+            consistency = request.form['consistency']
+            dehydration_signs = request.form['dehydration_signs']
+            duration_days = int(request.form['duration_days'])
+            if episodes_per_day < 1 or episodes_per_day > 100 or duration_days < 1 or duration_days > 365:
+                raise ValueError
+            if consistency not in ('loose', 'watery') or dehydration_signs not in ('none', 'mild', 'moderate', 'severe'):
+                raise ValueError
+            recorded_at = _parse_recorded_at(request.form)
+        except (KeyError, TypeError, ValueError):
+            flash('Enter valid diarrhea details.', 'error')
+            return redirect(url_for('symptoms.diarrhea_tracker'))
+        episode = DiarrheaEpisode(
+            child_id=child.id, episodes_per_day=episodes_per_day,
+            consistency=consistency, blood_present='blood_present' in request.form,
+            dehydration_signs=dehydration_signs, duration_days=duration_days,
+            recorded_at=recorded_at,
+        )
+        db.session.add(episode)
+        db.session.commit()
+        flash('Diarrhea episode saved.', 'success')
+        return redirect(url_for('symptoms.diarrhea_tracker'))
+    episodes = DiarrheaEpisode.query.filter_by(child_id=child.id).order_by(DiarrheaEpisode.recorded_at.desc(), DiarrheaEpisode.id.desc()).limit(30).all()
+    return render_template('symptoms/diarrhea_tracker.html', active_child=child, episodes=episodes, guidance=_diarrhea_guidance(episodes[0]) if episodes else {'severity': 'general', 'title': 'No diarrhea episodes yet', 'message': 'Log an episode to receive hydration and monitoring guidance.', 'actions': []}, disclaimer=FEVER_DISCLAIMER, guidance_source=GUIDANCE_ATTRIBUTION, page_title='Diarrhea Tracker')
 
 
 # Dietary and health checklist remains available under the symptoms blueprint for compatibility.

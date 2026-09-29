@@ -28,6 +28,7 @@
         <h6>{{ guidance.title }}</h6><p>{{ guidance.message }}</p>
         {% if guidance.actions %}<ul class="rec-actions">{% for action in guidance.actions %}<li>{{ action }}</li>{% endfor %}</ul>{% endif %}
         <div class="rec-disclaimer"><strong>Medical Disclaimer:</strong> {{ disclaimer }}</div>
+        <div class="small text-muted mt-2"><strong>Guidance source:</strong> {{ guidance_source }}</div>
       </section>
     </div>
   </div>

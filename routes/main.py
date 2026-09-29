@@ -147,43 +147,53 @@ def dashboard():
         current_user.children[0]
     )
 
-    # ── Health Checklist data ─────────────────────────────────
+    expanded_child_id = request.args.get('expanded_child', type=int)
+    if expanded_child_id not in {child.id for child in current_user.children}:
+        expanded_child_id = None
+
+    # ── Health Checklist data for every child card ────────────
     today = date.today()
     seven_days_ago = today - timedelta(days=6)
-
-    history_records = HealthChecklist.query.filter(
-        HealthChecklist.child_id == active_child.id,
-        HealthChecklist.date >= seven_days_ago,
-        HealthChecklist.date <= today,
-    ).all()
-    history_map = {r.date: r for r in history_records}
-
-    # Compute total items for this child's age bracket (lazy import avoids circulars)
     from routes.symptoms import CHECKLIST_ITEMS
-    checklist_total = sum(
-        1 for cat in CHECKLIST_ITEMS.values()
-        for item in cat['items']
-        if active_child.age_bracket in item['ages']
-    )
 
-    today_record = history_map.get(today)
-    checklist_today_count = len(json.loads(today_record.checked_items or '[]')) if today_record else 0
+    children_dashboard = []
+    for child in current_user.children:
+        history_records = HealthChecklist.query.filter(
+            HealthChecklist.child_id == child.id,
+            HealthChecklist.date >= seven_days_ago,
+            HealthChecklist.date <= today,
+        ).all()
+        history_map = {r.date: r for r in history_records}
 
-    # 7-day history list (oldest → newest)
-    history_days = []
-    for i in range(6, -1, -1):
-        d = today - timedelta(days=i)
-        rec = history_map.get(d)
-        cnt = len(json.loads(rec.checked_items or '[]')) if rec else 0
-        pct = round(cnt / checklist_total * 100) if checklist_total else 0
-        history_days.append({
-            'date': d,
-            'label': d.strftime('%a'),
-            'day_num': d.strftime('%d'),
-            'count': cnt,
-            'total': checklist_total,
-            'pct': pct,
-            'is_today': d == today,
+        checklist_total = sum(
+            1 for cat in CHECKLIST_ITEMS.values()
+            for item in cat['items']
+            if child.age_bracket in item['ages']
+        )
+        today_record = history_map.get(today)
+        checklist_today_count = len(json.loads(today_record.checked_items or '[]')) if today_record else 0
+
+        history_days = []
+        for i in range(6, -1, -1):
+            day = today - timedelta(days=i)
+            record = history_map.get(day)
+            count = len(json.loads(record.checked_items or '[]')) if record else 0
+            pct = round(count / checklist_total * 100) if checklist_total else 0
+            history_days.append({
+                'date': day,
+                'label': day.strftime('%a'),
+                'day_num': day.strftime('%d'),
+                'count': count,
+                'total': checklist_total,
+                'pct': pct,
+                'is_today': day == today,
+            })
+
+        children_dashboard.append({
+            'child': child,
+            'checklist_today_count': checklist_today_count,
+            'checklist_total': checklist_total,
+            'history_days': history_days,
         })
 
     age_months = active_child.age_months
@@ -203,9 +213,8 @@ def dashboard():
 
     return render_template('dashboard/dashboard.html',
                            active_child=active_child,
-                           checklist_today_count=checklist_today_count,
-                           checklist_total=checklist_total,
-                           history_days=history_days,
+                           children_dashboard=children_dashboard,
+                           expanded_child_id=expanded_child_id,
                            resources=resources,
                            newsletters=newsletters,
                            page_title='Dashboard')

@@ -326,6 +326,41 @@ class FeverReading(db.Model):
         return f'<FeverReading child={self.child_id} value={self.display_value}>'
 
 
+class RespiratoryEpisode(db.Model):
+    """A manually logged cough/cold episode for one child."""
+    __tablename__ = 'respiratory_episodes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    child_id = db.Column(db.Integer, db.ForeignKey('child_profiles.id'), nullable=False)
+    symptom_type = db.Column(db.String(30), nullable=False)
+    severity = db.Column(db.String(20), nullable=False)
+    duration_days = db.Column(db.Integer, nullable=False)
+    fever_present = db.Column(db.Boolean, default=False, nullable=False)
+    wheezing = db.Column(db.Boolean, default=False, nullable=False)
+    difficulty_breathing = db.Column(db.Boolean, default=False, nullable=False)
+    recorded_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    child = db.relationship('ChildProfile', backref=db.backref('respiratory_episodes', lazy=True, cascade='all, delete-orphan'))
+
+
+class DiarrheaEpisode(db.Model):
+    """A manually logged diarrhea episode for one child."""
+    __tablename__ = 'diarrhea_episodes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    child_id = db.Column(db.Integer, db.ForeignKey('child_profiles.id'), nullable=False)
+    episodes_per_day = db.Column(db.Integer, nullable=False)
+    consistency = db.Column(db.String(20), nullable=False)
+    blood_present = db.Column(db.Boolean, default=False, nullable=False)
+    dehydration_signs = db.Column(db.String(20), nullable=False, default='none')
+    duration_days = db.Column(db.Integer, nullable=False)
+    recorded_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    child = db.relationship('ChildProfile', backref=db.backref('diarrhea_episodes', lazy=True, cascade='all, delete-orphan'))
+
+
 class ClinicAnnouncement(db.Model):
     __tablename__ = 'clinic_announcements'
 

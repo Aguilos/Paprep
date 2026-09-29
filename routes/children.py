@@ -3,7 +3,7 @@ from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash, session, jsonify)
 from flask_login import login_required, current_user
 from app import db
-from models import ChildProfile, HealthChecklist, FeverReading, ClinicRegistration, NotificationRead, Newsletter
+from models import ChildProfile, HealthChecklist, FeverReading, RespiratoryEpisode, DiarrheaEpisode, ClinicRegistration, NotificationRead, Newsletter
 
 children_bp = Blueprint('children', __name__, url_prefix='/children')
 
@@ -154,6 +154,8 @@ def delete_child(child_id):
     # These records are not covered by the child relationship cascade.
     HealthChecklist.query.filter_by(child_id=child.id).delete(synchronize_session=False)
     FeverReading.query.filter_by(child_id=child.id).delete(synchronize_session=False)
+    RespiratoryEpisode.query.filter_by(child_id=child.id).delete(synchronize_session=False)
+    DiarrheaEpisode.query.filter_by(child_id=child.id).delete(synchronize_session=False)
     ClinicRegistration.query.filter_by(child_id=child.id).delete(synchronize_session=False)
     Newsletter.query.filter_by(child_id=child.id).delete(synchronize_session=False)
     NotificationRead.query.filter(
