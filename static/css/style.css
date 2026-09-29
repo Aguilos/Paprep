@@ -255,6 +255,7 @@ a:hover { color: var(--primary-dark); }
   display: flex;
   flex-direction: column;
   transition: margin-left var(--transition);
+  position: relative;
 }
 
 /* Collapsed sidebar */
@@ -297,6 +298,122 @@ a:hover { color: var(--primary-dark); }
 .topbar-title { font-size: 1rem; font-weight: 700; flex: 1; color: var(--text); }
 .topbar-greeting { font-size: .875rem; color: var(--text-muted); font-weight: 600; }
 
+/* ── Child Quick-View Topbar Button ───────────────────────── */
+.child-quickview-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: box-shadow var(--transition), border-color var(--transition), transform var(--transition);
+  position: relative;
+}
+.child-quickview-btn:hover,
+.child-quickview-btn:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(78,151,217,.25);
+  transform: scale(1.06);
+}
+.child-quickview-btn[aria-expanded="true"] {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(78,151,217,.30);
+}
+.child-quickview-avatar {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  font-size: .85rem;
+  font-weight: 800;
+}
+
+/* ── Child Quick-View Panel ───────────────────────────────── */
+.child-quickview-panel {
+  position: absolute;
+  top: var(--topbar-h);
+  left: 0; right: 0;
+  z-index: 200;
+  background: var(--gray-100);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  overflow-y: auto;
+  max-height: calc(100vh - var(--topbar-h));
+  /* animation */
+  animation: quickViewSlideDown .22s ease;
+}
+@keyframes quickViewSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.child-quickview-inner {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 20px 24px 28px;
+}
+.child-quickview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.child-quickview-label {
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  display: flex; align-items: center;
+}
+.child-quickview-close {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--gray-200);
+  color: var(--gray-700);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: .9rem;
+  transition: background var(--transition), color var(--transition);
+}
+.child-quickview-close:hover {
+  background: var(--gray-300);
+  color: var(--gray-900);
+}
+/* Inside the slot, remove bottom margin the panel normally adds */
+#childQuickViewSlot .child-dashboard-panel {
+  padding: 0;
+}
+#childQuickViewSlot .child-hero-card {
+  box-shadow: none;
+  border: 1px solid var(--border);
+  border-left-width: 5px !important;
+}
+#childQuickViewSlot .checklist-widget {
+  margin-top: 12px;
+}
+
+/* Backdrop — dims rest of page while panel is open */
+.child-quickview-backdrop {
+  position: fixed;
+  inset: var(--topbar-h) 0 0 0;
+  background: rgba(26,32,44,.35);
+  backdrop-filter: blur(1px);
+  z-index: 199;
+}
+
+/* Hide dashboard page content while quick-view is open */
+body.child-quickview-open .app-content .page-container > * {
+  display: none !important;
+}
+/* Inside child-cards, hide all cards except the active one panel */
+body.child-quickview-open .dashboard-child-cards {
+  /* the card rows stay but panels are hidden; JS controls visibility */
+}
+
+/* ── App Content ───────────────────────────────────────────── */
 .app-content { flex: 1; padding: 0; }
 
 /* ── PAGE CONTAINER ────────────────────────────────────────── */
@@ -1683,6 +1800,8 @@ a:hover { color: var(--primary-dark); }
   .date-tabs { gap: 4px; }
   .date-tab { padding: 6px 10px; min-width: 46px; }
   .app-topbar { padding: 0 12px; gap: 8px; }
+  .child-quickview-inner { padding: 16px 12px 24px; }
+  .child-quickview-btn { width: 34px; height: 34px; }
   .topbar-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .page-header { flex-direction: column; }
   .child-hero-card { padding: 16px; gap: 12px; }

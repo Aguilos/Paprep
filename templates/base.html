@@ -235,6 +235,19 @@
       <div class="topbar-actions d-flex align-items-center gap-3">
         <span class="topbar-greeting d-none d-sm-inline">Hi, {{ current_user.first_name }}!</span>
 
+        {% if children and active_child %}
+        <!-- Child Quick-View Button -->
+        <button type="button" id="childQuickViewBtn"
+                class="child-quickview-btn"
+                aria-expanded="false"
+                aria-controls="childQuickViewPanel"
+                title="Quick view: {{ active_child.name }}">
+          <span class="child-quickview-avatar"
+                style="background-color: {{ active_child.profile_color }};"
+                aria-hidden="true">{{ active_child.name[0].upper() }}</span>
+        </button>
+        {% endif %}
+
         <!-- Notification Center Bell -->
         <div class="dropdown notification-dropdown">
           <button class="btn btn-light btn-sm rounded-circle position-relative p-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="notifBellBtn" title="Notifications">
@@ -281,6 +294,25 @@
         </div>
       </div>
     </header>
+
+    {% if children and active_child %}
+    <!-- Child Quick-View Panel (populated by JS) -->
+    <div id="childQuickViewPanel" class="child-quickview-panel" hidden aria-label="Child quick view" role="region">
+      <div class="child-quickview-inner">
+        <div class="child-quickview-header">
+          <span class="child-quickview-label"><i class="bi bi-person-badge-fill me-2"></i>{{ active_child.name }}'s Quick View</span>
+          <button type="button" class="child-quickview-close" id="childQuickViewClose" aria-label="Close quick view">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <!-- Active child cards are moved here by JS -->
+        <div id="childQuickViewSlot"></div>
+      </div>
+    </div>
+    <!-- Backdrop for quick-view panel -->
+    <div id="childQuickViewBackdrop" class="child-quickview-backdrop" hidden></div>
+    {% endif %}
+
 
     <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}

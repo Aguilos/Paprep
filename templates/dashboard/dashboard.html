@@ -314,5 +314,101 @@
       button.setAttribute('aria-expanded', String(expanded));
     });
   });
+
+  /* ── Child Quick-View Panel Toggle ─────────────────────── */
+  (function () {
+    const btn       = document.getElementById('childQuickViewBtn');
+    const panel     = document.getElementById('childQuickViewPanel');
+    const slot      = document.getElementById('childQuickViewSlot');
+    const closeBtn  = document.getElementById('childQuickViewClose');
+    const backdrop  = document.getElementById('childQuickViewBackdrop');
+
+    if (!btn || !panel || !slot) return;
+
+    // The active child id rendered by Jinja
+    const activeChildId = {{ active_child.id }};
+
+    // Original location holder — where we'll put the panel node back on close
+    let originalParent = null;
+    let originalNextSibling = null;
+
+    function openQuickView() {
+      // Find the active child's panel element
+      const activePanel = document.getElementById('child-panel-' + activeChildId);
+      if (!activePanel) return;
+
+      // Remember its original DOM position
+      originalParent      = activePanel.parentNode;
+      originalNextSibling = activePanel.nextSibling;
+
+      // Make it visible (it may be hidden if the card isn't expanded yet)
+      activePanel.hidden = false;
+
+      // Move it into the slot
+      slot.appendChild(activePanel);
+
+      // Show the overlay elements
+      panel.hidden = false;
+      if (backdrop) backdrop.hidden = false;
+
+      // Add body class to hide other dashboard content via CSS
+      document.body.classList.add('child-quickview-open');
+
+      btn.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeQuickView() {
+      if (!originalParent) {
+        panel.hidden = true;
+        if (backdrop) backdrop.hidden = true;
+        document.body.classList.remove('child-quickview-open');
+        btn.setAttribute('aria-expanded', 'false');
+        return;
+      }
+
+      // Retrieve the panel element from the slot
+      const movedPanel = slot.firstElementChild;
+      if (movedPanel) {
+        // Return it to its original DOM position
+        if (originalNextSibling) {
+          originalParent.insertBefore(movedPanel, originalNextSibling);
+        } else {
+          originalParent.appendChild(movedPanel);
+        }
+        // Restore hidden state — hide it unless the child-dashboard-card is expanded
+        const ownerCard = originalParent.closest('[data-child-card]');
+        if (ownerCard && !ownerCard.classList.contains('is-expanded')) {
+          movedPanel.hidden = true;
+        }
+      }
+
+      // Hide overlay
+      panel.hidden = true;
+      if (backdrop) backdrop.hidden = true;
+
+      document.body.classList.remove('child-quickview-open');
+      btn.setAttribute('aria-expanded', 'false');
+
+      originalParent      = null;
+      originalNextSibling = null;
+    }
+
+    btn.addEventListener('click', function () {
+      const isOpen = !panel.hidden;
+      if (isOpen) {
+        closeQuickView();
+      } else {
+        openQuickView();
+      }
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', closeQuickView);
+    if (backdrop) backdrop.addEventListener('click', closeQuickView);
+
+    // Close on Escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !panel.hidden) closeQuickView();
+    });
+  })();
 </script>
 {% endblock %}
