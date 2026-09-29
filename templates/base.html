@@ -235,18 +235,25 @@
       <div class="topbar-actions d-flex align-items-center gap-3">
         <span class="topbar-greeting d-none d-sm-inline">Hi, {{ current_user.first_name }}!</span>
 
-        {% if children and active_child %}
-        <!-- Child Quick-View Button -->
-        <button type="button" id="childQuickViewBtn"
-                class="child-quickview-btn"
-                aria-expanded="false"
-                aria-controls="childQuickViewPanel"
-                title="Quick view: {{ active_child.name }}">
-          <span class="child-quickview-avatar"
-                id="topbarChildAvatar"
-                style="background-color: {{ active_child.profile_color }};"
-                aria-hidden="true">{{ active_child.name[0].upper() }}</span>
-        </button>
+        {% if children %}
+        <!-- Children Profiles Circular Icons Row -->
+        <div class="topbar-children-icons d-flex align-items-center gap-2" role="group" aria-label="Children profiles">
+          {% for child in children %}
+          {% set is_active = active_child and child.id == active_child.id %}
+          <button type="button"
+                  class="child-quickview-btn child-topbar-btn{% if is_active %} is-active{% endif %}"
+                  data-child-id="{{ child.id }}"
+                  data-child-name="{{ child.name }}"
+                  data-child-color="{{ child.profile_color }}"
+                  aria-expanded="false"
+                  aria-controls="childQuickViewPanel"
+                  title="{{ child.name }}{% if is_active %} (Active){% endif %}">
+            <span class="child-quickview-avatar"
+                  style="background-color: {{ child.profile_color }};"
+                  aria-hidden="true">{{ child.name[0].upper() }}</span>
+          </button>
+          {% endfor %}
+        </div>
         {% endif %}
 
         <!-- Notification Center Bell -->
@@ -552,15 +559,15 @@
   if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
   if (overlay) overlay.addEventListener('click', closeSidebar);
 
-  const topbarQvBtn = document.getElementById('childQuickViewBtn');
-  if (topbarQvBtn) {
-    topbarQvBtn.addEventListener('click', function() {
+  document.querySelectorAll('.child-topbar-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
       const isDashboard = window.location.pathname.includes('/dashboard');
       if (!isDashboard) {
-        window.location.href = "{{ url_for('main.dashboard') }}?expanded_child={{ active_child.id if active_child else '' }}";
+        const childId = btn.dataset.childId;
+        window.location.href = "{{ url_for('main.dashboard') }}?expanded_child=" + childId;
       }
     });
-  }
+  });
 })();
 
 function setActiveChild(childId) {
