@@ -243,6 +243,7 @@
                 aria-controls="childQuickViewPanel"
                 title="Quick view: {{ active_child.name }}">
           <span class="child-quickview-avatar"
+                id="topbarChildAvatar"
                 style="background-color: {{ active_child.profile_color }};"
                 aria-hidden="true">{{ active_child.name[0].upper() }}</span>
         </button>
@@ -294,24 +295,6 @@
         </div>
       </div>
     </header>
-
-    {% if children and active_child %}
-    <!-- Child Quick-View Panel (populated by JS) -->
-    <div id="childQuickViewPanel" class="child-quickview-panel" hidden aria-label="Child quick view" role="region">
-      <div class="child-quickview-inner">
-        <div class="child-quickview-header">
-          <span class="child-quickview-label"><i class="bi bi-person-badge-fill me-2"></i>{{ active_child.name }}'s Quick View</span>
-          <button type="button" class="child-quickview-close" id="childQuickViewClose" aria-label="Close quick view">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-        <!-- Active child cards are moved here by JS -->
-        <div id="childQuickViewSlot"></div>
-      </div>
-    </div>
-    <!-- Backdrop for quick-view panel -->
-    <div id="childQuickViewBackdrop" class="child-quickview-backdrop" hidden></div>
-    {% endif %}
 
 
     <!-- Flash messages -->
@@ -568,6 +551,16 @@
   });
   if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
   if (overlay) overlay.addEventListener('click', closeSidebar);
+
+  const topbarQvBtn = document.getElementById('childQuickViewBtn');
+  if (topbarQvBtn) {
+    topbarQvBtn.addEventListener('click', function() {
+      const isDashboard = window.location.pathname.includes('/dashboard');
+      if (!isDashboard) {
+        window.location.href = "{{ url_for('main.dashboard') }}?expanded_child={{ active_child.id if active_child else '' }}";
+      }
+    });
+  }
 })();
 
 function setActiveChild(childId) {
