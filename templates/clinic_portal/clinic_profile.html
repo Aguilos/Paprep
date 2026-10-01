@@ -91,16 +91,6 @@
             <option value="specialty" {% if clinic.clinic_type == 'specialty' %}selected{% endif %}>Specialty</option>
           </select>
         </div>
-        <div class="col-md-6 d-flex align-items-end">
-          <div class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" name="accepts_special_needs"
-                   id="cp_sn" {% if clinic.accepts_special_needs %}checked{% endif %}>
-            <label class="form-check-label fw-semibold" for="cp_sn">
-              <i class="bi bi-person-heart me-1" style="color:#9B59B6;"></i>
-              Accepts Special Needs Children
-            </label>
-          </div>
-        </div>
         <div class="col-12">
           <label class="form-label fw-semibold">Description</label>
           <textarea name="description" class="form-control" rows="3">{{ clinic.description or '' }}</textarea>

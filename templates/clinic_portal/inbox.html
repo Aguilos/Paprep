@@ -164,8 +164,6 @@
           {
             name: "{{ c.name }}",
             age: "{{ c.age_display }}",
-            type: "{{ c.child_type }}",
-            special: "{{ c.special_needs_type or '' }}",
             color: "{{ c.profile_color or '#4E97D9' }}"
           }{% if not loop.last %},{% endif %}
           {% endfor %}
@@ -211,16 +209,11 @@
     
     if (data.children.length > 0) {
       data.children.forEach(c => {
-        let badgeHtml = '';
-        if (c.type === 'special_needs') {
-          badgeHtml = `<span class="badge bg-purple text-white rounded-pill px-2 mt-1" style="background:#9B59B6; font-size:0.65rem;" title="${escapeHtml(c.special)}">Special Needs</span>`;
-        }
         childContainer.innerHTML += `
           <div class="d-flex align-items-center gap-3 p-2 bg-light rounded border">
             <div style="width:12px;height:12px;border-radius:50%;background-color:${c.color};"></div>
             <div>
               <div class="fw-bold fs-sm mb-0">${escapeHtml(c.name)} <span class="text-muted fw-normal ms-1">(${c.age})</span></div>
-              ${badgeHtml}
             </div>
           </div>
         `;

@@ -23,7 +23,6 @@ FORUM_CATEGORIES = {
     'nutrition':    {'label': 'Nutrition',       'icon': 'bi-apple',               'color': '#5CAD5C'},
     'health':       {'label': 'Child Health',    'icon': 'bi-heart-pulse-fill',    'color': '#E74C3C'},
     'safety':       {'label': 'Safety',          'icon': 'bi-shield-check',        'color': '#FF8C42'},
-    'special_needs':{'label': 'Special Needs',   'icon': 'bi-person-heart',        'color': '#8E44AD'},
 }
 
 

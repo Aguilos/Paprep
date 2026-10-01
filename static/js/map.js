@@ -41,8 +41,8 @@
   }
 
   // ── Custom Marker Icons ──────────────────────────────────
-  function makeIcon(acceptsSN, hasAnnouncement) {
-    const color = acceptsSN ? '#9B59B6' : '#4E97D9';
+  function makeIcon(hasAnnouncement) {
+    const color = '#4E97D9';
     const badge = hasAnnouncement
       ? `<circle cx="28" cy="6" r="7" fill="#FF6B35" stroke="white" stroke-width="2"/>
          <text x="28" y="10" text-anchor="middle" fill="white" font-size="9" font-family="Arial" font-weight="bold">!</text>`
@@ -75,15 +75,12 @@
       if (!c.latitude || !c.longitude) return;
 
       const marker = L.marker([c.latitude, c.longitude], {
-        icon: makeIcon(c.accepts_special_needs, c.has_announcement)
+        icon: makeIcon(c.has_announcement)
       }).addTo(map);
 
       const typeLabel = c.clinic_type
         ? c.clinic_type.charAt(0).toUpperCase() + c.clinic_type.slice(1)
         : 'Clinic';
-      const snLabel = c.accepts_special_needs
-        ? '<span style="color:#9B59B6;font-weight:700;">⭐ Accepts Special Needs</span><br>'
-        : '';
       const annLabel = c.has_announcement && c.announcement_preview
         ? `<div style="margin:6px 0 4px;padding:6px 8px;background:#fff3ee;border-left:3px solid #FF6B35;border-radius:4px;font-size:.8rem;"><span style="color:#FF6B35;">📢</span> <strong>${escHtml(c.announcement_preview)}</strong></div>`
         : '';
@@ -92,7 +89,6 @@
         <div style="min-width:200px; font-family:'Segoe UI',sans-serif;">
           <strong style="font-size:1rem;">${escHtml(c.name)}</strong><br>
           <small style="color:#718096;">${escHtml(typeLabel)}</small><br>
-          ${snLabel}
           ${annLabel}
           <small>${escHtml(c.address || '')}</small><br>
           ${c.phone ? '<small><a href="tel:' + escHtml(c.phone) + '">' + escHtml(c.phone) + '</a></small><br>' : ''}
@@ -137,7 +133,6 @@
           </div>
           <div class="clinic-card-badges mt-1">
             <span class="badge-type badge-type--${escHtml(typeLabel)}">${escHtml(typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1))}</span>
-            ${c.accepts_special_needs ? '<span class="badge-sn-sm"><i class="bi bi-person-heart me-1"></i>SN Friendly</span>' : ''}
             ${c.has_announcement ? '<span style="background:#FF6B35;color:#fff;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;"><i class="bi bi-megaphone-fill me-1"></i>Announcement</span>' : ''}
           </div>
         </div>
@@ -173,7 +168,6 @@
   function getFiltered() {
     const q = (document.getElementById('clinicSearch') || {}).value || '';
     const typeFilter = (document.getElementById('typeFilter') || {}).value || '';
-    const snFilter = (document.getElementById('snFilter') || {}).checked || false;
 
     return ALL_CLINICS.filter(function (c) {
       const matchQ = !q ||
@@ -181,8 +175,7 @@
         (c.city && c.city.toLowerCase().includes(q.toLowerCase())) ||
         (c.address && c.address.toLowerCase().includes(q.toLowerCase()));
       const matchType = !typeFilter || c.clinic_type === typeFilter;
-      const matchSN = !snFilter || c.accepts_special_needs;
-      return matchQ && matchType && matchSN;
+      return matchQ && matchType;
     });
   }
 
@@ -202,15 +195,6 @@
 
   const typeFilter = document.getElementById('typeFilter');
   if (typeFilter) typeFilter.addEventListener('change', applyFilters);
-
-  const snFilter = document.getElementById('snFilter');
-  if (snFilter) snFilter.addEventListener('change', applyFilters);
-
-  // Handle ?special_needs=1 in URL
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('special_needs') === '1' && snFilter) {
-    snFilter.checked = true;
-  }
 
   // ── Helpers ──────────────────────────────────────────────
   function escHtml(str) {
@@ -232,9 +216,6 @@
       updateCount(ALL_CLINICS.length);
     } else {
       initMap();
-      if (urlParams.get('special_needs') === '1') {
-        applyFilters();
-      }
     }
   }
 

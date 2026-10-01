@@ -201,8 +201,6 @@ def dashboard():
         ParentChildResource.target_age_min_months <= age_months,
         ParentChildResource.target_age_max_months >= age_months,
     )
-    if active_child.child_type != 'special_needs':
-        resource_query = resource_query.filter_by(is_special_needs=False)
     resources = resource_query.order_by(
         ParentChildResource.created_at.desc(), ParentChildResource.id.desc()
     ).limit(6).all()
@@ -218,14 +216,4 @@ def dashboard():
                            resources=resources,
                            newsletters=newsletters,
                            page_title='Dashboard')
-
-
-@main_bp.route('/special-needs')
-@login_required
-def special_needs():
-    has_sn = any(c.child_type == 'special_needs' for c in current_user.children)
-    if not has_sn:
-        return redirect(url_for('main.dashboard'))
-    return render_template('special_needs/special_needs.html',
-                           page_title='Special Needs Support')
 

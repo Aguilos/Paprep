@@ -68,9 +68,6 @@
       <div class="card-body">
         <h5 class="fw-800 mb-1">{{ clinic.name }}</h5>
         <span class="badge rounded-pill bg-primary mb-3">{{ clinic.clinic_type | title if clinic.clinic_type else 'General' }}</span>
-        {% if clinic.accepts_special_needs %}
-        <span class="badge rounded-pill ms-1 mb-3" style="background:#9B59B6;">Special Needs</span>
-        {% endif %}
         <ul class="list-unstyled small text-muted mb-0">
           {% if clinic.address %}
           <li class="mb-1"><i class="bi bi-geo-alt me-2"></i>{{ clinic.address }}{% if clinic.city %}, {{ clinic.city }}{% endif %}</li>

@@ -32,14 +32,13 @@
 {% if resources %}
 <div class="table-responsive mb-4">
   <table class="table table-hover align-middle bg-white rounded shadow-sm">
-    <thead class="table-light"><tr><th>Title</th><th>Type</th><th>Age Range</th><th>Support</th></tr></thead>
+    <thead class="table-light"><tr><th>Title</th><th>Type</th><th>Age Range</th></tr></thead>
     <tbody>
       {% for resource in resources %}
       <tr>
         <td><div class="fw-600">{{ resource.title }}</div><small class="text-muted">{{ resource.category|title }}</small></td>
         <td>{{ resource.resource_type|title }}</td>
         <td>{{ resource.target_age_min_months }}–{{ resource.target_age_max_months }} months</td>
-        <td>{{ 'Special needs' if resource.is_special_needs else 'All families' }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -130,7 +129,6 @@
         <div class="col-md-4"><label class="form-label fw-semibold">Minimum age (months)</label><input name="target_age_min_months" type="number" min="0" value="0" class="form-control"></div>
         <div class="col-md-4"><label class="form-label fw-semibold">Maximum age (months)</label><input name="target_age_max_months" type="number" min="0" value="60" class="form-control"></div>
         <div class="col-12"><label class="form-label fw-semibold">Thumbnail URL <small class="text-muted">(optional)</small></label><input name="thumbnail_url" type="url" class="form-control"></div>
-        <div class="col-12 form-check ms-2"><input name="is_special_needs" type="checkbox" class="form-check-input" id="resourceSpecialNeeds"><label class="form-check-label" for="resourceSpecialNeeds">Special-needs resource</label></div>
       </div></div>
       <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="submit">Save Resource</button></div>
     </form>

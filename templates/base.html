@@ -46,7 +46,6 @@
         {% for c in children %}
         <option value="{{ c.id }}" {% if c.id == active_child_id %}selected{% endif %}>
           {{ c.name }}
-          {% if c.child_type == 'special_needs' %}⭐{% endif %}
         </option>
         {% endfor %}
       </select>

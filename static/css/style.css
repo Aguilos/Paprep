@@ -183,17 +183,7 @@ a:hover { color: var(--primary-dark); }
   text-align: center;
   flex-shrink: 0;
 }
-.special-needs-link { color: #c9a4e5 !important; }
-.special-needs-link.active { background: rgba(155,89,182,.25) !important; border-color: var(--purple) !important; }
-.special-needs-link:hover { background: rgba(155,89,182,.15) !important; }
-.badge-sn {
-  background: var(--purple);
-  color: #fff;
-  font-size: .65rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 700;
-}
+
 .nav-divider {
   height: 1px;
   background: rgba(255,255,255,.08);
@@ -263,7 +253,6 @@ a:hover { color: var(--primary-dark); }
 .sidebar-collapsed .brand-text,
 .sidebar-collapsed .brand-sub,
 .sidebar-collapsed .nav-link span:not(.nav-icon),
-.sidebar-collapsed .badge-sn,
 .sidebar-collapsed .child-switcher,
 .sidebar-collapsed .sidebar-footer .user-info { display: none; }
 .sidebar-collapsed .nav-link { justify-content: center; padding: 12px; }
@@ -816,24 +805,7 @@ body.child-quickview-open #dashboardRestContent {
   font-size: .78rem;
   font-weight: 600;
 }
-.badge-sn-lg {
-  background: var(--purple-light);
-  color: var(--purple);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: .82rem;
-  font-weight: 700;
-  display: inline-block;
-}
-.badge-normal-lg {
-  background: var(--primary-light);
-  color: var(--primary-dark);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: .82rem;
-  font-weight: 700;
-  display: inline-block;
-}
+
 
 /* Module Cards Grid */
 .section-label {
@@ -1618,7 +1590,7 @@ body.child-quickview-open #dashboardRestContent {
 .badge-type--pediatric { background: var(--primary-light); color: var(--primary-dark); }
 .badge-type--specialty { background: var(--purple-light); color: var(--purple); }
 .badge-type--general { background: var(--secondary-light); color: #166534; }
-.badge-sn-sm { background: var(--purple-light); color: var(--purple); font-size: .65rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+
 
 /* Clinic Detail */
 .clinic-detail-card {

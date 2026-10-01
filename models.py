@@ -69,10 +69,10 @@ class ChildProfile(db.Model):
     name = db.Column(db.String(100), nullable=False)
     date_of_birth = db.Column(db.Date, nullable=False)
     gender = db.Column(db.String(10))
-    # 'normal' or 'special_needs'
-    child_type = db.Column(db.String(20), nullable=False, default='normal')
-    special_needs_type = db.Column(db.String(200))
-    special_needs_notes = db.Column(db.Text)
+    # DEPRECATED – retained for DB backward-compatibility only; not used by application logic
+    child_type = db.Column(db.String(20), nullable=True, default='normal')
+    special_needs_type = db.Column(db.String(200), nullable=True)
+    special_needs_notes = db.Column(db.Text, nullable=True)
     profile_color = db.Column(db.String(7), default='#4E97D9')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -123,11 +123,11 @@ class LearningModule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    # parenting | nutrition | safety | health | special_needs
+    # parenting | nutrition | safety | health
     category = db.Column(db.String(30), nullable=False)
     content = db.Column(db.Text)
     age_group = db.Column(db.String(50))
-    is_special_needs = db.Column(db.Boolean, default=False)
+    is_special_needs = db.Column(db.Boolean, default=False)  # DEPRECATED – not queried by application logic
     icon = db.Column(db.String(60), default='bi-book')
     sort_order = db.Column(db.Integer, default=0)
     pdf_filename = db.Column(db.String(255))
@@ -153,7 +153,7 @@ class ParentChildResource(db.Model):
     category = db.Column(db.String(30), nullable=False, default='parenting')
     target_age_min_months = db.Column(db.Integer, nullable=False, default=0)
     target_age_max_months = db.Column(db.Integer, nullable=False, default=60)
-    is_special_needs = db.Column(db.Boolean, nullable=False, default=False)
+    is_special_needs = db.Column(db.Boolean, nullable=True, default=False)  # DEPRECATED – not queried by application logic
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     # NULL = system resource, set = clinic-owned resource
     clinic_account_id = db.Column(db.Integer, db.ForeignKey('clinic_accounts.id'), nullable=True)
@@ -207,7 +207,7 @@ class Clinic(db.Model):
     longitude = db.Column(db.Float)
     # pediatric | general | specialty
     clinic_type = db.Column(db.String(30))
-    accepts_special_needs = db.Column(db.Boolean, default=False)
+    accepts_special_needs = db.Column(db.Boolean, default=False)  # DEPRECATED – not used by application logic
     description = db.Column(db.Text)
     # FK to clinic account that owns this clinic
     clinic_account_id = db.Column(db.Integer, db.ForeignKey('clinic_accounts.id'), nullable=True)
@@ -251,7 +251,6 @@ class Clinic(db.Model):
             'latitude': self.latitude,
             'longitude': self.longitude,
             'clinic_type': self.clinic_type,
-            'accepts_special_needs': self.accepts_special_needs,
             'description': self.description,
             'has_announcement': self.has_active_announcement,
             'announcement_preview': preview,
@@ -465,7 +464,7 @@ class ForumPost(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     title = db.Column(db.String(200), nullable=False)
     body = db.Column(db.Text, nullable=False)
-    # parenting | nutrition | health | safety | special_needs | general
+    # parenting | nutrition | health | safety | general
     category = db.Column(db.String(30), nullable=False, default='general')
     is_pinned = db.Column(db.Boolean, default=False)
     is_hidden = db.Column(db.Boolean, default=False, nullable=False)

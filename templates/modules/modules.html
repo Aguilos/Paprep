@@ -23,13 +23,11 @@
       <i class="bi bi-grid-1x2 me-1"></i> All
     </a>
     {% for key, meta in category_meta.items() %}
-    {% if key != 'special_needs' or has_special_needs_child %}
     <a href="{{ url_for('modules.list_modules', category=key) }}"
        class="cat-tab {% if active_category == key %}cat-tab--active{% endif %}"
        style="--cat-color: {{ meta.color }};">
       <i class="{{ meta.icon }} me-1"></i> {{ meta.label }}
     </a>
-    {% endif %}
     {% endfor %}
   </div>
 
@@ -42,9 +40,6 @@
            style="border-left: 4px solid {{ meta.color or '#4E97D9' }};">
         <i class="{{ meta.icon or 'bi-book' }}" style="color: {{ meta.color or '#4E97D9' }};"></i>
         <h5 class="mb-0">{{ meta.label or cat_key|title }}</h5>
-        {% if cat_key == 'special_needs' %}
-        <span class="badge-sn ms-2">Special Needs</span>
-        {% endif %}
       </div>
 
       <div class="row g-3 mt-1">

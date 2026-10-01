@@ -217,8 +217,6 @@ def clinic_inbox():
         children_data = [{
             'name': c.name,
             'age_display': c.age_display,
-            'child_type': c.child_type,
-            'special_needs_type': c.special_needs_type,
             'profile_color': c.profile_color
         } for c in user.children]
         
@@ -494,15 +492,7 @@ def match_bot_intent(text):
             "Here is the age-appropriate health checklist for your child.",
             {},
         ),
-        (
-            ('special needs', 'special-needs', 'asd', 'down syndrome', 'adhd'),
-            ('learn', 'learning', 'module', 'show me', 'go to', 'where is', 'about'),
-            'Special Needs Modules',
-            'modules.list_modules',
-            'bi-person-heart',
-            "Here are the PaPrep learning modules for special-needs support.",
-            {'category': 'special_needs'},
-        ),
+
         (
             ('nutrition', 'feeding', 'food', 'deworming'),
             ('learn', 'learning', 'module', 'show me', 'go to', 'where is', 'about', 'tips'),
@@ -569,8 +559,7 @@ def match_bot_intent(text):
         add_topic_shortcut('Add Child Profile', 'children.create_child', 'bi-person-plus')
     elif any(k in text_lower for k in ('health checklist', 'daily checklist', 'nutrition tracker', 'meal tracker', "child's health", 'what should i be checking')):
         add_topic_shortcut('Health Checklist', 'symptoms.health_checklist', 'bi-clipboard2-heart')
-    elif any(k in text_lower for k in ('special needs', 'special-needs', 'asd', 'down syndrome', 'adhd')):
-        add_topic_shortcut('Special Needs Modules', 'modules.list_modules', 'bi-person-heart', {'category': 'special_needs'})
+
     elif any(k in text_lower for k in ('vaccine', 'vaccination', 'immunization')):
         add_topic_shortcut('Child Health Modules', 'modules.list_modules', 'bi-heart-pulse-fill', {'category': 'health'})
     elif any(k in text_lower for k in ('nutrition', 'feeding', 'deworming')):

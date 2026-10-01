@@ -1,4 +1,4 @@
-﻿from io import BytesIO
+from io import BytesIO
 from flask import (Blueprint, render_template, request, make_response,
                    send_file, abort, Response)
 from flask_login import login_required, current_user
@@ -12,7 +12,6 @@ CATEGORY_META = {
     'nutrition':     {'label': 'Nutrition',    'icon': 'bi-apple',           'color': '#5CAD5C'},
     'safety':        {'label': 'Safety',       'icon': 'bi-shield-check',    'color': '#FF8C42'},
     'health':        {'label': 'Child Health', 'icon': 'bi-heart-pulse-fill','color': '#E74C3C'},
-    'special_needs': {'label': 'Special Needs','icon': 'bi-person-heart',    'color': '#9B59B6'},
 }
 
 
@@ -21,10 +20,7 @@ CATEGORY_META = {
 @modules_bp.route('/')
 @login_required
 def list_modules():
-    has_sn = any(c.child_type == 'special_needs' for c in current_user.children)
     query = LearningModule.query
-    if not has_sn:
-        query = query.filter_by(is_special_needs=False)
     category = request.args.get('category', '')
     if category and category in CATEGORY_META:
         query = query.filter_by(category=category)
@@ -44,10 +40,6 @@ def list_modules():
 @login_required
 def module_detail(module_id):
     module = LearningModule.query.get_or_404(module_id)
-    if module.is_special_needs:
-        has_sn = any(c.child_type == 'special_needs' for c in current_user.children)
-        if not has_sn:
-            abort(403)
     meta = CATEGORY_META.get(module.category, {})
     return render_template('modules/module_detail.html',
                            module=module,
@@ -60,10 +52,6 @@ def module_detail(module_id):
 def view_pdf(module_id):
     """Serve PDF stored in DB inline so users can read it in the browser."""
     module = LearningModule.query.get_or_404(module_id)
-    if module.is_special_needs:
-        has_sn = any(c.child_type == 'special_needs' for c in current_user.children)
-        if not has_sn:
-            abort(403)
     if not module.pdf_data:
         abort(404)
     return Response(
@@ -78,10 +66,6 @@ def view_pdf(module_id):
 def download_module(module_id):
     """Download the PDF from DB (or fall back to HTML)."""
     module = LearningModule.query.get_or_404(module_id)
-    if module.is_special_needs:
-        has_sn = any(c.child_type == 'special_needs' for c in current_user.children)
-        if not has_sn:
-            abort(403)
     safe_title = ''.join(c if c.isalnum() else '_' for c in module.title)
     if module.pdf_data:
         return send_file(

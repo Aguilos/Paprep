@@ -30,7 +30,6 @@ CATEGORY_META = {
     'nutrition':     {'label': 'Nutrition',    'icon': 'bi-apple',            'color': '#5CAD5C'},
     'safety':        {'label': 'Safety',       'icon': 'bi-shield-check',     'color': '#FF8C42'},
     'health':        {'label': 'Child Health', 'icon': 'bi-heart-pulse-fill', 'color': '#E74C3C'},
-    'special_needs': {'label': 'Special Needs','icon': 'bi-person-heart',     'color': '#9B59B6'},
 }
 MIN_PASSWORD_LENGTH = 8
 
@@ -321,7 +320,6 @@ def setup_clinic():
             email=request.form.get('email', '').strip(),
             website=request.form.get('website', '').strip(),
             clinic_type=request.form.get('clinic_type', 'general'),
-            accepts_special_needs='accepts_special_needs' in request.form,
             description=request.form.get('description', '').strip(),
             latitude=_parse_float(request.form.get('latitude')),
             longitude=_parse_float(request.form.get('longitude')),
@@ -375,7 +373,6 @@ def clinic_profile():
         clinic.email = request.form.get('email', '').strip()
         clinic.website = request.form.get('website', '').strip()
         clinic.clinic_type = request.form.get('clinic_type', 'general')
-        clinic.accepts_special_needs = 'accepts_special_needs' in request.form
         clinic.description = request.form.get('description', '').strip()
         lat = _parse_float(request.form.get('latitude'))
         lng = _parse_float(request.form.get('longitude'))
@@ -445,7 +442,6 @@ def add_resource():
         category=request.form.get('category', 'parenting').strip() or 'parenting',
         target_age_min_months=min_age,
         target_age_max_months=max_age,
-        is_special_needs='is_special_needs' in request.form,
         clinic_account_id=account.id,
     )
     db.session.add(resource)
@@ -469,7 +465,6 @@ def add_module():
         content=request.form.get('content', '').strip(),
         category=category if category in CATEGORY_META else 'parenting',
         age_group=request.form.get('age_group', '').strip(),
-        is_special_needs=(category == 'special_needs'),
         clinic_account_id=account.id,
     )
     db.session.add(module)
@@ -498,7 +493,6 @@ def edit_module(module_id):
     if cat in CATEGORY_META:
         module.category = cat
     module.age_group = request.form.get('age_group', '').strip()
-    module.is_special_needs = (module.category == 'special_needs')
     # Handle optional PDF upload
     file = request.files.get('pdf_file')
     if file and file.filename.lower().endswith('.pdf'):

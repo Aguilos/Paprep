@@ -7,19 +7,6 @@ from models import ChildProfile, HealthChecklist, FeverReading, RespiratoryEpiso
 
 children_bp = Blueprint('children', __name__, url_prefix='/children')
 
-SPECIAL_NEEDS_TYPES = [
-    'Autism Spectrum Disorder (ASD)',
-    'Down Syndrome',
-    'Attention Deficit Hyperactivity Disorder (ADHD)',
-    'Cerebral Palsy',
-    'Developmental Delay',
-    'Speech and Language Delay',
-    'Sensory Processing Disorder',
-    'Hearing Impairment',
-    'Visual Impairment',
-    'Other',
-]
-
 PROFILE_COLORS = [
     '#4E97D9', '#5CAD5C', '#FF8C42', '#9B59B6',
     '#E74C3C', '#1ABC9C', '#F39C12', '#3498DB',
@@ -33,9 +20,6 @@ def create_child():
         name = request.form.get('name', '').strip()
         dob_str = request.form.get('date_of_birth', '')
         gender = request.form.get('gender', '').strip()
-        child_type = request.form.get('child_type', 'normal')
-        sn_type = request.form.get('special_needs_type', '').strip()
-        sn_notes = request.form.get('special_needs_notes', '').strip()
         profile_color = request.form.get('profile_color', '#4E97D9')
 
         errors = []
@@ -59,12 +43,6 @@ def create_child():
             except ValueError:
                 errors.append('Invalid date format.')
 
-        if child_type not in ('normal', 'special_needs'):
-            child_type = 'normal'
-
-        if child_type == 'special_needs' and not sn_type:
-            errors.append('Please specify the type of special need.')
-
         if profile_color not in PROFILE_COLORS:
             profile_color = '#4E97D9'
 
@@ -72,7 +50,6 @@ def create_child():
             for e in errors:
                 flash(e, 'error')
             return render_template('dashboard/create_child.html',
-                                   special_needs_types=SPECIAL_NEEDS_TYPES,
                                    profile_colors=PROFILE_COLORS,
                                    form_data=request.form)
 
@@ -81,28 +58,16 @@ def create_child():
             name=name,
             date_of_birth=dob,
             gender=gender,
-            child_type=child_type,
-            special_needs_type=sn_type if child_type == 'special_needs' else None,
-            special_needs_notes=sn_notes if child_type == 'special_needs' else None,
             profile_color=profile_color,
         )
         db.session.add(child)
         db.session.commit()
 
         session['active_child_id'] = child.id
-
-        if child_type == 'special_needs':
-            flash(
-                f'{name}\'s profile has been created! We\'ve enabled the Special Needs Support module for you.',
-                'success'
-            )
-        else:
-            flash(f'{name}\'s profile has been created! Welcome to PaPrep!', 'success')
-
+        flash(f'{name}\'s profile has been created! Welcome to PaPrep!', 'success')
         return redirect(url_for('main.dashboard'))
 
     return render_template('dashboard/create_child.html',
-                           special_needs_types=SPECIAL_NEEDS_TYPES,
                            profile_colors=PROFILE_COLORS,
                            form_data={})
 
@@ -118,9 +83,6 @@ def edit_child(child_id):
         child.name = request.form.get('name', child.name).strip()
         dob_str = request.form.get('date_of_birth', '')
         child.gender = request.form.get('gender', child.gender)
-        child.child_type = request.form.get('child_type', child.child_type)
-        child.special_needs_type = request.form.get('special_needs_type', '')
-        child.special_needs_notes = request.form.get('special_needs_notes', '')
         profile_color = request.form.get('profile_color', child.profile_color)
         if profile_color in PROFILE_COLORS:
             child.profile_color = profile_color
@@ -138,7 +100,6 @@ def edit_child(child_id):
 
     return render_template('dashboard/create_child.html',
                            child=child,
-                           special_needs_types=SPECIAL_NEEDS_TYPES,
                            profile_colors=PROFILE_COLORS,
                            form_data={},
                            editing=True)

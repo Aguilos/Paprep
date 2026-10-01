@@ -57,9 +57,6 @@ def create_app():
         if current_user.is_authenticated:
             from flask import session as flask_session
             children = current_user.children
-            has_special_needs_child = any(
-                c.child_type == 'special_needs' for c in children
-            )
             active_child_id = flask_session.get('active_child_id')
             if not active_child_id and children:
                 active_child_id = children[0].id
@@ -69,13 +66,11 @@ def create_app():
                 children[0] if children else None
             )
             return {
-                'has_special_needs_child': has_special_needs_child,
                 'children': children,
                 'active_child': active_child,
                 'active_child_id': active_child_id,
             }
         return {
-            'has_special_needs_child': False,
             'children': [],
             'active_child': None,
             'active_child_id': None,

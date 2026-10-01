@@ -54,9 +54,6 @@
                         <span class="badge" style="background-color: {{ child.profile_color or '#4E97D9' }};">
                           {{ child.name }} ({{ child.age_display }})
                         </span>
-                        {% if child.child_type == 'special_needs' %}
-                          <span class="badge bg-purple text-white rounded-pill px-2" style="background:#9B59B6; font-size:0.65rem;" title="{{ child.special_needs_type }}">Special Needs</span>
-                        {% endif %}
                       </div>
                     {% endfor %}
                   </div>

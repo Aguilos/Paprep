@@ -121,11 +121,6 @@
           <td>
             <div class="fw-semibold">{{ clinic.name }}</div>
             {% if clinic.address %}<small class="text-muted">{{ clinic.address }}{% if clinic.city %}, {{ clinic.city }}{% endif %}</small>{% endif %}
-            {% if clinic.accepts_special_needs %}
-            <br><span class="badge bg-purple text-white" style="background:#9B59B6!important;font-size:10px;">
-              <i class="bi bi-person-heart me-1"></i>Special Needs
-            </span>
-            {% endif %}
           </td>
           <td>
             <span class="badge badge-{{ clinic.clinic_type or 'general' }} rounded-pill">
@@ -259,15 +254,6 @@
                     <option value="pediatric">Pediatric</option>
                     <option value="specialty">Specialty</option>
                   </select>
-                </div>
-                <div class="col-md-6 d-flex align-items-end">
-                  <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" name="accepts_special_needs" id="add_sn">
-                    <label class="form-check-label fw-semibold" for="add_sn">
-                      <i class="bi bi-person-heart me-1 text-purple" style="color:#9B59B6;"></i>
-                      Accepts Special Needs Children
-                    </label>
-                  </div>
                 </div>
                 <div class="col-12">
                   <label class="form-label fw-semibold">Description</label>
@@ -403,15 +389,6 @@
                     <option value="pediatric">Pediatric</option>
                     <option value="specialty">Specialty</option>
                   </select>
-                </div>
-                <div class="col-md-6 d-flex align-items-end">
-                  <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" name="accepts_special_needs" id="edit_sn">
-                    <label class="form-check-label fw-semibold" for="edit_sn">
-                      <i class="bi bi-person-heart me-1" style="color:#9B59B6;"></i>
-                      Accepts Special Needs Children
-                    </label>
-                  </div>
                 </div>
                 <div class="col-12">
                   <label class="form-label fw-semibold">Description</label>
@@ -551,7 +528,6 @@
     document.getElementById('edit_email').value       = clinic.email || '';
     document.getElementById('edit_website').value     = clinic.website || '';
     document.getElementById('edit_clinic_type').value = clinic.clinic_type || 'general';
-    document.getElementById('edit_sn').checked        = !!clinic.accepts_special_needs;
     document.getElementById('edit_description').value = clinic.description || '';
     document.getElementById('edit_lat').value         = clinic.latitude  != null ? clinic.latitude  : '';
     document.getElementById('edit_lng').value         = clinic.longitude != null ? clinic.longitude : '';
