@@ -7,6 +7,35 @@ from models import ClinicMessage, Clinic, User, ClinicAccount
 from datetime import datetime
 from werkzeug.utils import secure_filename
 
+# ---------------------------------------------------------------------------
+# Red Book PDF — Gemini File API integration
+# ---------------------------------------------------------------------------
+_RED_BOOK_FILE = None          # Cached Gemini File object after first upload
+_RED_BOOK_PATH = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'PaPrep_Red_Book.pdf')
+
+
+def _get_red_book_file():
+    """Upload the PaPrep Red Book PDF to the Gemini File API on first call
+    and return the cached file object on subsequent calls."""
+    global _RED_BOOK_FILE
+    if _RED_BOOK_FILE is not None:
+        return _RED_BOOK_FILE
+    try:
+        import google.generativeai as genai
+        from config import Config
+        if not getattr(Config, 'GEMINI_API_KEY', None):
+            return None
+        genai.configure(api_key=Config.GEMINI_API_KEY)
+        if not os.path.exists(_RED_BOOK_PATH):
+            return None
+        uploaded = genai.upload_file(_RED_BOOK_PATH, mime_type='application/pdf')
+        _RED_BOOK_FILE = uploaded
+        return _RED_BOOK_FILE
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning('Red Book PDF upload failed: %s', e)
+        return None
+
 chat_bp = Blueprint('chat', __name__, url_prefix='/chat')
 
 ALLOWED_FILE_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'zip'}
@@ -569,7 +598,7 @@ def match_bot_intent(text):
     elif any(k in text_lower for k in ('parenting', 'development', 'sleep training')):
         add_topic_shortcut('Learning Modules', 'modules.list_modules', 'bi-book')
 
-    # ── All other queries → Gemini AI ──────────────────────────────────────
+    # ── All other queries → Gemini AI (Red Book first) ────────────────────
     from config import Config
     gemini_key = getattr(Config, 'GEMINI_API_KEY', None)
     gemini_model = getattr(Config, 'GEMINI_MODEL', 'gemini-1.5-flash')
@@ -585,15 +614,29 @@ def match_bot_intent(text):
 
             system_prompt = (
                 "You are the PaPrep Assistant, a warm, empathetic, and knowledgeable AI parenting companion "
-                "built into the PaPrep app — a platform for parents of children aged 0-5 years. "
-                "You help parents with questions about child health, nutrition, development, safety, and well-being. "
-                "Keep answers concise (3-5 sentences or bullet points), friendly, and practical. "
-                "Use markdown formatting (bold, bullets) to improve readability. "
-                "IMPORTANT: You are an AI assistant. Always remind parents to consult their pediatrician "
-                "or a registered clinic for serious medical concerns."
+                "built into the PaPrep app — a platform for parents of children aged 0-5 years in the Philippines. "
+                "You help parents with questions about child health, nutrition, development, safety, and well-being.\n\n"
+                "CRITICAL INSTRUCTION — Knowledge priority:\n"
+                "1. ALWAYS consult the attached PaPrep Red Book PDF first. "
+                "Treat it as your primary authoritative reference. Quote or paraphrase relevant sections when applicable.\n"
+                "2. Only supplement with your general knowledge when the Red Book does not cover the topic.\n"
+                "3. If you use information from the Red Book, briefly note it (e.g., 'According to the PaPrep Red Book…').\n\n"
+                "Style rules:\n"
+                "- Keep answers concise (3-5 sentences or bullet points), friendly, and practical.\n"
+                "- Use markdown formatting (bold, bullets) to improve readability.\n"
+                "- IMPORTANT: Always remind parents to consult their pediatrician or a registered clinic for serious medical concerns."
             )
 
-            response = model.generate_content(f"{system_prompt}\n\nParent's question: {original_text}")
+            # Attempt to include the Red Book PDF as file context
+            red_book = _get_red_book_file()
+            if red_book:
+                contents = [red_book, f"{system_prompt}\n\nParent's question: {original_text}"]
+            else:
+                # Fallback: text-only prompt without PDF
+                contents = [f"{system_prompt}\n\nParent's question: {original_text}"]
+                current_app.logger.warning('Red Book PDF not available — using text-only prompt')
+
+            response = model.generate_content(contents)
             reply = response.text
             return reply, topic_shortcuts, default_actions
 
