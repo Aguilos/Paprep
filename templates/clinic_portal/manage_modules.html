@@ -2,13 +2,6 @@
 {% block title %}Learning Modules{% endblock %}
 {% block page_title %}Learning Modules{% endblock %}
 
-{% block extra_css %}
-<style>
-.modal-dialog-scrollable { max-height: 90vh; }
-.modal-dialog-scrollable .modal-content { max-height: 90vh; }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
@@ -23,7 +16,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <h5 class="page-heading mb-0">Videos &amp; Links</h5>
-    <p class="text-muted small mb-0">Add resources that match children’s age and support needs.</p>
+    <p class="text-muted small mb-0">Add resources that match children's age and support needs.</p>
   </div>
   <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addResourceModal">
     <i class="bi bi-link-45deg me-1"></i> Add Resource
@@ -58,8 +51,9 @@
         <th>Title</th>
         <th>Category</th>
         <th>Age Group</th>
+        <th>Quiz</th>
         <th>PDF</th>
-        <th style="width:100px;"></th>
+        <th style="width:110px;"></th>
       </tr>
     </thead>
     <tbody>
@@ -79,6 +73,16 @@
         </td>
         <td><small class="text-muted">{{ m.age_group or '—' }}</small></td>
         <td>
+          {% set q_count = m.quiz_questions|length %}
+          {% if q_count > 0 %}
+          <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25">
+            <i class="bi bi-patch-question me-1"></i>{{ q_count }} Q
+          </span>
+          {% else %}
+          <span class="badge bg-light text-muted border">No quiz</span>
+          {% endif %}
+        </td>
+        <td>
           {% if m.pdf_data %}
           <a href="{{ url_for('clinic_portal.view_pdf', module_id=m.id) }}" target="_blank"
              class="badge bg-success text-decoration-none">
@@ -90,10 +94,10 @@
         </td>
         <td>
           <div class="d-flex gap-1">
-            <button class="btn btn-sm btn-outline-primary" title="Edit"
-                    onclick="openEditModule({{ m.id }})">
-              <i class="bi bi-pencil"></i>
-            </button>
+            <a href="{{ url_for('clinic_portal.module_editor', module_id=m.id) }}"
+               class="btn btn-sm btn-outline-primary" title="Open Editor">
+              <i class="bi bi-pencil-square me-1"></i>Edit
+            </a>
             <form method="POST" action="{{ url_for('clinic_portal.delete_module', module_id=m.id) }}"
                   onsubmit="return confirm('Delete module &quot;{{ m.title }}&quot;?');">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -115,6 +119,7 @@
 </div>
 {% endif %}
 
+<!-- ── Add Resource Modal ───────────────────────────────────────── -->
 <div class="modal fade" id="addResourceModal" tabindex="-1">
   <div class="modal-dialog modal-lg"><div class="modal-content">
     <form method="POST" action="{{ url_for('clinic_portal.add_resource') }}">
@@ -126,8 +131,8 @@
         <div class="col-md-4"><label class="form-label fw-semibold">Type</label><select name="resource_type" class="form-select"><option value="link">Link</option><option value="video">Video</option></select></div>
         <div class="col-12"><label class="form-label fw-semibold">Description</label><textarea name="description" class="form-control" rows="2"></textarea></div>
         <div class="col-md-4"><label class="form-label fw-semibold">Category</label><input name="category" value="parenting" class="form-control"></div>
-        <div class="col-md-4"><label class="form-label fw-semibold">Minimum age (months)</label><input name="target_age_min_months" type="number" min="0" value="0" class="form-control"></div>
-        <div class="col-md-4"><label class="form-label fw-semibold">Maximum age (months)</label><input name="target_age_max_months" type="number" min="0" value="60" class="form-control"></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Min age (months)</label><input name="target_age_min_months" type="number" min="0" value="0" class="form-control"></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Max age (months)</label><input name="target_age_max_months" type="number" min="0" value="60" class="form-control"></div>
         <div class="col-12"><label class="form-label fw-semibold">Thumbnail URL <small class="text-muted">(optional)</small></label><input name="thumbnail_url" type="url" class="form-control"></div>
       </div></div>
       <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="submit">Save Resource</button></div>
@@ -135,17 +140,21 @@
   </div></div>
 </div>
 
-<!-- ── ADD MODULE MODAL ────────────────────────────────────── -->
+<!-- ── Add Module Modal (quick-create → redirects to editor) ──── -->
 <div class="modal fade" id="addModuleModal" tabindex="-1">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable" style="max-height:90vh;">
+  <div class="modal-dialog modal-md">
     <div class="modal-content">
       <form method="POST" action="{{ url_for('clinic_portal.add_module') }}" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-plus-circle me-2 text-primary"></i>Add Learning Module</h5>
+          <h5 class="modal-title"><i class="bi bi-plus-circle me-2 text-primary"></i>New Module</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
+          <p class="text-muted small mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            Enter basic info here. You'll be taken to the full editor to add content and quiz questions.
+          </p>
           <div class="row g-3">
             <div class="col-12">
               <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
@@ -168,97 +177,16 @@
               <textarea name="description" class="form-control" rows="2"
                         placeholder="Brief overview shown on the modules list."></textarea>
             </div>
-            <div class="col-12">
-              <label class="form-label fw-semibold">Content <small class="text-muted">(what's inside)</small></label>
-              <textarea name="content" class="form-control" rows="3"
-                        placeholder="Describe topics, lessons, or sections in this module..."></textarea>
-            </div>
-            <div class="col-12">
-              <label class="form-label fw-semibold">PDF <small class="text-muted">(optional)</small></label>
-              <input type="file" name="pdf_file" accept=".pdf" class="form-control">
-            </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save Module</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-arrow-right me-1"></i>Create & Open Editor
+          </button>
         </div>
       </form>
     </div>
   </div>
 </div>
-
-<!-- ── EDIT MODULE MODAL ───────────────────────────────────── -->
-<div class="modal fade" id="editModuleModal" tabindex="-1">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable" style="max-height:90vh;">
-    <div class="modal-content">
-      <form method="POST" id="editModuleForm" action="" enctype="multipart/form-data">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-pencil-square me-2 text-primary"></i>Edit Module</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-12">
-              <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
-              <input type="text" name="title" id="em_title" class="form-control" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Category</label>
-              <select name="category" id="em_category" class="form-select">
-                {% for key, cmeta in category_meta.items() %}
-                <option value="{{ key }}">{{ cmeta.label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Age Group</label>
-              <input type="text" name="age_group" id="em_age_group" class="form-control">
-            </div>
-            <div class="col-12">
-              <label class="form-label fw-semibold">Description</label>
-              <textarea name="description" id="em_description" class="form-control" rows="2"></textarea>
-            </div>
-            <div class="col-12">
-              <label class="form-label fw-semibold">Content</label>
-              <textarea name="content" id="em_content" class="form-control" rows="3"></textarea>
-            </div>
-            <div class="col-12">
-              <label class="form-label fw-semibold">Replace PDF <small class="text-muted">(optional)</small></label>
-              <input type="file" name="pdf_file" accept=".pdf" class="form-control">
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Module data for JS -->
-<script>
-const MODULES_DATA = [
-  {% for m in modules %}
-  {id:{{ m.id }}, title:{{ m.title | tojson }}, category:{{ (m.category or 'parenting') | tojson }},
-   age_group:{{ (m.age_group or '') | tojson }}, description:{{ (m.description or '') | tojson }},
-   content:{{ (m.content or '') | tojson }}}{% if not loop.last %},{% endif %}
-  {% endfor %}
-];
-
-function openEditModule(id) {
-  const m = MODULES_DATA.find(x => x.id === id);
-  if (!m) return;
-  document.getElementById('editModuleForm').action = `/clinic/modules/${id}/edit`;
-  document.getElementById('em_title').value       = m.title || '';
-  document.getElementById('em_category').value    = m.category || 'parenting';
-  document.getElementById('em_age_group').value   = m.age_group || '';
-  document.getElementById('em_description').value = m.description || '';
-  document.getElementById('em_content').value     = m.content || '';
-  bootstrap.Modal.getOrCreateInstance(document.getElementById('editModuleModal')).show();
-}
-</script>
 {% endblock %}

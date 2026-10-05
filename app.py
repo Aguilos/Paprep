@@ -164,3 +164,12 @@ def create_app():
         )
 
     return app
+
+
+if __name__ == '__main__':
+    import os
+    import sys
+    import subprocess
+
+    run_path = os.path.join(os.path.dirname(__file__), 'run.py')
+    sys.exit(subprocess.call([sys.executable, run_path] + sys.argv[1:]))

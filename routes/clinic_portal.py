@@ -15,12 +15,14 @@ import pyotp
 import qrcode
 
 from flask import (Blueprint, render_template, request, redirect,
-                   url_for, flash, session, abort, send_file, Response, current_app)
+                   url_for, flash, session, abort, send_file, Response, current_app,
+                   jsonify)
 from werkzeug.utils import secure_filename
 from app import db
 from models import (ClinicAccount, Clinic, ClinicSchedule, LearningModule,
                     ClinicAnnouncement, ParentChildResource, PasswordResetToken,
-                    ClinicRegistration, ChildProfile, Newsletter, NewsletterMedia)
+                    ClinicRegistration, ChildProfile, Newsletter, NewsletterMedia,
+                    ModuleQuizQuestion)
 
 clinic_portal_bp = Blueprint('clinic_portal', __name__, url_prefix='/clinic')
 
@@ -475,8 +477,8 @@ def add_module():
         module.pdf_data = file.read()
         module.pdf_filename = secure_filename(file.filename)
     db.session.commit()
-    flash(f'Module "{module.title}" added.', 'success')
-    return redirect(url_for('clinic_portal.manage_modules'))
+    flash(f'Module "{module.title}" created. Add content and quiz questions below.', 'success')
+    return redirect(url_for('clinic_portal.module_editor', module_id=module.id))
 
 
 @clinic_portal_bp.route('/modules/<int:module_id>/edit', methods=['POST'])
@@ -513,6 +515,135 @@ def delete_module(module_id):
     db.session.commit()
     flash(f'Module "{title}" deleted.', 'info')
     return redirect(url_for('clinic_portal.manage_modules'))
+
+
+# ── Module Full-Page Editor ───────────────────────────────────────────────────
+
+@clinic_portal_bp.route('/modules/<int:module_id>/editor', methods=['GET', 'POST'])
+@clinic_login_required
+def module_editor(module_id):
+    """Dedicated full-page editor for a clinic-owned module."""
+    account = _current_clinic_account()
+    module = LearningModule.query.filter_by(id=module_id, clinic_account_id=account.id).first_or_404()
+
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        if title:
+            module.title = title
+        module.description = request.form.get('description', '').strip()
+        module.content     = request.form.get('content', '').strip()
+        cat = request.form.get('category', module.category)
+        if cat in CATEGORY_META:
+            module.category = cat
+        module.age_group = request.form.get('age_group', '').strip()
+        file = request.files.get('pdf_file')
+        if file and file.filename.lower().endswith('.pdf'):
+            module.pdf_data     = file.read()
+            module.pdf_filename = secure_filename(file.filename)
+        db.session.commit()
+        flash(f'Module "{module.title}" saved successfully.', 'success')
+        return redirect(url_for('clinic_portal.module_editor', module_id=module.id))
+
+    questions = ModuleQuizQuestion.query.filter_by(module_id=module_id)\
+        .order_by(ModuleQuizQuestion.sort_order, ModuleQuizQuestion.id).all()
+
+    return render_template('clinic_portal/module_editor.html',
+                           account=account,
+                           module=module,
+                           questions=questions,
+                           category_meta=CATEGORY_META)
+
+
+# ── Quiz Question CRUD (AJAX) ─────────────────────────────────────────────────
+
+@clinic_portal_bp.route('/modules/<int:module_id>/quiz/add', methods=['POST'])
+@clinic_login_required
+def add_quiz_question(module_id):
+    account = _current_clinic_account()
+    LearningModule.query.filter_by(id=module_id, clinic_account_id=account.id).first_or_404()
+
+    data = request.get_json(silent=True) or request.form
+    question_text = (data.get('question') or '').strip()
+    option_a      = (data.get('option_a') or '').strip()
+    option_b      = (data.get('option_b') or '').strip()
+    correct       = (data.get('correct') or '').lower().strip()
+
+    if not question_text or not option_a or not option_b or correct not in ('a', 'b', 'c', 'd'):
+        return jsonify({'ok': False, 'error': 'question, option_a, option_b and correct (a/b/c/d) are required.'}), 400
+
+    # Determine next sort_order
+    max_order = db.session.query(db.func.max(ModuleQuizQuestion.sort_order))\
+        .filter_by(module_id=module_id).scalar() or 0
+
+    q = ModuleQuizQuestion(
+        module_id=module_id,
+        question=question_text,
+        option_a=option_a,
+        option_b=option_b,
+        option_c=(data.get('option_c') or '').strip() or None,
+        option_d=(data.get('option_d') or '').strip() or None,
+        correct=correct,
+        explanation=(data.get('explanation') or '').strip() or None,
+        sort_order=max_order + 1,
+    )
+    db.session.add(q)
+    db.session.commit()
+    return jsonify({'ok': True, 'question': q.to_dict()})
+
+
+@clinic_portal_bp.route('/modules/<int:module_id>/quiz/<int:q_id>/edit', methods=['POST'])
+@clinic_login_required
+def edit_quiz_question(module_id, q_id):
+    account = _current_clinic_account()
+    LearningModule.query.filter_by(id=module_id, clinic_account_id=account.id).first_or_404()
+    q = ModuleQuizQuestion.query.filter_by(id=q_id, module_id=module_id).first_or_404()
+
+    data = request.get_json(silent=True) or request.form
+    if data.get('question'):
+        q.question = data['question'].strip()
+    if data.get('option_a'):
+        q.option_a = data['option_a'].strip()
+    if data.get('option_b'):
+        q.option_b = data['option_b'].strip()
+    q.option_c = (data.get('option_c') or '').strip() or None
+    q.option_d = (data.get('option_d') or '').strip() or None
+    correct = (data.get('correct') or '').lower().strip()
+    if correct in ('a', 'b', 'c', 'd'):
+        q.correct = correct
+    q.explanation = (data.get('explanation') or '').strip() or None
+    db.session.commit()
+    return jsonify({'ok': True, 'question': q.to_dict()})
+
+
+@clinic_portal_bp.route('/modules/<int:module_id>/quiz/<int:q_id>/delete', methods=['POST'])
+@clinic_login_required
+def delete_quiz_question(module_id, q_id):
+    account = _current_clinic_account()
+    LearningModule.query.filter_by(id=module_id, clinic_account_id=account.id).first_or_404()
+    q = ModuleQuizQuestion.query.filter_by(id=q_id, module_id=module_id).first_or_404()
+    db.session.delete(q)
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+@clinic_portal_bp.route('/modules/<int:module_id>/image/upload', methods=['POST'])
+@clinic_login_required
+def upload_module_image(module_id):
+    """AJAX endpoint: upload an image for use in module content. Returns JSON {ok, url}."""
+    account = _current_clinic_account()
+    LearningModule.query.filter_by(id=module_id, clinic_account_id=account.id).first_or_404()
+    f = request.files.get('image')
+    if not f:
+        return jsonify({'ok': False, 'error': 'No file provided'}), 400
+    ext = os.path.splitext(secure_filename(f.filename))[1].lower()
+    if ext not in ('.jpg', '.jpeg', '.png', '.gif', '.webp'):
+        return jsonify({'ok': False, 'error': 'Unsupported file type. Use JPG, PNG, GIF, or WebP.'}), 400
+    upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(module_id))
+    os.makedirs(upload_dir, exist_ok=True)
+    fname = f"{secrets.token_hex(8)}{ext}"
+    f.save(os.path.join(upload_dir, fname))
+    url = url_for('static', filename=f'uploads/modules/{module_id}/{fname}')
+    return jsonify({'ok': True, 'url': url})
 
 
 @clinic_portal_bp.route('/modules/<int:module_id>/pdf')

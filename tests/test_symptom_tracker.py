@@ -39,7 +39,8 @@ class SymptomTrackerTests(unittest.TestCase):
             session['active_child_id'] = self.child_one_id
 
     def test_cough_cold_entry_creation_and_emergency_guidance(self):
-        response = self.client.post('/cough-cold-tracker', data={
+        response = self.client.post('/fever-tracker', data={
+            '_form_type': 'cough',
             'symptom_type': 'cough', 'severity': 'moderate', 'duration_days': '1',
             'difficulty_breathing': 'on',
         })
@@ -50,7 +51,8 @@ class SymptomTrackerTests(unittest.TestCase):
             self.assertEqual(_respiratory_guidance(episode)['severity'], 'emergency')
 
     def test_diarrhea_entry_creation_and_emergency_guidance(self):
-        response = self.client.post('/diarrhea-tracker', data={
+        response = self.client.post('/fever-tracker', data={
+            '_form_type': 'diarrhea',
             'episodes_per_day': '2', 'consistency': 'watery',
             'dehydration_signs': 'none', 'duration_days': '1', 'blood_present': 'on',
         })
@@ -79,7 +81,8 @@ class SymptomTrackerTests(unittest.TestCase):
             db.session.commit()
         with self.client.session_transaction() as session:
             session['active_child_id'] = self.child_two_id
-        response = self.client.get('/cough-cold-tracker')
+        # /cough-cold-tracker now redirects to /fever-tracker?tab=cough
+        response = self.client.get('/fever-tracker', query_string={'tab': 'cough'})
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'No cough/cold episodes yet', response.data)
         with self.app.app_context():

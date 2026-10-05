@@ -9,35 +9,337 @@
     <div class="disclaimer-text"><strong>Medical Disclaimer:</strong> {{ disclaimer }}</div>
   </div>
 
-  <div class="row g-4 mt-1">
-    <div class="col-lg-5">
-      <section class="symptom-panel">
-        <div class="symptom-panel-header"><i class="bi bi-thermometer-half me-2"></i><h5 class="mb-0">Log a temperature for {{ active_child.name }}</h5></div>
-        <form method="POST" class="symptom-panel-body">
-          <div class="mb-3"><label class="form-label fw-semibold">Temperature</label><div class="input-group"><input type="number" name="value" class="form-control" min="30" max="113" step="0.1" required placeholder="e.g. 38.2"><select name="unit" class="form-select" style="max-width:90px"><option value="C">°C</option><option value="F">°F</option></select></div></div>
-          <div class="mb-3"><label class="form-label fw-semibold">Method <small class="text-muted">(optional)</small></label><select name="method" class="form-select"><option value="">Not specified</option><option value="oral">Oral</option><option value="ear">Ear</option><option value="forehead">Forehead</option><option value="armpit">Armpit</option></select></div>
-          <div class="mb-3"><label class="form-label fw-semibold">Date and time</label><input type="datetime-local" name="recorded_at" class="form-control"></div>
-          <button class="btn btn-primary w-100" type="submit"><i class="bi bi-plus-circle me-2"></i>Save Reading</button>
-        </form>
+  <!-- Tab navigation -->
+  <ul class="nav nav-pills mb-4 mt-3 gap-2" id="trackerTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if active_tab == 'fever' %}active{% endif %}"
+              id="tab-fever-btn" data-bs-toggle="pill" data-bs-target="#tab-fever"
+              type="button" role="tab" aria-controls="tab-fever"
+              aria-selected="{{ 'true' if active_tab == 'fever' else 'false' }}">
+        <i class="bi bi-thermometer-half me-1"></i> Fever
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if active_tab == 'cough' %}active{% endif %}"
+              id="tab-cough-btn" data-bs-toggle="pill" data-bs-target="#tab-cough"
+              type="button" role="tab" aria-controls="tab-cough"
+              aria-selected="{{ 'true' if active_tab == 'cough' else 'false' }}">
+        <i class="bi bi-lungs me-1"></i> Cough &amp; Colds
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if active_tab == 'diarrhea' %}active{% endif %}"
+              id="tab-diarrhea-btn" data-bs-toggle="pill" data-bs-target="#tab-diarrhea"
+              type="button" role="tab" aria-controls="tab-diarrhea"
+              aria-selected="{{ 'true' if active_tab == 'diarrhea' else 'false' }}">
+        <i class="bi bi-droplet-half me-1"></i> Diarrhea
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="trackerTabContent">
+
+    <!-- ============================================================
+         FEVER TAB
+         ============================================================ -->
+    <div class="tab-pane fade {% if active_tab == 'fever' %}show active{% endif %}"
+         id="tab-fever" role="tabpanel" aria-labelledby="tab-fever-btn">
+      <div class="row g-4 mt-1">
+        <div class="col-lg-5">
+          <section class="symptom-panel">
+            <div class="symptom-panel-header">
+              <i class="bi bi-thermometer-half me-2"></i>
+              <h5 class="mb-0">Log a temperature for {{ active_child.name }}</h5>
+            </div>
+            <form method="POST" class="symptom-panel-body">
+              <input type="hidden" name="_form_type" value="fever">
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Temperature</label>
+                <div class="input-group">
+                  <input type="number" name="value" class="form-control" min="30" max="113" step="0.1" required placeholder="e.g. 38.2">
+                  <select name="unit" class="form-select" style="max-width:90px">
+                    <option value="C">°C</option>
+                    <option value="F">°F</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Method <small class="text-muted">(optional)</small></label>
+                <select name="method" class="form-select">
+                  <option value="">Not specified</option>
+                  <option value="oral">Oral</option>
+                  <option value="ear">Ear</option>
+                  <option value="forehead">Forehead</option>
+                  <option value="armpit">Armpit</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Date and time</label>
+                <input type="datetime-local" name="recorded_at" class="form-control">
+              </div>
+              <button class="btn btn-primary w-100" type="submit">
+                <i class="bi bi-plus-circle me-2"></i>Save Reading
+              </button>
+            </form>
+          </section>
+        </div>
+
+        <div class="col-lg-7">
+          <section class="results-panel">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <i class="bi bi-activity text-primary"></i>
+              <h5 class="mb-0">Latest guidance</h5>
+              <span class="badge severity-{{ guidance.severity }} ms-auto">{{ guidance.severity|title }}</span>
+            </div>
+            <h6>{{ guidance.title }}</h6>
+            <p>{{ guidance.message }}</p>
+            {% if guidance.actions %}
+              <ul class="rec-actions">{% for action in guidance.actions %}<li>{{ action }}</li>{% endfor %}</ul>
+            {% endif %}
+            <div class="rec-disclaimer"><strong>Medical Disclaimer:</strong> {{ disclaimer }}</div>
+            <div class="small text-muted mt-2"><strong>Guidance source:</strong> {{ guidance_source }}</div>
+          </section>
+        </div>
+      </div>
+
+      <section class="symptom-panel mt-4">
+        <div class="symptom-panel-header">
+          <i class="bi bi-clock-history me-2"></i>
+          <h5 class="mb-0">Temperature history</h5>
+        </div>
+        {% if readings %}
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead><tr><th>Date and time</th><th>Reading</th><th>Method</th></tr></thead>
+              <tbody>
+                {% for reading in readings %}
+                  <tr>
+                    <td>{{ reading.recorded_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                    <td class="fw-bold">{{ reading.display_value }}</td>
+                    <td>{{ reading.method|title if reading.method else 'Not specified' }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="dashboard-empty-resource">No temperature readings yet for {{ active_child.name }}. Add the first reading above.</div>
+        {% endif %}
       </section>
     </div>
 
-    <div class="col-lg-7">
-      <section class="results-panel">
-        <div class="d-flex align-items-center gap-2 mb-3"><i class="bi bi-activity text-primary"></i><h5 class="mb-0">Latest guidance</h5><span class="badge severity-{{ guidance.severity }} ms-auto">{{ guidance.severity|title }}</span></div>
-        <h6>{{ guidance.title }}</h6><p>{{ guidance.message }}</p>
-        {% if guidance.actions %}<ul class="rec-actions">{% for action in guidance.actions %}<li>{{ action }}</li>{% endfor %}</ul>{% endif %}
-        <div class="rec-disclaimer"><strong>Medical Disclaimer:</strong> {{ disclaimer }}</div>
-        <div class="small text-muted mt-2"><strong>Guidance source:</strong> {{ guidance_source }}</div>
+    <!-- ============================================================
+         COUGH & COLDS TAB
+         ============================================================ -->
+    <div class="tab-pane fade {% if active_tab == 'cough' %}show active{% endif %}"
+         id="tab-cough" role="tabpanel" aria-labelledby="tab-cough-btn">
+      <div class="row g-4 mt-1">
+        <div class="col-lg-5">
+          <section class="symptom-panel">
+            <div class="symptom-panel-header">
+              <i class="bi bi-lungs me-2"></i>
+              <h5 class="mb-0">Log symptoms for {{ active_child.name }}</h5>
+            </div>
+            <form method="POST" class="symptom-panel-body">
+              <input type="hidden" name="_form_type" value="cough">
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Main symptom</label>
+                <select name="symptom_type" class="form-select" required>
+                  <option value="cough">Cough</option>
+                  <option value="runny/stuffy nose">Runny or stuffy nose</option>
+                  <option value="sore throat">Sore throat</option>
+                  <option value="other">Other cold symptom</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Severity</label>
+                <select name="severity" class="form-select" required>
+                  <option value="mild">Mild</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="severe">Severe</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Duration (days)</label>
+                <input type="number" name="duration_days" class="form-control" min="1" max="365" required>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="fever_present" id="fever_present_cough">
+                <label class="form-check-label" for="fever_present_cough">Fever present</label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="wheezing" id="wheezing_cough">
+                <label class="form-check-label" for="wheezing_cough">Wheezing</label>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="difficulty_breathing" id="difficulty_breathing_cough">
+                <label class="form-check-label" for="difficulty_breathing_cough">Difficulty breathing</label>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Date and time</label>
+                <input type="datetime-local" name="recorded_at" class="form-control">
+              </div>
+              <button class="btn btn-primary w-100" type="submit">
+                <i class="bi bi-plus-circle me-2"></i>Save Episode
+              </button>
+            </form>
+          </section>
+        </div>
+
+        <div class="col-lg-7">
+          <section class="results-panel">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <i class="bi bi-activity text-primary"></i>
+              <h5 class="mb-0">Latest guidance</h5>
+              <span class="badge severity-{{ resp_guidance.severity }} ms-auto">{{ resp_guidance.severity|title }}</span>
+            </div>
+            <h6>{{ resp_guidance.title }}</h6>
+            <p>{{ resp_guidance.message }}</p>
+            {% if resp_guidance.actions %}
+              <ul class="rec-actions">{% for action in resp_guidance.actions %}<li>{{ action }}</li>{% endfor %}</ul>
+            {% endif %}
+            <div class="rec-disclaimer"><strong>Medical Disclaimer:</strong> {{ disclaimer }}</div>
+            <div class="small text-muted mt-2"><strong>Guidance source:</strong> {{ guidance_source }}</div>
+          </section>
+        </div>
+      </div>
+
+      <section class="symptom-panel mt-4">
+        <div class="symptom-panel-header">
+          <i class="bi bi-clock-history me-2"></i>
+          <h5 class="mb-0">Cough/cold history</h5>
+        </div>
+        {% if resp_episodes %}
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead><tr><th>Date</th><th>Symptom</th><th>Severity</th><th>Duration</th><th>Signs</th></tr></thead>
+              <tbody>
+                {% for episode in resp_episodes %}
+                  <tr>
+                    <td>{{ episode.recorded_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                    <td>{{ episode.symptom_type|title }}</td>
+                    <td>{{ episode.severity|title }}</td>
+                    <td>{{ episode.duration_days }} day{% if episode.duration_days != 1 %}s{% endif %}</td>
+                    <td>
+                      {% if episode.difficulty_breathing %}Breathing difficulty
+                      {% elif episode.wheezing %}Wheezing
+                      {% elif episode.fever_present %}Fever
+                      {% else %}None reported{% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="dashboard-empty-resource">No cough/cold episodes yet for {{ active_child.name }}.</div>
+        {% endif %}
       </section>
     </div>
-  </div>
 
-  <section class="symptom-panel mt-4">
-    <div class="symptom-panel-header"><i class="bi bi-clock-history me-2"></i><h5 class="mb-0">Temperature history</h5></div>
-    {% if readings %}
-    <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Date and time</th><th>Reading</th><th>Method</th></tr></thead><tbody>{% for reading in readings %}<tr><td>{{ reading.recorded_at.strftime('%b %d, %Y %I:%M %p') }}</td><td class="fw-bold">{{ reading.display_value }}</td><td>{{ reading.method|title if reading.method else 'Not specified' }}</td></tr>{% endfor %}</tbody></table></div>
-    {% else %}<div class="dashboard-empty-resource">No temperature readings yet for {{ active_child.name }}. Add the first reading above.</div>{% endif %}
-  </section>
+    <!-- ============================================================
+         DIARRHEA TAB
+         ============================================================ -->
+    <div class="tab-pane fade {% if active_tab == 'diarrhea' %}show active{% endif %}"
+         id="tab-diarrhea" role="tabpanel" aria-labelledby="tab-diarrhea-btn">
+      <div class="row g-4 mt-1">
+        <div class="col-lg-5">
+          <section class="symptom-panel">
+            <div class="symptom-panel-header">
+              <i class="bi bi-droplet-half me-2"></i>
+              <h5 class="mb-0">Log symptoms for {{ active_child.name }}</h5>
+            </div>
+            <form method="POST" class="symptom-panel-body">
+              <input type="hidden" name="_form_type" value="diarrhea">
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Episodes per day</label>
+                <input type="number" name="episodes_per_day" class="form-control" min="1" max="100" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Consistency</label>
+                <select name="consistency" class="form-select" required>
+                  <option value="loose">Loose</option>
+                  <option value="watery">Watery</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Dehydration signs</label>
+                <select name="dehydration_signs" class="form-select" required>
+                  <option value="none">None noticed</option>
+                  <option value="mild">Mild</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="severe">Severe</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Duration (days)</label>
+                <input type="number" name="duration_days" class="form-control" min="1" max="365" required>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="blood_present" id="blood_present_diarrhea">
+                <label class="form-check-label" for="blood_present_diarrhea">Blood present in stool</label>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Date and time</label>
+                <input type="datetime-local" name="recorded_at" class="form-control">
+              </div>
+              <button class="btn btn-primary w-100" type="submit">
+                <i class="bi bi-plus-circle me-2"></i>Save Episode
+              </button>
+            </form>
+          </section>
+        </div>
+
+        <div class="col-lg-7">
+          <section class="results-panel">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <i class="bi bi-activity text-primary"></i>
+              <h5 class="mb-0">Latest guidance</h5>
+              <span class="badge severity-{{ diarr_guidance.severity }} ms-auto">{{ diarr_guidance.severity|title }}</span>
+            </div>
+            <h6>{{ diarr_guidance.title }}</h6>
+            <p>{{ diarr_guidance.message }}</p>
+            {% if diarr_guidance.actions %}
+              <ul class="rec-actions">{% for action in diarr_guidance.actions %}<li>{{ action }}</li>{% endfor %}</ul>
+            {% endif %}
+            <div class="rec-disclaimer"><strong>Medical Disclaimer:</strong> {{ disclaimer }}</div>
+            <div class="small text-muted mt-2"><strong>Guidance source:</strong> {{ guidance_source }}</div>
+          </section>
+        </div>
+      </div>
+
+      <section class="symptom-panel mt-4">
+        <div class="symptom-panel-header">
+          <i class="bi bi-clock-history me-2"></i>
+          <h5 class="mb-0">Diarrhea history</h5>
+        </div>
+        {% if diarr_episodes %}
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead><tr><th>Date</th><th>Episodes/day</th><th>Consistency</th><th>Duration</th><th>Signs</th></tr></thead>
+              <tbody>
+                {% for episode in diarr_episodes %}
+                  <tr>
+                    <td>{{ episode.recorded_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                    <td>{{ episode.episodes_per_day }}</td>
+                    <td>{{ episode.consistency|title }}</td>
+                    <td>{{ episode.duration_days }} day{% if episode.duration_days != 1 %}s{% endif %}</td>
+                    <td>
+                      {% if episode.blood_present %}Blood
+                      {% elif episode.dehydration_signs != 'none' %}{{ episode.dehydration_signs|title }} dehydration
+                      {% else %}None reported{% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="dashboard-empty-resource">No diarrhea episodes yet for {{ active_child.name }}.</div>
+        {% endif %}
+      </section>
+    </div>
+
+  </div>{# end tab-content #}
 </div>
 {% endblock %}

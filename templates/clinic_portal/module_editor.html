@@ -1,0 +1,795 @@
+{% extends 'clinic_portal/base.html' %}
+{% block title %}Edit Module — {{ module.title }}{% endblock %}
+{% block page_title %}Module Editor{% endblock %}
+
+{% block extra_css %}
+<!-- Quill WYSIWYG -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+/* ── Editor layout ────────────────────────────────────────────── */
+.editor-page { max-width: 960px; margin: 0 auto; }
+
+.editor-topbar {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 20px;
+  margin-bottom: 20px; box-shadow: var(--shadow-sm);
+  position: sticky; top: 0; z-index: 100;
+}
+.module-title-input {
+  flex: 1; font-size: 1.05rem; font-weight: 700;
+  border: none; outline: none; background: transparent;
+  color: var(--gray-900); min-width: 0;
+}
+.module-title-input::placeholder { color: var(--gray-300); }
+
+.editor-panel {
+  background: #fff; border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+  margin-bottom: 20px; box-shadow: var(--shadow-sm);
+}
+.editor-panel-title {
+  font-size: .8rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--gray-500);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+
+/* ── Section cards ────────────────────────────────────────────── */
+.section-card {
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: #fff; margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  transition: box-shadow .15s ease;
+}
+.section-card.drag-over {
+  border-color: var(--primary); box-shadow: 0 0 0 2px rgba(78,151,217,.2);
+}
+.section-card-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px 0;
+}
+.section-drag-handle {
+  color: var(--gray-400); cursor: grab; font-size: 1.1rem;
+  user-select: none; padding: 4px 2px; line-height: 1;
+}
+.section-drag-handle:active { cursor: grabbing; }
+.section-num {
+  font-size: .72rem; font-weight: 700; color: var(--gray-400);
+  text-transform: uppercase; letter-spacing: .06em;
+  white-space: nowrap; min-width: 22px;
+}
+.section-title-input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-size: .98rem; font-weight: 700; color: var(--gray-900);
+  padding: 4px 0; border-bottom: 2px solid transparent;
+  transition: border-color .15s;
+}
+.section-title-input:focus { border-bottom-color: var(--primary); }
+.section-title-input::placeholder { color: var(--gray-300); font-weight: 400; }
+.section-delete-btn {
+  border: none; background: none; color: var(--gray-400); cursor: pointer;
+  font-size: .82rem; padding: 4px 6px; border-radius: 4px;
+  transition: all .15s;
+}
+.section-delete-btn:hover { background: #fee2e2; color: #dc2626; }
+
+.section-card-body { padding: 0 14px 14px; }
+.section-quill-wrap { margin-top: 10px; }
+/* Quill overrides inside section cards */
+.section-quill-wrap .ql-toolbar.ql-snow {
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-color: #e5e9f0; background: var(--gray-50);
+}
+.section-quill-wrap .ql-container.ql-snow {
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  border-color: #e5e9f0; min-height: 120px;
+  font-family: var(--font); font-size: .92rem;
+}
+.section-quill-wrap .ql-editor { min-height: 100px; }
+.section-quill-wrap .ql-editor img {
+  max-width: 100%; border-radius: 6px;
+  margin: 6px 0; display: block;
+}
+.section-quill-wrap .ql-editor iframe {
+  width: 100%; border-radius: 8px; border: none;
+  min-height: 280px; display: block; margin: 8px 0;
+}
+
+/* ── Add section button ───────────────────────────────────────── */
+.section-add-btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; width: 100%;
+  border: 2px dashed #c7d2e0; border-radius: var(--radius-sm);
+  padding: 14px; background: #fafcff; color: var(--primary);
+  font-weight: 600; font-size: .88rem; cursor: pointer;
+  transition: all .15s; margin-bottom: 4px;
+}
+.section-add-btn:hover {
+  border-color: var(--primary); background: var(--primary-light);
+}
+
+/* ── Section count badge ─────────────────────────────────────── */
+.section-count-badge {
+  background: var(--primary); color: #fff;
+  font-size: .72rem; font-weight: 700;
+  padding: 2px 9px; border-radius: 20px;
+}
+
+/* ── Empty state ─────────────────────────────────────────────── */
+.sections-empty {
+  text-align: center; padding: 28px;
+  color: var(--gray-500); font-size: .88rem;
+}
+
+/* ── Video prompt overlay ─────────────────────────────────────── */
+.video-prompt-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(15,23,42,.6); backdrop-filter: blur(4px);
+  z-index: 2000; align-items: center; justify-content: center;
+}
+.video-prompt-overlay.open { display: flex; }
+.video-prompt-card {
+  background: #fff; border-radius: 14px; padding: 28px 24px;
+  max-width: 440px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,.2);
+  animation: slideUpCard .25s ease;
+}
+@keyframes slideUpCard {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.video-prompt-card h6 { font-weight: 700; margin-bottom: 12px; }
+.video-prompt-card input { border-radius: 8px; font-size: .88rem; }
+.video-prompt-card .video-preview { margin-top: 10px; }
+.video-prompt-card iframe { width: 100%; height: 200px; border-radius: 8px; border: none; }
+
+/* ── Quiz builder (unchanged) ─────────────────────────────────── */
+.quiz-q-card {
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 16px 18px; margin-bottom: 12px;
+  background: var(--gray-50); position: relative;
+}
+.quiz-q-card .q-number {
+  font-size: .72rem; font-weight: 700; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px;
+}
+.quiz-q-card .q-text { font-weight: 600; color: var(--gray-900); margin-bottom: 10px; }
+.quiz-options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+.quiz-opt {
+  background: #fff; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 5px 10px;
+  font-size: .82rem; color: var(--gray-700);
+}
+.quiz-opt.correct-opt {
+  border-color: var(--secondary); background: var(--secondary-light);
+  color: #1a5c1a; font-weight: 700;
+}
+.quiz-opt-label { font-weight: 700; margin-right: 4px; color: var(--gray-500); }
+.quiz-explanation {
+  font-size: .78rem; color: var(--gray-500);
+  background: #fff; border: 1px dashed var(--border);
+  border-radius: 6px; padding: 5px 10px; margin-top: 4px;
+}
+.quiz-q-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
+.add-q-form { display: none; }
+.add-q-form.open { display: block; }
+.add-q-form-inner {
+  border: 2px dashed var(--primary-light); border-radius: var(--radius-sm);
+  padding: 20px; background: #fafcff; margin-top: 4px;
+}
+.pdf-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .82rem; font-weight: 600; padding: 4px 10px;
+  border-radius: 20px;
+}
+.pdf-status.has-pdf { background: #d1fae5; color: #065f46; }
+.pdf-status.no-pdf  { background: var(--gray-100); color: var(--gray-500); }
+
+/* ── Image upload progress ────────────────────────────────────── */
+.img-uploading-toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 3000;
+  background: #1e293b; color: #fff;
+  padding: 10px 16px; border-radius: 8px; font-size: .82rem;
+  display: none; align-items: center; gap: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+}
+.img-uploading-toast.show { display: flex; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="editor-page">
+
+  <!-- ── Sticky top bar ────────────────────────────────────────── -->
+  <form method="POST" id="editorForm" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="content" id="contentInput">
+
+    <div class="editor-topbar">
+      <a href="{{ url_for('clinic_portal.manage_modules') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Modules
+      </a>
+      <input type="text" name="title" class="module-title-input"
+             value="{{ module.title }}" placeholder="Module title…" required id="editorTitleInput">
+      <button type="submit" class="btn btn-primary btn-sm px-4" id="saveBtn">
+        <i class="bi bi-check-lg me-1"></i> Save
+      </button>
+    </div>
+
+    <!-- ── Panel 1: Module Info ──────────────────────────────────── -->
+    <div class="editor-panel">
+      <div class="editor-panel-title">
+        <i class="bi bi-info-circle text-primary"></i> Module Info
+      </div>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Category</label>
+          <select name="category" class="form-select">
+            {% for key, cmeta in category_meta.items() %}
+            <option value="{{ key }}" {% if module.category == key %}selected{% endif %}>
+              {{ cmeta.label }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Age Group</label>
+          <input type="text" name="age_group" class="form-control"
+                 value="{{ module.age_group or '' }}" placeholder="e.g. 6–12 months">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">PDF <small class="text-muted">(optional)</small></label>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if module.pdf_data %}
+            <span class="pdf-status has-pdf"><i class="bi bi-file-earmark-pdf-fill"></i> PDF attached</span>
+            <a href="{{ url_for('clinic_portal.view_pdf', module_id=module.id) }}"
+               target="_blank" class="btn btn-sm btn-outline-success">View</a>
+            {% else %}
+            <span class="pdf-status no-pdf"><i class="bi bi-file-earmark"></i> No PDF</span>
+            {% endif %}
+          </div>
+          <input type="file" name="pdf_file" accept=".pdf" class="form-control form-control-sm mt-2">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Short Description
+            <small class="text-muted">(shown on module card)</small></label>
+          <textarea name="description" class="form-control" rows="2"
+                    placeholder="Brief overview…">{{ module.description or '' }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Panel 2: Section Editor ──────────────────────────────── -->
+    <div class="editor-panel">
+      <div class="editor-panel-title">
+        <i class="bi bi-layout-text-sidebar text-primary"></i> Sections
+        <span class="section-count-badge ms-auto" id="sectionCountBadge">0 sections</span>
+      </div>
+
+      <p class="text-muted small mb-3">
+        <i class="bi bi-lightbulb-fill text-warning me-1"></i>
+        Each section becomes a separate page that parents navigate step by step.
+        Add images and YouTube videos inside each section.
+      </p>
+
+      <!-- Section cards container -->
+      <div id="sectionList"></div>
+
+      <!-- Add section button -->
+      <button type="button" class="section-add-btn" id="addSectionBtn" onclick="addSection()">
+        <i class="bi bi-plus-circle-fill"></i> Add Section
+      </button>
+
+    </div><!-- end panel 2 -->
+
+  </form>{# end editorForm #}
+
+  <!-- ── Panel 3: Quiz Builder (AJAX, outside main form) ──────── -->
+  <div class="editor-panel">
+    <div class="editor-panel-title">
+      <i class="bi bi-patch-question text-primary"></i> Quiz Questions
+      <span class="badge bg-secondary ms-auto" id="qCountBadge">{{ questions|length }}</span>
+      <button class="btn btn-sm btn-primary ms-2" id="addQBtn" onclick="toggleAddForm()">
+        <i class="bi bi-plus-lg me-1"></i> Add Question
+      </button>
+    </div>
+    <p class="text-muted small mb-3">
+      Parents take this quiz after reading all sections. They need ≥ 70% to complete the module.
+    </p>
+
+    <div id="questionsList">
+      {% for q in questions %}
+      <div class="quiz-q-card" id="qcard-{{ q.id }}">
+        <div class="q-number">Q{{ loop.index }}</div>
+        <div class="q-text">{{ q.question }}</div>
+        <div class="quiz-options-grid">
+          {% set opts = [('a', q.option_a), ('b', q.option_b), ('c', q.option_c), ('d', q.option_d)] %}
+          {% for ltr, txt in opts %}{% if txt %}
+          <div class="quiz-opt {% if ltr == q.correct %}correct-opt{% endif %}">
+            <span class="quiz-opt-label">{{ ltr|upper }}.</span>{{ txt }}
+          </div>
+          {% endif %}{% endfor %}
+        </div>
+        {% if q.explanation %}
+        <div class="quiz-explanation"><i class="bi bi-info-circle me-1"></i>{{ q.explanation }}</div>
+        {% endif %}
+        <div class="quiz-q-actions">
+          <button class="btn btn-xs btn-outline-primary"
+                  onclick="editQuestion({{ q.id }}, {{ q.to_dict()|tojson }})">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-xs btn-outline-danger"
+                  onclick="deleteQuestion({{ q.id }})">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+      {% else %}
+      <div class="text-muted text-center py-3" id="noQuestionsMsg">
+        <i class="bi bi-patch-question fs-2 d-block mb-2"></i>
+        No quiz questions yet. Click <strong>Add Question</strong> to create the first one.
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="add-q-form" id="addQForm">
+      <div class="add-q-form-inner">
+        <h6 class="fw-bold mb-3" id="addQFormTitle">
+          <i class="bi bi-plus-circle me-2 text-primary"></i>New Question
+        </h6>
+        <input type="hidden" id="editQId" value="">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Question <span class="text-danger">*</span></label>
+          <textarea class="form-control" id="qQuestion" rows="2"
+                    placeholder="e.g. What temperature is considered a fever in a newborn?"></textarea>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Option A <span class="text-danger">*</span></label>
+            <input class="form-control" id="qOptA" placeholder="Option A">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Option B <span class="text-danger">*</span></label>
+            <input class="form-control" id="qOptB" placeholder="Option B">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Option C <small class="text-muted">(optional)</small></label>
+            <input class="form-control" id="qOptC" placeholder="Option C">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Option D <small class="text-muted">(optional)</small></label>
+            <input class="form-control" id="qOptD" placeholder="Option D">
+          </div>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Correct Answer <span class="text-danger">*</span></label>
+            <select class="form-select" id="qCorrect">
+              <option value="a">A</option>
+              <option value="b">B</option>
+              <option value="c">C</option>
+              <option value="d">D</option>
+            </select>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Explanation <small class="text-muted">(shown after answer)</small></label>
+            <input class="form-control" id="qExplanation" placeholder="Brief explanation of the correct answer…">
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary btn-sm" onclick="submitQuestion()">
+            <i class="bi bi-check-lg me-1"></i> Save Question
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="cancelAddForm()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div><!-- end quiz panel -->
+
+</div><!-- end editor-page -->
+
+<!-- ── Image uploading toast ──────────────────────────────────── -->
+<div class="img-uploading-toast" id="uploadToast">
+  <span class="spinner-border spinner-border-sm me-1"></span> Uploading image…
+</div>
+
+<!-- ── Video URL prompt modal ─────────────────────────────────── -->
+<div class="video-prompt-overlay" id="videoOverlay">
+  <div class="video-prompt-card">
+    <h6><i class="bi bi-youtube text-danger me-2"></i>Insert YouTube Video</h6>
+    <div class="mb-3">
+      <label class="form-label fw-semibold small">YouTube URL</label>
+      <input type="url" class="form-control" id="videoUrlInput"
+             placeholder="https://www.youtube.com/watch?v=…">
+      <div class="video-preview mt-2" id="videoPreview" style="display:none">
+        <iframe id="videoPreviewFrame" src="" allowfullscreen></iframe>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-danger btn-sm" onclick="insertVideoFromPrompt()">
+        <i class="bi bi-check-lg me-1"></i>Insert
+      </button>
+      <button class="btn btn-outline-secondary btn-sm" onclick="closeVideoPrompt()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script>
+const MODULE_ID   = {{ module.id }};
+const CSRF_TOKEN  = {{ csrf_token() | tojson }};
+const IMAGE_UPLOAD_URL = `/clinic/modules/${MODULE_ID}/image/upload`;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let sectionEditors = [];   // [{quill, titleEl, cardEl}]
+let activeSectionIdx = 0;  // which section is currently targeted for video insert
+let dragSrcIndex = null;
+
+// ── Parse existing HTML into sections ────────────────────────────────────────
+function parseSectionsFromHTML(html) {
+  if (!html || !html.trim()) return [];
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const body = doc.body;
+  const sections = [];
+  let current = null;
+  Array.from(body.childNodes).forEach(node => {
+    if (node.nodeName === 'H2') {
+      if (current) sections.push(current);
+      current = { title: node.textContent.trim(), bodyHTML: '' };
+    } else if (current) {
+      current.bodyHTML += node.outerHTML || '';
+    } else {
+      // content before first h2 — treat as intro section
+      const txt = (node.textContent || '').trim();
+      if (txt) {
+        if (!current) current = { title: 'Introduction', bodyHTML: '' };
+        current.bodyHTML += node.outerHTML || '';
+      }
+    }
+  });
+  if (current) sections.push(current);
+  return sections;
+}
+
+// ── Serialize all sections → HTML ────────────────────────────────────────────
+function serializeToHTML() {
+  let html = '';
+  sectionEditors.forEach(sec => {
+    const title = sec.titleEl.value.trim() || 'Untitled';
+    const body  = sec.quill.root.innerHTML;
+    html += `<h2>${title}</h2>${body}`;
+  });
+  return html;
+}
+
+// ── Update section count badge ────────────────────────────────────────────────
+function updateSectionCountBadge() {
+  const n = sectionEditors.length;
+  document.getElementById('sectionCountBadge').textContent =
+    n + ' section' + (n !== 1 ? 's' : '');
+  // renumber
+  sectionEditors.forEach((sec, i) => {
+    const numEl = sec.cardEl.querySelector('.section-num');
+    if (numEl) numEl.textContent = 'S' + (i + 1);
+  });
+}
+
+// ── Quill toolbar config ──────────────────────────────────────────────────────
+function buildQuillConfig(sectionIdx) {
+  return {
+    theme: 'snow',
+    modules: {
+      toolbar: {
+        container: [
+          [{ header: 3 }],
+          ['bold', 'italic', 'underline'],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          ['link', 'blockquote'],
+          ['image', 'video'],
+          ['clean']
+        ],
+        handlers: {
+          image: function () { triggerImageUpload(sectionIdx); },
+          video: function () { openVideoPrompt(sectionIdx); }
+        }
+      }
+    }
+  };
+}
+
+// ── Create a section card ─────────────────────────────────────────────────────
+function createSectionCard(title, bodyHTML) {
+  const idx    = sectionEditors.length;
+  const cardEl = document.createElement('div');
+  cardEl.className = 'section-card';
+  cardEl.draggable = true;
+  cardEl.dataset.idx = idx;
+
+  const quillDivId = `quill-sec-${idx}-${Date.now()}`;
+
+  cardEl.innerHTML = `
+    <div class="section-card-header">
+      <span class="section-drag-handle" title="Drag to reorder">⠿</span>
+      <span class="section-num">S${idx + 1}</span>
+      <input type="text" class="section-title-input" placeholder="Section title…" value="${escHtml(title)}">
+      <button type="button" class="section-delete-btn" title="Delete section">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+    <div class="section-card-body">
+      <div class="section-quill-wrap">
+        <div id="${quillDivId}"></div>
+      </div>
+    </div>`;
+
+  const sectionList = document.getElementById('sectionList');
+  sectionList.appendChild(cardEl);
+
+  // Init Quill AFTER card is in DOM
+  const quill = new Quill(`#${quillDivId}`, buildQuillConfig(idx));
+  if (bodyHTML) {
+    quill.root.innerHTML = bodyHTML;
+  }
+
+  const entry = { quill, titleEl: cardEl.querySelector('.section-title-input'), cardEl };
+  sectionEditors.push(entry);
+
+  // Delete button
+  cardEl.querySelector('.section-delete-btn').addEventListener('click', () => {
+    if (sectionEditors.length <= 1) {
+      alert('You need at least one section. Add another section first before deleting this one.');
+      return;
+    }
+    if (!confirm('Delete this section?')) return;
+    const pos = sectionEditors.findIndex(s => s.cardEl === cardEl);
+    sectionEditors.splice(pos, 1);
+    cardEl.remove();
+    updateSectionCountBadge();
+  });
+
+  // Drag events
+  cardEl.addEventListener('dragstart', e => {
+    dragSrcIndex = sectionEditors.findIndex(s => s.cardEl === cardEl);
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => cardEl.style.opacity = '.4', 0);
+  });
+  cardEl.addEventListener('dragend', () => {
+    cardEl.style.opacity = '';
+    document.querySelectorAll('.section-card').forEach(c => c.classList.remove('drag-over'));
+  });
+  cardEl.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.section-card').forEach(c => c.classList.remove('drag-over'));
+    cardEl.classList.add('drag-over');
+  });
+  cardEl.addEventListener('drop', e => {
+    e.preventDefault();
+    const destIndex = sectionEditors.findIndex(s => s.cardEl === cardEl);
+    if (dragSrcIndex === null || dragSrcIndex === destIndex) return;
+    // Reorder DOM
+    const src = sectionEditors[dragSrcIndex];
+    sectionEditors.splice(dragSrcIndex, 1);
+    sectionEditors.splice(destIndex, 0, src);
+    const list = document.getElementById('sectionList');
+    sectionEditors.forEach(s => list.appendChild(s.cardEl));
+    updateSectionCountBadge();
+    cardEl.classList.remove('drag-over');
+    dragSrcIndex = null;
+  });
+
+  updateSectionCountBadge();
+  return entry;
+}
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Add Section button ────────────────────────────────────────────────────────
+function addSection() {
+  const entry = createSectionCard('', '');
+  entry.titleEl.focus();
+  entry.cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Image Upload ──────────────────────────────────────────────────────────────
+function triggerImageUpload(sectionIdx) {
+  activeSectionIdx = sectionIdx;
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/jpeg,image/png,image/gif,image/webp';
+  input.onchange = () => {
+    if (!input.files.length) return;
+    uploadImage(input.files[0], sectionIdx);
+  };
+  input.click();
+}
+
+async function uploadImage(file, sectionIdx) {
+  const toast = document.getElementById('uploadToast');
+  toast.classList.add('show');
+  try {
+    const fd = new FormData();
+    fd.append('image', file);
+    const res = await fetch(IMAGE_UPLOAD_URL, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF_TOKEN },
+      body: fd,
+    });
+    const data = await res.json();
+    if (!data.ok) { alert(data.error || 'Image upload failed.'); return; }
+    const quill = sectionEditors[sectionIdx].quill;
+    const range = quill.getSelection(true);
+    quill.insertEmbed(range.index, 'image', data.url);
+    quill.setSelection(range.index + 1);
+  } catch(err) {
+    alert('Image upload failed. Please try again.');
+    console.error(err);
+  } finally {
+    toast.classList.remove('show');
+  }
+}
+
+// ── Video Prompt ──────────────────────────────────────────────────────────────
+function openVideoPrompt(sectionIdx) {
+  activeSectionIdx = sectionIdx;
+  document.getElementById('videoUrlInput').value = '';
+  document.getElementById('videoPreview').style.display = 'none';
+  document.getElementById('videoPreviewFrame').src = '';
+  document.getElementById('videoOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('videoUrlInput').focus(), 100);
+}
+
+function closeVideoPrompt() {
+  document.getElementById('videoOverlay').classList.remove('open');
+}
+
+// Preview on input change
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('videoUrlInput').addEventListener('input', function() {
+    const embed = toYouTubeEmbed(this.value);
+    const preview = document.getElementById('videoPreview');
+    const frame   = document.getElementById('videoPreviewFrame');
+    if (embed) {
+      frame.src = embed;
+      preview.style.display = '';
+    } else {
+      preview.style.display = 'none';
+      frame.src = '';
+    }
+  });
+});
+
+function toYouTubeEmbed(url) {
+  if (!url) return null;
+  let vid = null;
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('youtube.com')) {
+      vid = u.searchParams.get('v');
+      if (!vid && u.pathname.startsWith('/embed/')) vid = u.pathname.split('/embed/')[1];
+    } else if (u.hostname === 'youtu.be') {
+      vid = u.pathname.slice(1);
+    }
+  } catch(e) { return null; }
+  if (!vid) return null;
+  return `https://www.youtube.com/embed/${vid}`;
+}
+
+function insertVideoFromPrompt() {
+  const url   = document.getElementById('videoUrlInput').value.trim();
+  const embed = toYouTubeEmbed(url);
+  if (!embed) { alert('Please enter a valid YouTube URL.'); return; }
+  closeVideoPrompt();
+  const quill = sectionEditors[activeSectionIdx].quill;
+  const range = quill.getSelection(true) || { index: quill.getLength() };
+  const html  = `<p><iframe src="${embed}" width="100%" height="315" allowfullscreen></iframe></p><p><br></p>`;
+  quill.clipboard.dangerouslyPasteHTML(range.index, html);
+}
+
+// Close overlay on backdrop click / ESC
+document.addEventListener('click', e => {
+  if (e.target === document.getElementById('videoOverlay')) closeVideoPrompt();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeVideoPrompt(); });
+
+// ── Form submit: serialize sections → HTML ────────────────────────────────────
+document.getElementById('editorForm').addEventListener('submit', function() {
+  document.getElementById('contentInput').value = serializeToHTML();
+});
+
+// ── Init: load existing content as section cards ──────────────────────────────
+const seedContent = {{ (module.content or '') | tojson }};
+const parsedSections = parseSectionsFromHTML(seedContent);
+
+if (parsedSections.length > 0) {
+  parsedSections.forEach(s => createSectionCard(s.title, s.bodyHTML));
+} else {
+  // Brand-new module — start with one empty section
+  createSectionCard('Introduction', '');
+}
+
+// ── Quiz Builder ──────────────────────────────────────────────────────────────
+let editingQId = null;
+
+function toggleAddForm() {
+  const form = document.getElementById('addQForm');
+  const isOpen = form.classList.contains('open');
+  if (isOpen) { cancelAddForm(); return; }
+  editingQId = null;
+  document.getElementById('addQFormTitle').innerHTML =
+    '<i class="bi bi-plus-circle me-2 text-primary"></i>New Question';
+  clearQForm();
+  form.classList.add('open');
+  form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function cancelAddForm() {
+  document.getElementById('addQForm').classList.remove('open');
+  editingQId = null;
+  clearQForm();
+}
+
+function clearQForm() {
+  ['qQuestion', 'qOptA', 'qOptB', 'qOptC', 'qOptD', 'qExplanation']
+    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('qCorrect').value = 'a';
+}
+
+function editQuestion(id, data) {
+  editingQId = id;
+  document.getElementById('addQFormTitle').innerHTML =
+    '<i class="bi bi-pencil-square me-2 text-primary"></i>Edit Question';
+  document.getElementById('qQuestion').value   = data.question  || '';
+  document.getElementById('qOptA').value        = data.option_a || '';
+  document.getElementById('qOptB').value        = data.option_b || '';
+  document.getElementById('qOptC').value        = data.option_c || '';
+  document.getElementById('qOptD').value        = data.option_d || '';
+  document.getElementById('qCorrect').value     = data.correct  || 'a';
+  document.getElementById('qExplanation').value = data.explanation || '';
+  const form = document.getElementById('addQForm');
+  form.classList.add('open');
+  form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function submitQuestion() {
+  const body = {
+    question:    document.getElementById('qQuestion').value.trim(),
+    option_a:    document.getElementById('qOptA').value.trim(),
+    option_b:    document.getElementById('qOptB').value.trim(),
+    option_c:    document.getElementById('qOptC').value.trim(),
+    option_d:    document.getElementById('qOptD').value.trim(),
+    correct:     document.getElementById('qCorrect').value,
+    explanation: document.getElementById('qExplanation').value.trim(),
+  };
+  if (!body.question || !body.option_a || !body.option_b) {
+    alert('Question, Option A and Option B are required.'); return;
+  }
+  const url = editingQId
+    ? `/clinic/modules/${MODULE_ID}/quiz/${editingQId}/edit`
+    : `/clinic/modules/${MODULE_ID}/quiz/add`;
+  const res  = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!data.ok) { alert(data.error || 'Failed to save question.'); return; }
+  cancelAddForm();
+  location.reload();
+}
+
+async function deleteQuestion(id) {
+  if (!confirm('Delete this question?')) return;
+  const res  = await fetch(`/clinic/modules/${MODULE_ID}/quiz/${id}/delete`, {
+    method: 'POST', headers: { 'X-CSRFToken': CSRF_TOKEN },
+  });
+  const data = await res.json();
+  if (data.ok) location.reload();
+}
+</script>
+{% endblock %}

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="PaPrep — The all-in-one parenting platform for children aged 0–5.">
   <title>{% block title %}PaPrep{% endblock %} | Empowering Parents</title>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
 
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -77,25 +78,12 @@
         </li>
         <li>
            <a href="{{ url_for('symptoms.fever_tracker') }}"
-             class="nav-link {% if request.endpoint == 'symptoms.fever_tracker' %}active{% endif %}">
+             class="nav-link {% if request.endpoint in ('symptoms.fever_tracker', 'symptoms.cough_cold_tracker', 'symptoms.diarrhea_tracker') %}active{% endif %}">
             <i class="bi bi-thermometer-half nav-icon"></i>
             <span>Fever Tracker</span>
           </a>
         </li>
-        <li>
-          <a href="{{ url_for('symptoms.cough_cold_tracker') }}"
-             class="nav-link {% if request.endpoint == 'symptoms.cough_cold_tracker' %}active{% endif %}">
-            <i class="bi bi-lungs nav-icon"></i>
-            <span>Cough & Colds</span>
-          </a>
-        </li>
-        <li>
-          <a href="{{ url_for('symptoms.diarrhea_tracker') }}"
-             class="nav-link {% if request.endpoint == 'symptoms.diarrhea_tracker' %}active{% endif %}">
-            <i class="bi bi-droplet-half nav-icon"></i>
-            <span>Diarrhea Tracker</span>
-          </a>
-        </li>
+
         <li>
           <a href="{{ url_for('symptoms.health_checklist') }}"
              class="nav-link {% if request.endpoint == 'symptoms.health_checklist' %}active{% endif %}">

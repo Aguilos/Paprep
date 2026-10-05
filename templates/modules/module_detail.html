@@ -2,15 +2,274 @@
 {% block title %}{{ module.title }}{% endblock %}
 {% block page_title %}{{ module.title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+/* ── Reader layout ───────────────────────────────────────────── */
+.module-reader {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 767px) {
+  .module-reader { grid-template-columns: 1fr; }
+  .reader-sidebar { display: none; }
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+.reader-sidebar {
+  position: sticky; top: 80px;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+.sidebar-progress-title {
+  font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--gray-500); margin-bottom: 12px;
+}
+.sidebar-section-list { list-style: none; padding: 0; margin: 0; }
+.sidebar-section-list li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: var(--radius-sm);
+  font-size: .82rem; color: var(--gray-700); cursor: pointer;
+  transition: background .15s;
+}
+.sidebar-section-list li:hover { background: var(--gray-50); }
+.sidebar-section-list li.active { background: var(--primary-light); color: var(--primary-dark); font-weight: 700; }
+.sidebar-section-list li.done  { color: var(--secondary); }
+.sidebar-section-list li .s-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid currentColor; background: transparent;
+}
+.sidebar-section-list li.done .s-dot  { background: var(--secondary); border-color: var(--secondary); }
+.sidebar-section-list li.active .s-dot{ background: var(--primary); border-color: var(--primary); }
+.sidebar-section-list li.quiz-item { color: var(--purple); }
+.sidebar-section-list li.quiz-item.active { background: var(--purple-light); }
+.sidebar-section-list li.quiz-item.done   { color: var(--secondary); }
+
+/* Overall progress bar */
+.reader-overall-bar { margin-top: 14px; }
+.reader-overall-bar .bar-label { font-size: .72rem; color: var(--gray-500); margin-bottom: 4px; display: flex; justify-content: space-between; }
+.reader-overall-bar .bar-track { height: 6px; background: var(--gray-200); border-radius: 3px; overflow: hidden; }
+.reader-overall-bar .bar-fill  { height: 100%; border-radius: 3px; background: var(--primary); transition: width .4s; }
+
+/* ── Content panel ───────────────────────────────────────────── */
+.reader-content-panel {
+  background: #fff; border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* Module header bar */
+.reader-header {
+  padding: 20px 28px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 14px;
+}
+.reader-header-icon {
+  width: 44px; height: 44px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; color: #fff; flex-shrink: 0;
+}
+.reader-breadcrumb { font-size: .75rem; color: var(--gray-500); margin-bottom: 2px; }
+.reader-title { font-size: 1.05rem; font-weight: 800; color: var(--gray-900); margin: 0; }
+
+/* Section display */
+.reader-section-wrap {
+  padding: 28px 32px;
+  min-height: 340px;
+  animation: fadeSection .28s ease;
+}
+@keyframes fadeSection { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.reader-section-wrap h2 { font-size: 1.15rem; font-weight: 800; color: var(--gray-900); margin-bottom: 14px; }
+.reader-section-wrap h3 { font-size: 1rem; font-weight: 700; color: var(--gray-800); margin: 18px 0 10px; }
+.reader-section-wrap p  { line-height: 1.75; color: var(--gray-700); }
+.reader-section-wrap ul, .reader-section-wrap ol { padding-left: 20px; color: var(--gray-700); line-height: 1.8; }
+.reader-section-wrap blockquote {
+  border-left: 4px solid var(--primary); padding: 10px 16px;
+  background: var(--primary-light); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--gray-700); margin: 12px 0;
+}
+
+/* Section nav */
+.section-nav {
+  padding: 16px 28px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.section-counter { font-size: .8rem; color: var(--gray-500); }
+
+/* ── Quiz screen ─────────────────────────────────────────────── */
+.quiz-screen { padding: 28px 32px; animation: fadeSection .28s ease; }
+.quiz-screen-header { text-align: center; margin-bottom: 28px; }
+.quiz-screen-header .quiz-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--purple-light); color: var(--purple);
+  font-size: 1.8rem; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+}
+.quiz-screen-header h4 { font-weight: 800; color: var(--gray-900); margin-bottom: 4px; }
+.quiz-screen-header p  { font-size: .88rem; color: var(--gray-500); margin: 0; }
+
+.quiz-q-block { margin-bottom: 28px; }
+.quiz-q-block .q-label {
+  font-size: .72rem; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--gray-500); margin-bottom: 6px;
+}
+.quiz-q-block .q-text { font-weight: 700; color: var(--gray-900); font-size: .97rem; margin-bottom: 12px; }
+.quiz-options { display: flex; flex-direction: column; gap: 8px; }
+.quiz-opt-btn {
+  display: flex; align-items: center; gap: 12px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: #fff; padding: 10px 14px; cursor: pointer; width: 100%;
+  text-align: left; transition: border-color .15s, background .15s;
+  font-size: .9rem; color: var(--gray-700);
+}
+.quiz-opt-btn:hover:not([disabled]) { border-color: var(--primary); background: var(--primary-light); }
+.quiz-opt-btn .opt-letter {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: var(--gray-100); border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .8rem; color: var(--gray-600);
+}
+.quiz-opt-btn.selected    { border-color: var(--primary); background: var(--primary-light); }
+.quiz-opt-btn.selected .opt-letter { background: var(--primary); border-color: var(--primary); color: #fff; }
+.quiz-opt-btn.correct-ans { border-color: var(--secondary) !important; background: var(--secondary-light) !important; }
+.quiz-opt-btn.correct-ans .opt-letter { background: var(--secondary); border-color: var(--secondary); color: #fff; }
+.quiz-opt-btn.wrong-ans   { border-color: var(--red) !important; background: var(--red-light) !important; }
+.quiz-opt-btn.wrong-ans .opt-letter   { background: var(--red); border-color: var(--red); color: #fff; }
+.quiz-explanation-hint {
+  margin-top: 8px; padding: 8px 12px;
+  background: var(--yellow-light); border-radius: var(--radius-sm);
+  font-size: .8rem; color: var(--gray-700); display: none;
+}
+
+/* Quiz result */
+.quiz-result-panel { text-align: center; padding: 32px 20px; }
+.score-ring {
+  width: 110px; height: 110px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  margin: 0 auto 20px; border: 6px solid var(--border);
+  font-size: 1.8rem; font-weight: 800;
+}
+.score-ring.pass { border-color: var(--secondary); color: var(--secondary); }
+.score-ring.fail { border-color: var(--red); color: var(--red); }
+.score-ring small { font-size: .55rem; font-weight: 600; color: var(--gray-500); }
+
+/* ── Completion Modal Popup ──────────────────────────────────── */
+.completion-banner {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1050;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+.completion-banner.show {
+  display: flex !important;
+  opacity: 1;
+  pointer-events: auto;
+}
+.completion-banner-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 36px 30px 30px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  animation: compPopIn .35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes compPopIn {
+  0% { transform: scale(0.88) translateY(12px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.completion-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: .85rem;
+  transition: all .15s ease;
+}
+.completion-close-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  transform: scale(1.05);
+}
+.comp-icon-wrap {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px;
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 25px -5px rgba(34, 197, 94, 0.35);
+}
+.completion-banner .comp-icon {
+  font-size: 2.6rem;
+  line-height: 1;
+  animation: compBounce 1s ease infinite alternate;
+}
+@keyframes compBounce {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-5px) scale(1.08); }
+}
+.completion-banner h4 {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #14532d;
+  margin-bottom: 8px;
+}
+.completion-banner p {
+  color: #4b5563;
+  font-size: .93rem;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.comp-score-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: .85rem;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  margin-bottom: 16px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-container">
 
   <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item">
-        <a href="{{ url_for('modules.list_modules') }}">Learning Modules</a>
-      </li>
+      <li class="breadcrumb-item"><a href="{{ url_for('modules.list_modules') }}">Learning Modules</a></li>
       {% if meta %}
       <li class="breadcrumb-item">
         <a href="{{ url_for('modules.list_modules', category=module.category) }}">
@@ -22,96 +281,488 @@
     </ol>
   </nav>
 
-  <div class="module-detail-card">
-    <!-- Header -->
-    <div class="module-detail-header" style="background-color: {{ meta.get('color', '#4E97D9') }};">
-      <div class="module-detail-icon">
-        <i class="{{ module.icon or meta.get('icon', 'bi-book') }}"></i>
+  <!-- Completion modal popup (shown after module completed) -->
+  <div class="completion-banner" id="completionBanner" role="dialog" aria-modal="true" aria-labelledby="compModalTitle">
+    <div class="completion-banner-card">
+      <button type="button" class="completion-close-btn" onclick="closeCompletionPopup()" aria-label="Close">
+        <i class="bi bi-x-lg"></i>
+      </button>
+      <div class="comp-icon-wrap">
+        <span class="comp-icon">🎉</span>
       </div>
-      <div class="module-detail-meta">
-        <span class="module-cat-label">{{ meta.get('label', module.category|title) }}</span>
-        {% if module.age_group %}
-        <span class="module-age-label"><i class="bi bi-person me-1"></i>{{ module.age_group }}</span>
-        {% endif %}
+      <h4 class="comp-title" id="compModalTitle">Module Completed!</h4>
+      <p class="comp-desc">
+        Great job! You've successfully completed <strong>{{ module.title }}</strong>.
+      </p>
+      {% if progress.quiz_score is not none %}
+      <div>
+        <span class="comp-score-pill">
+          <i class="bi bi-award-fill text-warning me-1"></i> Final Score: <strong>{{ progress.quiz_score }}%</strong>
+        </span>
       </div>
-      <h2 class="module-detail-title">{{ module.title }}</h2>
+      {% endif %}
+      <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center mt-3">
+        <a href="{{ url_for('modules.list_modules') }}" class="btn btn-success px-4 py-2 fw-semibold">
+          <i class="bi bi-grid-1x2-fill me-2"></i>Back to All Modules
+        </a>
+        <button type="button" class="btn btn-outline-secondary px-3 py-2" onclick="closeCompletionPopup()">
+          <i class="bi bi-book-half me-1"></i>Review Module
+        </button>
+      </div>
     </div>
+  </div>
 
-    <!-- Description -->
-    {% if module.description %}
-    <div class="module-description-bar">
-      <i class="bi bi-info-circle me-2 text-muted"></i>
-      <p class="mb-0 text-muted">{{ module.description }}</p>
-    </div>
-    {% endif %}
+  <div class="module-reader">
+    <!-- ── Sidebar ───────────────────────────────────────────── -->
+    <aside class="reader-sidebar">
+      <div class="sidebar-progress-title">Your Progress</div>
+      <ul class="sidebar-section-list" id="sidebarList">
+        <!-- Populated by JS -->
+      </ul>
+      <div class="reader-overall-bar">
+        <div class="bar-label">
+          <span>Overall</span>
+          <span id="overallPct">0%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="overallBar" style="width:0%"></div></div>
+      </div>
+    </aside>
 
-    <!-- Content -->
-    <div class="module-content">
-      {{ module.content | safe }}
-    </div>
+    <!-- ── Content panel ─────────────────────────────────────── -->
+    <main>
+      <div class="reader-content-panel">
+        <!-- Header -->
+        <div class="reader-header">
+          <div class="reader-header-icon"
+               style="background-color:{{ meta.get('color','#4E97D9') }};">
+            <i class="{{ module.icon or meta.get('icon','bi-book') }}"></i>
+          </div>
+          <div>
+            <div class="reader-breadcrumb">{{ meta.get('label', module.category|title) }} · {{ module.age_group or 'All ages' }}</div>
+            <p class="reader-title">{{ module.title }}</p>
+          </div>
+          {% if progress.status == 'completed' %}
+          <button type="button" class="badge bg-success border-0 ms-auto px-3 py-2 fs-6 shadow-sm"
+                  onclick="openCompletionPopup()" style="cursor:pointer;" title="Click to view completion details">
+            <i class="bi bi-patch-check-fill me-1"></i>Completed
+          </button>
+          {% endif %}
+        </div>
 
-    <!-- PDF Viewer -->
-    {% if module.pdf_data %}
-    <div class="pdf-viewer-section mt-4">
-      <div class="pdf-viewer-header d-flex align-items-center justify-content-between mb-2">
-        <h6 class="mb-0 fw-semibold">
-          <i class="bi bi-file-earmark-pdf-fill text-danger me-2"></i>PDF Reference Book
-        </h6>
-        <div class="d-flex gap-2">
-          <a href="{{ url_for('modules.view_pdf', module_id=module.id) }}"
-             class="btn btn-sm btn-outline-danger" target="_blank" title="Open PDF in new tab">
-            <i class="bi bi-box-arrow-up-right me-1"></i> Open in New Tab
-          </a>
-          <a href="{{ url_for('modules.download_module', module_id=module.id) }}"
-             class="btn btn-sm btn-danger">
-            <i class="bi bi-download me-1"></i> Download PDF
-          </a>
+        <!-- Section reader (hidden when quiz shows) -->
+        <div id="sectionReader">
+          <div class="reader-section-wrap" id="sectionContent"></div>
+          <div class="section-nav">
+            <button class="btn btn-outline-secondary" id="prevBtn" onclick="navigate(-1)">
+              <i class="bi bi-arrow-left me-1"></i> Prev
+            </button>
+            <span class="section-counter" id="sectionCounter"></span>
+            <button class="btn btn-primary" id="nextBtn" onclick="navigate(1)">
+              Next <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quiz screen (hidden initially) -->
+        <div id="quizScreen" style="display:none">
+          <div class="quiz-screen">
+            <div class="quiz-screen-header">
+              <div class="quiz-icon"><i class="bi bi-patch-question-fill"></i></div>
+              <h4>Knowledge Check</h4>
+              <p>Answer the questions below to complete this module. You need {{ pass_threshold }}% to pass.</p>
+            </div>
+            <div id="quizQuestions"></div>
+            <div class="d-flex gap-2 justify-content-center mt-4" id="quizActions">
+              <button class="btn btn-primary px-5" onclick="submitQuiz()">
+                <i class="bi bi-send-fill me-2"></i>Submit Answers
+              </button>
+            </div>
+          </div>
+
+          <!-- Result panel (hidden until submitted) -->
+          <div class="quiz-result-panel" id="quizResult" style="display:none">
+            <div class="score-ring" id="scoreRing">
+              <span id="scoreNum">0</span>
+              <small>/ 100</small>
+            </div>
+            <h4 id="resultHeading"></h4>
+            <p id="resultMsg" class="text-muted"></p>
+            <div class="d-flex gap-2 justify-content-center mt-3" id="resultActions"></div>
+          </div>
+        </div>
+
+      </div><!-- /reader-content-panel -->
+
+      <!-- PDF section (if available) -->
+      {% if module.pdf_data %}
+      <div class="reader-content-panel mt-4">
+        <div class="reader-header">
+          <i class="bi bi-file-earmark-pdf-fill text-danger fs-5 me-2"></i>
+          <strong>PDF Reference</strong>
+          <div class="ms-auto d-flex gap-2">
+            <a href="{{ url_for('modules.view_pdf', module_id=module.id) }}"
+               class="btn btn-sm btn-outline-danger" target="_blank">
+              <i class="bi bi-box-arrow-up-right me-1"></i>Open
+            </a>
+            <a href="{{ url_for('modules.download_module', module_id=module.id) }}"
+               class="btn btn-sm btn-danger">
+              <i class="bi bi-download me-1"></i>Download
+            </a>
+          </div>
+        </div>
+        <div style="padding:0 16px 16px;">
+          <iframe src="{{ url_for('modules.view_pdf', module_id=module.id) }}"
+                  class="pdf-embed-frame" title="PDF – {{ module.title }}"
+                  style="width:100%;height:420px;border:none;border-radius:8px;"></iframe>
         </div>
       </div>
-      <div class="pdf-embed-wrapper">
-        <iframe src="{{ url_for('modules.view_pdf', module_id=module.id) }}"
-                class="pdf-embed-frame"
-                title="PDF Viewer – {{ module.title }}"
-                allowfullscreen></iframe>
-      </div>
-      <p class="text-muted small mt-2">
-        <i class="bi bi-info-circle me-1"></i>
-        Can't see the PDF? <a href="{{ url_for('modules.view_pdf', module_id=module.id) }}"
-                               target="_blank">Open it in a new tab</a> or
-        <a href="{{ url_for('modules.download_module', module_id=module.id) }}">download it</a>.
-      </p>
-    </div>
-    {% endif %}
-
-    <!-- Actions -->
-    <div class="module-actions">
-      {% if module.pdf_data %}
-      <a href="{{ url_for('modules.download_module', module_id=module.id) }}"
-         class="btn btn-primary">
-        <i class="bi bi-file-earmark-pdf me-2"></i> Download PDF
-      </a>
-      {% else %}
-      <a href="{{ url_for('modules.download_module', module_id=module.id) }}"
-         class="btn btn-primary">
-        <i class="bi bi-download me-2"></i> Download as Reference Guide
-      </a>
       {% endif %}
-      <a href="{{ url_for('modules.list_modules', category=module.category) }}"
-         class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-2"></i> Back to Modules
-      </a>
-    </div>
-  </div>
 
-  <!-- Disclaimer -->
-  <div class="health-disclaimer mt-4">
-    <i class="bi bi-info-circle-fill me-2"></i>
-    <small>
-      The information in this module is for educational purposes only and does not constitute
-      medical advice. Always consult a qualified healthcare professional for specific concerns
-      about your child's health and development.
-    </small>
+      <!-- Disclaimer -->
+      <div class="health-disclaimer mt-4">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <small>Educational purposes only. Consult a qualified healthcare professional for specific concerns about your child's health.</small>
+      </div>
+    </main>
   </div>
-
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Data from server ─────────────────────────────────────────────────────────
+const RAW_CONTENT   = {{ (module.content or '') | tojson }};
+const QUESTIONS     = {{ (questions_data or []) | tojson }};
+const LAST_SECTION  = {{ progress.last_section }};
+const IS_COMPLETED  = {{ ('true' if progress.status == 'completed' else 'false') }};
+const MODULE_ID     = {{ module.id }};
+const PASS_THRESHOLD= {{ pass_threshold }};
+const SAVE_URL      = `/modules/${MODULE_ID}/progress`;
+const QUIZ_URL      = `/modules/${MODULE_ID}/quiz`;
+const COMPLETE_URL  = `/modules/${MODULE_ID}/complete`;
+const CSRF_TOKEN    = document.querySelector('meta[name="csrf-token"]') &&
+                      document.querySelector('meta[name="csrf-token"]').content || '';
+
+// ── Parse content into sections ──────────────────────────────────────────────
+function parseSections(html) {
+  if (!html || !html.trim()) {
+    return [{ title: 'Introduction', body: '<p class="text-muted">No content yet.</p>' }];
+  }
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const nodes = Array.from(div.childNodes);
+  const sections = [];
+  let current = null;
+
+  nodes.forEach(node => {
+    if (node.nodeName === 'H2') {
+      if (current) sections.push(current);
+      current = { title: node.textContent.trim(), body: '' };
+    } else {
+      if (!current) current = { title: 'Introduction', body: '' };
+      current.body += node.outerHTML || node.textContent;
+    }
+  });
+  if (current) sections.push(current);
+  if (!sections.length) sections.push({ title: 'Content', body: html });
+  return sections;
+}
+
+const SECTIONS = parseSections(RAW_CONTENT);
+const HAS_QUIZ = QUESTIONS.length > 0;
+const TOTAL_STEPS = SECTIONS.length + (HAS_QUIZ ? 1 : 0);
+
+let currentStep = Math.min(LAST_SECTION, SECTIONS.length - 1);
+let completedSteps = new Set();
+let quizAnswers = {};
+let quizSubmitted = false;
+
+// ── Sidebar ──────────────────────────────────────────────────────────────────
+function buildSidebar() {
+  const ul = document.getElementById('sidebarList');
+  ul.innerHTML = '';
+  SECTIONS.forEach((s, i) => {
+    const li = document.createElement('li');
+    li.id = `sidebar-step-${i}`;
+    li.innerHTML = `<span class="s-dot"></span><span>${s.title || 'Section ' + (i+1)}</span>`;
+    li.onclick = () => goToStep(i);
+    ul.appendChild(li);
+  });
+  if (HAS_QUIZ) {
+    const li = document.createElement('li');
+    li.id = `sidebar-step-quiz`;
+    li.className = 'quiz-item';
+    li.innerHTML = `<span class="s-dot"></span><i class="bi bi-patch-question me-1"></i>Quiz`;
+    li.onclick = () => goToStep(SECTIONS.length);
+    ul.appendChild(li);
+  }
+}
+
+function updateSidebar() {
+  SECTIONS.forEach((_, i) => {
+    const li = document.getElementById(`sidebar-step-${i}`);
+    if (!li) return;
+    li.className = '';
+    if (completedSteps.has(i)) li.classList.add('done');
+    if (i === currentStep && !inQuiz()) li.classList.add('active');
+  });
+  const quizLi = document.getElementById('sidebar-step-quiz');
+  if (quizLi) {
+    quizLi.className = 'quiz-item';
+    if (inQuiz()) quizLi.classList.add('active');
+    if (quizSubmitted && IS_COMPLETED) quizLi.classList.add('done');
+  }
+  // Overall progress
+  const done = completedSteps.size + (quizSubmitted && IS_COMPLETED ? 1 : 0);
+  const pct = Math.round(done / TOTAL_STEPS * 100);
+  document.getElementById('overallBar').style.width = pct + '%';
+  document.getElementById('overallPct').textContent = pct + '%';
+}
+
+function inQuiz() { return currentStep >= SECTIONS.length; }
+
+// ── Section rendering ────────────────────────────────────────────────────────
+function renderSection(idx) {
+  const s = SECTIONS[idx];
+  const wrap = document.getElementById('sectionContent');
+  wrap.style.opacity = 0;
+  setTimeout(() => {
+    wrap.innerHTML = `<h2>${s.title}</h2>${s.body}`;
+    wrap.style.opacity = 1;
+    wrap.style.transition = 'opacity .25s';
+  }, 80);
+
+  // Prev/Next buttons
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  const nextBtn = document.getElementById('nextBtn');
+  if (idx === SECTIONS.length - 1) {
+    nextBtn.innerHTML = HAS_QUIZ
+      ? 'Take Quiz <i class="bi bi-patch-question ms-1"></i>'
+      : 'Complete <i class="bi bi-check-circle ms-1"></i>';
+    nextBtn.className = 'btn btn-success';
+  } else {
+    nextBtn.innerHTML = 'Next <i class="bi bi-arrow-right ms-1"></i>';
+    nextBtn.className = 'btn btn-primary';
+  }
+  document.getElementById('sectionCounter').textContent =
+    `Section ${idx + 1} of ${SECTIONS.length}`;
+
+  completedSteps.add(idx);
+  updateSidebar();
+}
+
+function goToStep(step) {
+  currentStep = step;
+  if (step >= SECTIONS.length) {
+    showQuiz();
+  } else {
+    document.getElementById('sectionReader').style.display = '';
+    document.getElementById('quizScreen').style.display = 'none';
+    renderSection(step);
+    saveProgress(step);
+  }
+  updateSidebar();
+}
+
+function navigate(dir) {
+  const next = currentStep + dir;
+  if (next < 0) return;
+  if (next >= SECTIONS.length && !HAS_QUIZ) {
+    // No quiz — mark complete directly
+    markComplete();
+    return;
+  }
+  goToStep(next);
+}
+
+// ── Progress persistence ─────────────────────────────────────────────────────
+async function saveProgress(sectionIdx) {
+  try {
+    await fetch(SAVE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json',
+                 'X-CSRFToken': getCsrf() },
+      body: JSON.stringify({ section: sectionIdx }),
+    });
+  } catch (_) {}
+}
+
+// ── Quiz ─────────────────────────────────────────────────────────────────────
+function showQuiz() {
+  document.getElementById('sectionReader').style.display = 'none';
+  const qs = document.getElementById('quizScreen');
+  qs.style.display = '';
+  document.getElementById('quizResult').style.display = 'none';
+  document.getElementById('quizQuestions').style.display = '';
+  document.getElementById('quizActions').style.display = '';
+  renderQuizQuestions();
+  currentStep = SECTIONS.length;
+  updateSidebar();
+}
+
+function renderQuizQuestions() {
+  const container = document.getElementById('quizQuestions');
+  container.innerHTML = '';
+  QUESTIONS.forEach((q, qi) => {
+    const opts = ['a','b','c','d'].filter(l => q['option_' + l]);
+    const block = document.createElement('div');
+    block.className = 'quiz-q-block';
+    block.innerHTML = `
+      <div class="q-label">Question ${qi + 1} of ${QUESTIONS.length}</div>
+      <div class="q-text">${q.question}</div>
+      <div class="quiz-options" id="opts-${q.id}">
+        ${opts.map(l => `
+          <button class="quiz-opt-btn" id="opt-${q.id}-${l}"
+                  onclick="selectOption(${q.id}, '${l}')">
+            <span class="opt-letter">${l.toUpperCase()}</span>
+            ${q['option_' + l]}
+          </button>`).join('')}
+      </div>
+      <div class="quiz-explanation-hint" id="exp-${q.id}">
+        <i class="bi bi-lightbulb-fill text-warning me-1"></i>${q.explanation || ''}
+      </div>`;
+    container.appendChild(block);
+  });
+}
+
+function selectOption(qId, letter) {
+  if (quizSubmitted) return;
+  quizAnswers[qId] = letter;
+  // Highlight selection
+  QUESTIONS.forEach(q => {
+    if (q.id !== qId) return;
+    ['a','b','c','d'].forEach(l => {
+      const btn = document.getElementById(`opt-${qId}-${l}`);
+      if (!btn) return;
+      btn.classList.toggle('selected', l === letter);
+    });
+  });
+}
+
+async function submitQuiz() {
+  // Validate all answered
+  const unanswered = QUESTIONS.filter(q => !quizAnswers[q.id]);
+  if (unanswered.length) {
+    alert(`Please answer all ${QUESTIONS.length} questions before submitting.`);
+    return;
+  }
+  document.getElementById('quizActions').innerHTML =
+    '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Scoring…</span></div>';
+
+  const res = await fetch(QUIZ_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+    body: JSON.stringify({ answers: quizAnswers }),
+  });
+  const data = await res.json();
+  if (!data.ok) { alert('Error submitting quiz. Please try again.'); return; }
+
+  quizSubmitted = true;
+
+  // Show per-answer feedback
+  data.results.forEach(r => {
+    ['a','b','c','d'].forEach(l => {
+      const btn = document.getElementById(`opt-${r.id}-${l}`);
+      if (!btn) return;
+      btn.disabled = true;
+      if (l === r.correct) btn.classList.add('correct-ans');
+      if (!r.is_correct && l === r.submitted) btn.classList.add('wrong-ans');
+    });
+    if (r.explanation) {
+      const exp = document.getElementById(`exp-${r.id}`);
+      if (exp) exp.style.display = 'block';
+    }
+  });
+
+  // Show result panel
+  setTimeout(() => showResult(data), 600);
+}
+
+function showResult(data) {
+  document.getElementById('quizQuestions').style.display = 'none';
+  document.getElementById('quizActions').style.display = 'none';
+  const resultPanel = document.getElementById('quizResult');
+  resultPanel.style.display = '';
+
+  const ring = document.getElementById('scoreRing');
+  document.getElementById('scoreNum').textContent = data.score;
+  ring.className = 'score-ring ' + (data.passed ? 'pass' : 'fail');
+
+  if (data.passed) {
+    document.getElementById('resultHeading').textContent = '🎉 You Passed!';
+    document.getElementById('resultMsg').textContent =
+      `${data.correct_count} of ${data.total} correct (${data.score}%). Module completed!`;
+    document.getElementById('resultActions').innerHTML = `
+      <a href="{{ url_for('modules.list_modules') }}" class="btn btn-success px-4">
+        <i class="bi bi-grid-1x2-fill me-2"></i>All Modules
+      </a>`;
+    // Show completion popup
+    openCompletionPopup();
+    IS_COMPLETED = true;
+  } else {
+    document.getElementById('resultHeading').textContent = 'Keep Trying!';
+    document.getElementById('resultMsg').textContent =
+      `${data.correct_count} of ${data.total} correct (${data.score}%). You need ${PASS_THRESHOLD}% to pass.`;
+    document.getElementById('resultActions').innerHTML = `
+      <button class="btn btn-primary px-4" onclick="retryQuiz()">
+        <i class="bi bi-arrow-repeat me-2"></i>Try Again
+      </button>
+      <a href="{{ url_for('modules.list_modules') }}" class="btn btn-outline-secondary px-4">Back to Modules</a>`;
+  }
+  updateSidebar();
+}
+
+function retryQuiz() {
+  quizAnswers = {};
+  quizSubmitted = false;
+  showQuiz();
+}
+
+async function markComplete() {
+  await fetch(COMPLETE_URL, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrf() },
+  });
+  openCompletionPopup();
+}
+
+function openCompletionPopup() {
+  const banner = document.getElementById('completionBanner');
+  if (banner) banner.classList.add('show');
+}
+
+function closeCompletionPopup() {
+  const banner = document.getElementById('completionBanner');
+  if (banner) banner.classList.remove('show');
+}
+
+// Close on clicking backdrop
+const compBannerEl = document.getElementById('completionBanner');
+if (compBannerEl) {
+  compBannerEl.addEventListener('click', function(e) {
+    if (e.target === compBannerEl) closeCompletionPopup();
+  });
+}
+// Close on ESC key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeCompletionPopup();
+});
+
+function getCsrf() {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  return meta ? meta.content : '';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildSidebar();
+// Mark all sections up to last_section as done
+for (let i = 0; i <= Math.min(LAST_SECTION, SECTIONS.length - 1); i++) {
+  completedSteps.add(i);
+}
+if (IS_COMPLETED) {
+  quizSubmitted = true;
+  openCompletionPopup();
+}
+goToStep(Math.min(LAST_SECTION, SECTIONS.length - 1));
+</script>
 {% endblock %}

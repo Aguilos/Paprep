@@ -2092,3 +2092,33 @@ img, iframe, video, canvas { max-width: 100%; }
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7), 0 2px 6px rgba(0, 0, 0, 0.15) !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Interactive Learning Modules
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Module card completed badge ────────────────────────────── */
+.learning-card { position: relative; }
+.learning-card-completed-badge {
+  position: absolute; top: 10px; right: 10px; z-index: 5;
+  background: var(--secondary); color: #fff;
+  font-size: .7rem; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px;
+  display: flex; align-items: center; gap: 4px;
+  box-shadow: 0 2px 6px rgba(92,173,92,.4);
+}
+
+/* ── Reader two-column grid is defined inline per template ── */
+
+/* ── PDF embed frame ─────────────────────────────────────────── */
+.pdf-embed-frame {
+  width: 100%; height: 420px; border: none; border-radius: var(--radius-sm);
+}
+
+/* ── Quiz option buttons (extra states for modules page) ────── */
+.quiz-opt-btn { font-family: var(--font); }
+
+/* ── Clinic portal editor page ──────────────────────────────── */
+.btn-xs {
+  padding: 2px 7px; font-size: .72rem; border-radius: 5px;
+}
+

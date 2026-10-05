@@ -140,6 +140,66 @@ class LearningModule(db.Model):
         return f'<Module {self.title}>'
 
 
+class ModuleProgress(db.Model):
+    """Tracks a parent's reading progress and quiz completion for a module."""
+    __tablename__ = 'module_progress'
+
+    id            = db.Column(db.Integer, primary_key=True)
+    user_id       = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    module_id     = db.Column(db.Integer, db.ForeignKey('learning_modules.id'), nullable=False)
+    # 'in_progress' | 'completed'
+    status        = db.Column(db.String(20), default='in_progress')
+    last_section  = db.Column(db.Integer, default=0)   # 0-indexed section the user left at
+    quiz_score    = db.Column(db.Integer, nullable=True)   # 0-100 percentage
+    quiz_attempts = db.Column(db.Integer, default=0)
+    completed_at  = db.Column(db.DateTime, nullable=True)
+    updated_at    = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'module_id', name='uq_module_progress_user_module'),)
+
+    user   = db.relationship('User', backref=db.backref('module_progress', lazy='dynamic'))
+    module = db.relationship('LearningModule', backref=db.backref('progress_records', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<ModuleProgress user={self.user_id} module={self.module_id} status={self.status}>'
+
+
+class ModuleQuizQuestion(db.Model):
+    """Multiple-choice quiz question for a learning module."""
+    __tablename__ = 'module_quiz_questions'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    module_id   = db.Column(db.Integer, db.ForeignKey('learning_modules.id'), nullable=False)
+    question    = db.Column(db.Text, nullable=False)
+    option_a    = db.Column(db.String(400), nullable=False)
+    option_b    = db.Column(db.String(400), nullable=False)
+    option_c    = db.Column(db.String(400), nullable=True)
+    option_d    = db.Column(db.String(400), nullable=True)
+    correct     = db.Column(db.String(1), nullable=False)   # 'a' | 'b' | 'c' | 'd'
+    explanation = db.Column(db.Text, nullable=True)
+    sort_order  = db.Column(db.Integer, default=0)
+
+    module = db.relationship('LearningModule', backref=db.backref('quiz_questions', lazy=True,
+                                                                   order_by='ModuleQuizQuestion.sort_order'))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'module_id': self.module_id,
+            'question': self.question,
+            'option_a': self.option_a,
+            'option_b': self.option_b,
+            'option_c': self.option_c,
+            'option_d': self.option_d,
+            'correct': self.correct,
+            'explanation': self.explanation,
+            'sort_order': self.sort_order,
+        }
+
+    def __repr__(self):
+        return f'<QuizQuestion module={self.module_id} q={self.question[:40]}>'
+
+
 class ParentChildResource(db.Model):
     """Curated videos and external resources shown on the parent dashboard."""
     __tablename__ = 'parent_child_resources'

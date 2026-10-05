@@ -107,35 +107,116 @@ def fever_tracker():
     if not child:
         return redirect(url_for('children.create_child'))
 
-    if request.method == 'POST':
-        try:
-            value = float(request.form.get('value', ''))
-            unit = request.form.get('unit', 'C').upper()
-            if unit not in ('C', 'F'):
-                raise ValueError
-            celsius = _to_celsius(value, unit)
-            if not 30 <= celsius <= 45:
-                raise ValueError
-            recorded_at = datetime.fromisoformat(request.form.get('recorded_at', '').strip()) if request.form.get('recorded_at') else datetime.utcnow()
-        except (TypeError, ValueError):
-            flash('Enter a valid temperature between 30°C and 45°C.', 'error')
-            return redirect(url_for('symptoms.fever_tracker'))
+    tab = request.args.get('tab', 'fever')
+    if tab not in ('fever', 'cough', 'diarrhea'):
+        tab = 'fever'
 
-        reading = FeverReading(
-            child_id=child.id,
-            value=value,
-            unit=unit,
-            value_celsius=celsius,
-            method=request.form.get('method', '').strip() or None,
-            recorded_at=recorded_at,
-        )
-        db.session.add(reading)
-        db.session.commit()
-        flash('Temperature reading saved.', 'success')
-        return redirect(url_for('symptoms.fever_tracker'))
+    if request.method == 'POST':
+        form_type = request.form.get('_form_type', 'fever')
+
+        if form_type == 'fever':
+            try:
+                value = float(request.form.get('value', ''))
+                unit = request.form.get('unit', 'C').upper()
+                if unit not in ('C', 'F'):
+                    raise ValueError
+                celsius = _to_celsius(value, unit)
+                if not 30 <= celsius <= 45:
+                    raise ValueError
+                recorded_at = datetime.fromisoformat(request.form.get('recorded_at', '').strip()) if request.form.get('recorded_at') else datetime.utcnow()
+            except (TypeError, ValueError):
+                flash('Enter a valid temperature between 30°C and 45°C.', 'error')
+                return redirect(url_for('symptoms.fever_tracker', tab='fever'))
+            reading = FeverReading(
+                child_id=child.id,
+                value=value,
+                unit=unit,
+                value_celsius=celsius,
+                method=request.form.get('method', '').strip() or None,
+                recorded_at=recorded_at,
+            )
+            db.session.add(reading)
+            db.session.commit()
+            flash('Temperature reading saved.', 'success')
+            return redirect(url_for('symptoms.fever_tracker', tab='fever'))
+
+        elif form_type == 'cough':
+            try:
+                symptom_type = request.form['symptom_type']
+                severity = request.form['severity']
+                duration_days = int(request.form['duration_days'])
+                if symptom_type not in ('cough', 'runny/stuffy nose', 'sore throat', 'other'):
+                    raise ValueError
+                if severity not in ('mild', 'moderate', 'severe') or duration_days < 1 or duration_days > 365:
+                    raise ValueError
+                recorded_at = _parse_recorded_at(request.form)
+            except (KeyError, TypeError, ValueError):
+                flash('Enter valid cough/cold details.', 'error')
+                return redirect(url_for('symptoms.fever_tracker', tab='cough'))
+            episode = RespiratoryEpisode(
+                child_id=child.id, symptom_type=symptom_type, severity=severity,
+                duration_days=duration_days, fever_present='fever_present' in request.form,
+                wheezing='wheezing' in request.form,
+                difficulty_breathing='difficulty_breathing' in request.form,
+                recorded_at=recorded_at,
+            )
+            db.session.add(episode)
+            db.session.commit()
+            flash('Cough/cold episode saved.', 'success')
+            return redirect(url_for('symptoms.fever_tracker', tab='cough'))
+
+        elif form_type == 'diarrhea':
+            try:
+                episodes_per_day = int(request.form['episodes_per_day'])
+                consistency = request.form['consistency']
+                dehydration_signs = request.form['dehydration_signs']
+                duration_days = int(request.form['duration_days'])
+                if episodes_per_day < 1 or episodes_per_day > 100 or duration_days < 1 or duration_days > 365:
+                    raise ValueError
+                if consistency not in ('loose', 'watery') or dehydration_signs not in ('none', 'mild', 'moderate', 'severe'):
+                    raise ValueError
+                recorded_at = _parse_recorded_at(request.form)
+            except (KeyError, TypeError, ValueError):
+                flash('Enter valid diarrhea details.', 'error')
+                return redirect(url_for('symptoms.fever_tracker', tab='diarrhea'))
+            episode = DiarrheaEpisode(
+                child_id=child.id, episodes_per_day=episodes_per_day,
+                consistency=consistency, blood_present='blood_present' in request.form,
+                dehydration_signs=dehydration_signs, duration_days=duration_days,
+                recorded_at=recorded_at,
+            )
+            db.session.add(episode)
+            db.session.commit()
+            flash('Diarrhea episode saved.', 'success')
+            return redirect(url_for('symptoms.fever_tracker', tab='diarrhea'))
 
     readings = FeverReading.query.filter_by(child_id=child.id).order_by(FeverReading.recorded_at.desc(), FeverReading.id.desc()).limit(30).all()
-    return render_template('symptoms/fever_tracker.html', active_child=child, readings=readings, guidance=_reading_guidance(child, readings), disclaimer=FEVER_DISCLAIMER, guidance_source=GUIDANCE_ATTRIBUTION, page_title='Fever Tracker')
+    resp_episodes = RespiratoryEpisode.query.filter_by(child_id=child.id).order_by(RespiratoryEpisode.recorded_at.desc(), RespiratoryEpisode.id.desc()).limit(30).all()
+    diarr_episodes = DiarrheaEpisode.query.filter_by(child_id=child.id).order_by(DiarrheaEpisode.recorded_at.desc(), DiarrheaEpisode.id.desc()).limit(30).all()
+
+    resp_guidance = _respiratory_guidance(resp_episodes[0]) if resp_episodes else {
+        'severity': 'general', 'title': 'No cough/cold episodes yet',
+        'message': 'Log an episode to receive monitoring guidance.', 'actions': []
+    }
+    diarr_guidance = _diarrhea_guidance(diarr_episodes[0]) if diarr_episodes else {
+        'severity': 'general', 'title': 'No diarrhea episodes yet',
+        'message': 'Log an episode to receive hydration and monitoring guidance.', 'actions': []
+    }
+
+    return render_template(
+        'symptoms/fever_tracker.html',
+        active_child=child,
+        active_tab=tab,
+        readings=readings,
+        resp_episodes=resp_episodes,
+        diarr_episodes=diarr_episodes,
+        guidance=_reading_guidance(child, readings),
+        resp_guidance=resp_guidance,
+        diarr_guidance=diarr_guidance,
+        disclaimer=FEVER_DISCLAIMER,
+        guidance_source=GUIDANCE_ATTRIBUTION,
+        page_title='Fever Tracker',
+    )
 
 
 @symptoms_bp.route('/api/fever/readings', methods=['GET', 'POST'])
@@ -165,69 +246,15 @@ def fever_readings_api():
 @symptoms_bp.route('/cough-cold-tracker', methods=['GET', 'POST'])
 @login_required
 def cough_cold_tracker():
-    child = _active_child()
-    if not child:
-        return redirect(url_for('children.create_child'))
-    if request.method == 'POST':
-        try:
-            symptom_type = request.form['symptom_type']
-            severity = request.form['severity']
-            duration_days = int(request.form['duration_days'])
-            if symptom_type not in ('cough', 'runny/stuffy nose', 'sore throat', 'other'):
-                raise ValueError
-            if severity not in ('mild', 'moderate', 'severe') or duration_days < 1 or duration_days > 365:
-                raise ValueError
-            recorded_at = _parse_recorded_at(request.form)
-        except (KeyError, TypeError, ValueError):
-            flash('Enter valid cough/cold details.', 'error')
-            return redirect(url_for('symptoms.cough_cold_tracker'))
-        episode = RespiratoryEpisode(
-            child_id=child.id, symptom_type=symptom_type, severity=severity,
-            duration_days=duration_days, fever_present='fever_present' in request.form,
-            wheezing='wheezing' in request.form,
-            difficulty_breathing='difficulty_breathing' in request.form,
-            recorded_at=recorded_at,
-        )
-        db.session.add(episode)
-        db.session.commit()
-        flash('Cough/cold episode saved.', 'success')
-        return redirect(url_for('symptoms.cough_cold_tracker'))
-    episodes = RespiratoryEpisode.query.filter_by(child_id=child.id).order_by(RespiratoryEpisode.recorded_at.desc(), RespiratoryEpisode.id.desc()).limit(30).all()
-    return render_template('symptoms/cough_cold_tracker.html', active_child=child, episodes=episodes, guidance=_respiratory_guidance(episodes[0]) if episodes else {'severity': 'general', 'title': 'No cough/cold episodes yet', 'message': 'Log an episode to receive monitoring guidance.', 'actions': []}, disclaimer=FEVER_DISCLAIMER, guidance_source=GUIDANCE_ATTRIBUTION, page_title='Cough & Colds Tracker')
+    # Merged into the Fever Tracker – redirect to the Cough & Colds tab.
+    return redirect(url_for('symptoms.fever_tracker', tab='cough'))
 
 
 @symptoms_bp.route('/diarrhea-tracker', methods=['GET', 'POST'])
 @login_required
 def diarrhea_tracker():
-    child = _active_child()
-    if not child:
-        return redirect(url_for('children.create_child'))
-    if request.method == 'POST':
-        try:
-            episodes_per_day = int(request.form['episodes_per_day'])
-            consistency = request.form['consistency']
-            dehydration_signs = request.form['dehydration_signs']
-            duration_days = int(request.form['duration_days'])
-            if episodes_per_day < 1 or episodes_per_day > 100 or duration_days < 1 or duration_days > 365:
-                raise ValueError
-            if consistency not in ('loose', 'watery') or dehydration_signs not in ('none', 'mild', 'moderate', 'severe'):
-                raise ValueError
-            recorded_at = _parse_recorded_at(request.form)
-        except (KeyError, TypeError, ValueError):
-            flash('Enter valid diarrhea details.', 'error')
-            return redirect(url_for('symptoms.diarrhea_tracker'))
-        episode = DiarrheaEpisode(
-            child_id=child.id, episodes_per_day=episodes_per_day,
-            consistency=consistency, blood_present='blood_present' in request.form,
-            dehydration_signs=dehydration_signs, duration_days=duration_days,
-            recorded_at=recorded_at,
-        )
-        db.session.add(episode)
-        db.session.commit()
-        flash('Diarrhea episode saved.', 'success')
-        return redirect(url_for('symptoms.diarrhea_tracker'))
-    episodes = DiarrheaEpisode.query.filter_by(child_id=child.id).order_by(DiarrheaEpisode.recorded_at.desc(), DiarrheaEpisode.id.desc()).limit(30).all()
-    return render_template('symptoms/diarrhea_tracker.html', active_child=child, episodes=episodes, guidance=_diarrhea_guidance(episodes[0]) if episodes else {'severity': 'general', 'title': 'No diarrhea episodes yet', 'message': 'Log an episode to receive hydration and monitoring guidance.', 'actions': []}, disclaimer=FEVER_DISCLAIMER, guidance_source=GUIDANCE_ATTRIBUTION, page_title='Diarrhea Tracker')
+    # Merged into the Fever Tracker – redirect to the Diarrhea tab.
+    return redirect(url_for('symptoms.fever_tracker', tab='diarrhea'))
 
 
 # Dietary and health checklist remains available under the symptoms blueprint for compatibility.

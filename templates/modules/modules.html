@@ -46,6 +46,12 @@
         {% for module in mods %}
         <div class="col-md-6 col-lg-4">
           <div class="learning-card" data-cat="{{ module.category }}">
+            <!-- Completed badge overlay -->
+            {% if module.completed %}
+            <div class="learning-card-completed-badge">
+              <i class="bi bi-patch-check-fill me-1"></i>Completed
+            </div>
+            {% endif %}
             <div class="learning-card-header" style="background-color: {{ meta.color or '#4E97D9' }};">
               <i class="{{ module.icon or meta.icon or 'bi-book' }}"></i>
             </div>
@@ -57,6 +63,19 @@
               {% endif %}
               <h6 class="learning-card-title">{{ module.title }}</h6>
               <p class="learning-card-desc text-muted small">{{ module.description }}</p>
+              <!-- Progress indicators -->
+              {% if module.in_progress %}
+              <div class="mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <small class="text-muted">In progress</small>
+                  <small class="text-muted">Section {{ module.last_section + 1 }}</small>
+                </div>
+                <div style="height:4px;background:var(--gray-200);border-radius:2px;overflow:hidden;">
+                  <div style="height:100%;background:var(--accent);border-radius:2px;
+                              width:{{ [((module.last_section + 1) / 1)|int * 20, 90]|min }}%;"></div>
+                </div>
+              </div>
+              {% endif %}
               {% if module.pdf_data %}
               <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 small">
                 <i class="bi bi-file-earmark-pdf-fill me-1"></i>PDF Available
@@ -64,10 +83,22 @@
               {% endif %}
             </div>
             <div class="learning-card-footer">
+              {% if module.completed %}
+              <a href="{{ url_for('modules.module_detail', module_id=module.id) }}"
+                 class="btn btn-sm btn-success flex-grow-1">
+                <i class="bi bi-patch-check-fill me-1"></i>Review
+              </a>
+              {% elif module.in_progress %}
+              <a href="{{ url_for('modules.module_detail', module_id=module.id) }}"
+                 class="btn btn-sm btn-warning flex-grow-1">
+                <i class="bi bi-play-circle-fill me-1"></i>Continue
+              </a>
+              {% else %}
               <a href="{{ url_for('modules.module_detail', module_id=module.id) }}"
                  class="btn btn-sm btn-primary flex-grow-1">
-                <i class="bi bi-book-fill me-1"></i> Read
+                <i class="bi bi-book-fill me-1"></i>Start
               </a>
+              {% endif %}
               {% if module.pdf_data %}
               <a href="{{ url_for('modules.download_module', module_id=module.id) }}"
                  class="btn btn-sm btn-danger" title="Download PDF">
