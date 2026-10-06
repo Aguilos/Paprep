@@ -52,6 +52,7 @@
               <h5 class="mb-0">Log a temperature for {{ active_child.name }}</h5>
             </div>
             <form method="POST" class="symptom-panel-body">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="_form_type" value="fever">
               <div class="mb-3">
                 <label class="form-label fw-semibold">Temperature</label>
@@ -141,6 +142,7 @@
               <h5 class="mb-0">Log symptoms for {{ active_child.name }}</h5>
             </div>
             <form method="POST" class="symptom-panel-body">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="_form_type" value="cough">
               <div class="mb-3">
                 <label class="form-label fw-semibold">Main symptom</label>
@@ -250,6 +252,7 @@
               <h5 class="mb-0">Log symptoms for {{ active_child.name }}</h5>
             </div>
             <form method="POST" class="symptom-panel-body">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="_form_type" value="diarrhea">
               <div class="mb-3">
                 <label class="form-label fw-semibold">Episodes per day</label>
