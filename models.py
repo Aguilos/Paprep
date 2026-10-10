@@ -631,6 +631,54 @@ class NewsletterMedia(db.Model):
         return f'<NewsletterMedia newsletter={self.newsletter_id} type={self.media_type}>'
 
 
+class NewsletterLike(db.Model):
+    """Tracks when a parent marks a newsletter as helpful."""
+    __tablename__ = 'newsletter_likes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    newsletter_id = db.Column(db.Integer, db.ForeignKey('newsletters.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship(
+        'User',
+        backref=db.backref('newsletter_likes', lazy=True, cascade='all, delete-orphan')
+    )
+    newsletter = db.relationship(
+        'Newsletter',
+        backref=db.backref('likes', lazy=True, cascade='all, delete-orphan')
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'newsletter_id', name='uq_user_newsletter_like'),
+    )
+
+
+class NewsletterComment(db.Model):
+    """A parent's comment on a clinic newsletter."""
+    __tablename__ = 'newsletter_comments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    newsletter_id = db.Column(db.Integer, db.ForeignKey('newsletters.id'), nullable=False)
+    text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship(
+        'User',
+        backref=db.backref('newsletter_comments', lazy=True, cascade='all, delete-orphan')
+    )
+    newsletter = db.relationship(
+        'Newsletter',
+        backref=db.backref(
+            'comments',
+            lazy=True,
+            cascade='all, delete-orphan',
+            order_by='NewsletterComment.created_at'
+        )
+    )
+
+
 class ForumReport(db.Model):
     """A parent report for forum content awaiting moderation."""
     __tablename__ = 'forum_reports'

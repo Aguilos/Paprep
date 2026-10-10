@@ -1,12 +1,13 @@
 from datetime import date, datetime, timedelta
 import json
 
-from flask import Blueprint, render_template, redirect, url_for, session, jsonify, request
+from flask import Blueprint, abort, render_template, redirect, url_for, session, jsonify, request
 from flask_login import login_required, current_user
 
 from models import (
     HealthChecklist, ClinicAnnouncement, ClinicMessage, Clinic,
     NotificationRead, ParentChildResource, Newsletter,
+    NewsletterLike, NewsletterComment,
 )
 from app import db
 from utils import today_pht
@@ -125,6 +126,68 @@ def mark_notification_read():
     return jsonify({'ok': True, 'unread_count': get_user_notifications()['unread_count']})
 
 
+def get_accessible_newsletter(newsletter_id):
+    newsletter = Newsletter.query.filter_by(
+        id=newsletter_id, is_published=True
+    ).first_or_404()
+    if newsletter.child_id not in {child.id for child in current_user.children}:
+        abort(404)
+    return newsletter
+
+
+@main_bp.route('/api/newsletters/<int:newsletter_id>/like', methods=['POST'])
+@login_required
+def toggle_newsletter_like(newsletter_id):
+    newsletter = get_accessible_newsletter(newsletter_id)
+    existing_like = NewsletterLike.query.filter_by(
+        user_id=current_user.id, newsletter_id=newsletter.id
+    ).first()
+
+    if existing_like:
+        db.session.delete(existing_like)
+        liked = False
+    else:
+        db.session.add(NewsletterLike(
+            user_id=current_user.id,
+            newsletter_id=newsletter.id,
+        ))
+        liked = True
+
+    db.session.commit()
+    like_count = NewsletterLike.query.filter_by(newsletter_id=newsletter.id).count()
+    return jsonify({'ok': True, 'liked': liked, 'like_count': like_count})
+
+
+@main_bp.route('/api/newsletters/<int:newsletter_id>/comment', methods=['POST'])
+@login_required
+def add_newsletter_comment(newsletter_id):
+    newsletter = get_accessible_newsletter(newsletter_id)
+    data = request.get_json(silent=True) or {}
+    raw_text = data.get('text', '') if isinstance(data, dict) else ''
+    text = raw_text.strip() if isinstance(raw_text, str) else ''
+
+    if not text:
+        return jsonify({'ok': False, 'error': 'Comment cannot be empty'}), 400
+
+    comment = NewsletterComment(
+        user_id=current_user.id,
+        newsletter_id=newsletter.id,
+        text=text,
+    )
+    db.session.add(comment)
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'comment': {
+            'id': comment.id,
+            'user_name': f'{current_user.first_name} {current_user.last_name}',
+            'text': comment.text,
+            'time': 'Just now',
+        },
+    })
+
+
 
 @main_bp.route('/')
 def index():
@@ -208,6 +271,10 @@ def dashboard():
     newsletters = Newsletter.query.filter_by(
         child_id=active_child.id, is_published=True
     ).order_by(Newsletter.created_at.desc(), Newsletter.id.desc()).all()
+    liked_newsletter_ids = {
+        like.newsletter_id
+        for like in NewsletterLike.query.filter_by(user_id=current_user.id).all()
+    }
 
     return render_template('dashboard/dashboard.html',
                            active_child=active_child,
@@ -215,5 +282,5 @@ def dashboard():
                            expanded_child_id=expanded_child_id,
                            resources=resources,
                            newsletters=newsletters,
+                           liked_newsletter_ids=liked_newsletter_ids,
                            page_title='Dashboard')
-

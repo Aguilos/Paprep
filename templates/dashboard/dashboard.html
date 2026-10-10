@@ -164,13 +164,37 @@
         </div>
         {% endif %}
         <footer class="newsletter-engagement" aria-label="Newsletter engagement">
-          <button type="button" class="newsletter-engagement-action">
-            <i class="bi bi-hand-thumbs-up" aria-hidden="true"></i> Helpful
+          <button type="button"
+                  class="newsletter-engagement-action newsletter-like-button {% if newsletter.id in liked_newsletter_ids %}is-liked{% endif %}"
+                  data-newsletter-id="{{ newsletter.id }}"
+                  aria-pressed="{{ 'true' if newsletter.id in liked_newsletter_ids else 'false' }}">
+            <i class="bi bi-hand-thumbs-{{ 'up-fill' if newsletter.id in liked_newsletter_ids else 'up' }}" aria-hidden="true"></i>
+            Helpful <span class="newsletter-like-count">{{ newsletter.likes|length }}</span>
           </button>
-          <button type="button" class="newsletter-engagement-action">
-            <i class="bi bi-chat-left-text" aria-hidden="true"></i> Comment
+          <button type="button" class="newsletter-engagement-action newsletter-comment-toggle"
+                  data-newsletter-id="{{ newsletter.id }}" aria-expanded="false">
+            <i class="bi bi-chat-left-text" aria-hidden="true"></i>
+            Comment <span class="newsletter-comment-count">{{ newsletter.comments|length }}</span>
           </button>
         </footer>
+        <div class="newsletter-comments" data-newsletter-id="{{ newsletter.id }}" hidden>
+          <div class="newsletter-comment-list">
+            {% for comment in newsletter.comments %}
+            <div class="newsletter-comment">
+              <strong>{{ comment.user.first_name }} {{ comment.user.last_name }}</strong>
+              <span class="newsletter-comment-time">{{ comment.created_at.strftime('%b %d, %H:%M') }}</span>
+              <p>{{ comment.text }}</p>
+            </div>
+            {% endfor %}
+          </div>
+          <form class="newsletter-comment-form" data-newsletter-id="{{ newsletter.id }}">
+            <label class="visually-hidden" for="newsletter-comment-{{ newsletter.id }}">Add a comment</label>
+            <input id="newsletter-comment-{{ newsletter.id }}" name="text" type="text"
+                   maxlength="2000" placeholder="Share a thought..." required>
+            <button type="submit" class="btn btn-sm btn-primary">Post</button>
+          </form>
+          <div class="newsletter-comment-error" role="alert" hidden></div>
+        </div>
       </article>
       {% else %}
       <div class="dashboard-empty-resource">No clinic-authored newsletters are available for {{ active_child.name }} yet.</div>
@@ -277,6 +301,80 @@
       button.setAttribute('aria-expanded', String(expanded));
     });
   });
+
+  /* ── Newsletter engagement ─────────────────────────────────── */
+  (function () {
+    const csrfToken = '{{ csrf_token() }}';
+
+    document.querySelectorAll('.newsletter-like-button').forEach(function (button) {
+      button.addEventListener('click', async function () {
+        button.disabled = true;
+        try {
+          const response = await fetch('/api/newsletters/' + button.dataset.newsletterId + '/like', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+          });
+          const data = await response.json();
+          if (!response.ok || !data.ok) throw new Error(data.error || 'Unable to update helpful status.');
+          button.classList.toggle('is-liked', data.liked);
+          button.setAttribute('aria-pressed', String(data.liked));
+          button.querySelector('i').className = 'bi bi-hand-thumbs-' + (data.liked ? 'up-fill' : 'up');
+          button.querySelector('.newsletter-like-count').textContent = data.like_count;
+        } catch (error) {
+          console.error(error);
+        } finally {
+          button.disabled = false;
+        }
+      });
+    });
+
+    document.querySelectorAll('.newsletter-comment-toggle').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const comments = document.querySelector('.newsletter-comments[data-newsletter-id="' + button.dataset.newsletterId + '"]');
+        const isHidden = comments.hasAttribute('hidden');
+        if (isHidden) comments.removeAttribute('hidden');
+        else comments.setAttribute('hidden', '');
+        button.setAttribute('aria-expanded', String(isHidden));
+        if (isHidden) comments.querySelector('input').focus();
+      });
+    });
+
+    document.querySelectorAll('.newsletter-comment-form').forEach(function (form) {
+      form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const input = form.querySelector('input');
+        const submit = form.querySelector('button');
+        const errorBox = form.parentElement.querySelector('.newsletter-comment-error');
+        const text = input.value.trim();
+        if (!text) return;
+        submit.disabled = true;
+        errorBox.hidden = true;
+        try {
+          const response = await fetch('/api/newsletters/' + form.dataset.newsletterId + '/comment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ text: text })
+          });
+          const data = await response.json();
+          if (!response.ok || !data.ok) throw new Error(data.error || 'Unable to post comment.');
+          const comment = document.createElement('div');
+          comment.className = 'newsletter-comment';
+          comment.innerHTML = '<strong></strong><span class="newsletter-comment-time">Just now</span><p></p>';
+          comment.querySelector('strong').textContent = data.comment.user_name;
+          comment.querySelector('p').textContent = data.comment.text;
+          form.parentElement.querySelector('.newsletter-comment-list').appendChild(comment);
+          const count = document.querySelector('.newsletter-comment-toggle[data-newsletter-id="' + form.dataset.newsletterId + '"] .newsletter-comment-count');
+          count.textContent = Number(count.textContent) + 1;
+          input.value = '';
+        } catch (error) {
+          errorBox.textContent = error.message;
+          errorBox.hidden = false;
+        } finally {
+          submit.disabled = false;
+        }
+      });
+    });
+  })();
 
   /* ── Topbar Child Icon Buttons + Quick-View Panel ─────────── */
   (function () {
