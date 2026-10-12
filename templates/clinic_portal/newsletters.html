@@ -22,7 +22,7 @@
     <div class="card-body">
       <div class="d-flex justify-content-between gap-3">
         <div>
-          <div class="small text-muted mb-1">{{ newsletter.child.name }} · {{ newsletter.updated_at.strftime('%b %d, %Y') }}</div>
+          <div class="small text-muted mb-1">Ages {{ newsletter.target_age_min_years }}–{{ newsletter.target_age_max_years }} · {{ newsletter.updated_at.strftime('%b %d, %Y') }}</div>
           <h5 class="mb-2">{{ newsletter.title }}</h5>
           <p class="mb-0" style="white-space:pre-wrap;">{{ newsletter.body }}</p>
           {% if newsletter.media %}
@@ -32,6 +32,26 @@
             {% endfor %}
           </div>
           {% endif %}
+          <div class="border-top mt-3 pt-3">
+            <div class="small text-muted mb-2">
+              <i class="bi bi-hand-thumbs-up me-1"></i>{{ newsletter.likes|length }} helpful
+              <span class="mx-2">·</span>
+              <i class="bi bi-chat-left-text me-1"></i>{{ newsletter.comments|length }} comments
+            </div>
+            {% if newsletter.comments %}
+            <div class="d-flex flex-column gap-2">
+              {% for comment in newsletter.comments %}
+              <div class="small">
+                <strong>{{ comment.user.first_name }} {{ comment.user.last_name }}</strong>
+                <span class="text-muted ms-1">{{ comment.created_at.strftime('%b %d, %H:%M') }}</span>
+                <div>{{ comment.text }}</div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="small text-muted">No comments yet.</div>
+            {% endif %}
+          </div>
         </div>
         <div class="text-end flex-shrink-0">
           <span class="badge {% if newsletter.is_published %}bg-success{% else %}bg-secondary{% endif %}">{{ 'Published' if newsletter.is_published else 'Draft' }}</span>
@@ -52,7 +72,7 @@
 <div class="text-center py-5 text-muted bg-white rounded shadow-sm">
   <i class="bi bi-envelope-paper fs-1 d-block mb-3"></i>
   <h5>No child newsletters yet.</h5>
-  <p class="mb-0">Create a newsletter for a registered child to publish a clinic-authored update.</p>
+  <p class="mb-0">Create an age-appropriate clinic update for parents.</p>
 </div>
 {% endif %}
 
@@ -63,8 +83,8 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="modal-header"><h5 class="modal-title">New Child Newsletter</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body">
-        <label class="form-label fw-semibold">Child</label>
-        <select name="child_id" class="form-select mb-3" required>{% for registration in registrations %}<option value="{{ registration.child.id }}">{{ registration.child.name }} ({{ registration.user.first_name }} {{ registration.user.last_name }})</option>{% endfor %}</select>
+        <label class="form-label fw-semibold">Target age range (years)</label>
+        <div class="row g-2 mb-3"><div class="col"><input name="target_age_min_years" type="number" min="0" max="21" value="0" class="form-control" required><div class="form-text">From</div></div><div class="col"><input name="target_age_max_years" type="number" min="0" max="21" value="21" class="form-control" required><div class="form-text">To</div></div></div>
         <label class="form-label fw-semibold">Title</label><input name="title" class="form-control mb-3" required>
         <label class="form-label fw-semibold">Body</label><textarea name="body" class="form-control" rows="7" required></textarea>
         <label class="form-label fw-semibold mt-3">Images and videos <small class="text-muted">(optional URL-only attachments)</small></label>
@@ -84,7 +104,7 @@
     <form method="POST" action="{{ url_for('clinic_portal.edit_newsletter', newsletter_id=newsletter.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="modal-header"><h5 class="modal-title">Edit Newsletter</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body"><label class="form-label fw-semibold">Title</label><input name="title" value="{{ newsletter.title }}" class="form-control mb-3" required><label class="form-label fw-semibold">Body</label><textarea name="body" class="form-control" rows="7" required>{{ newsletter.body }}</textarea><label class="form-label fw-semibold mt-3">Images and videos <small class="text-muted">(optional URL-only attachments)</small></label><div id="editMediaRows{{ newsletter.id }}">{% for media in newsletter.media %}<div class="media-row d-flex gap-2 mb-2"><select name="media_type" class="form-select" style="max-width:110px"><option value="image" {% if media.media_type == 'image' %}selected{% endif %}>Image</option><option value="video" {% if media.media_type == 'video' %}selected{% endif %}>Video</option></select><input name="media_source" value="{{ media.source }}" class="form-control" type="url" required><input name="media_caption" value="{{ media.caption or '' }}" class="form-control" placeholder="Caption"><button type="button" class="btn btn-outline-danger" onclick="this.closest('.media-row').remove()" title="Remove"><i class="bi bi-x-lg"></i></button></div>{% endfor %}</div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="addMediaRow('editMediaRows{{ newsletter.id }}')"><i class="bi bi-plus-lg me-1"></i>Add media</button><div class="media-preview mt-3" data-preview-for="editMediaRows{{ newsletter.id }}"></div></div>
+      <div class="modal-body"><label class="form-label fw-semibold">Target age range (years)</label><div class="row g-2 mb-3"><div class="col"><input name="target_age_min_years" type="number" min="0" max="21" value="{{ newsletter.target_age_min_years }}" class="form-control" required><div class="form-text">From</div></div><div class="col"><input name="target_age_max_years" type="number" min="0" max="21" value="{{ newsletter.target_age_max_years }}" class="form-control" required><div class="form-text">To</div></div></div><label class="form-label fw-semibold">Title</label><input name="title" value="{{ newsletter.title }}" class="form-control mb-3" required><label class="form-label fw-semibold">Body</label><textarea name="body" class="form-control" rows="7" required>{{ newsletter.body }}</textarea><label class="form-label fw-semibold mt-3">Images and videos <small class="text-muted">(optional URL-only attachments)</small></label><div id="editMediaRows{{ newsletter.id }}">{% for media in newsletter.media %}<div class="media-row d-flex gap-2 mb-2"><select name="media_type" class="form-select" style="max-width:110px"><option value="image" {% if media.media_type == 'image' %}selected{% endif %}>Image</option><option value="video" {% if media.media_type == 'video' %}selected{% endif %}>Video</option></select><input name="media_source" value="{{ media.source }}" class="form-control" type="url" required><input name="media_caption" value="{{ media.caption or '' }}" class="form-control" placeholder="Caption"><button type="button" class="btn btn-outline-danger" onclick="this.closest('.media-row').remove()" title="Remove"><i class="bi bi-x-lg"></i></button></div>{% endfor %}</div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="addMediaRow('editMediaRows{{ newsletter.id }}')"><i class="bi bi-plus-lg me-1"></i>Add media</button><div class="media-preview mt-3" data-preview-for="editMediaRows{{ newsletter.id }}"></div></div>
       <div class="modal-footer"><button class="btn btn-outline-secondary" name="action" value="draft">Save as Draft</button><button class="btn btn-primary" name="action" value="publish">Publish</button></div>
     </form>
   </div></div>

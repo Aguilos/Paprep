@@ -110,8 +110,10 @@ class ChildProfile(db.Model):
             return '2–3 years'
         elif m < 48:
             return '3–4 years'
-        else:
+        elif m < 60:
             return '4–5 years'
+        else:
+            return '5+ years'
 
     def __repr__(self):
         return f'<Child {self.name}>'
@@ -588,14 +590,16 @@ class ClinicRegistration(db.Model):
 
 
 class Newsletter(db.Model):
-    """A clinic-authored update published for one registered child."""
+    """A clinic-authored update published for a range of child ages."""
     __tablename__ = 'newsletters'
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     body = db.Column(db.Text, nullable=False)
-    child_id = db.Column(db.Integer, db.ForeignKey('child_profiles.id'), nullable=False)
+    child_id = db.Column(db.Integer, db.ForeignKey('child_profiles.id'), nullable=True)
     clinic_id = db.Column(db.Integer, db.ForeignKey('clinics.id'), nullable=False)
+    target_age_min_years = db.Column(db.Integer, nullable=False, default=0)
+    target_age_max_years = db.Column(db.Integer, nullable=False, default=21)
     is_published = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

@@ -21,7 +21,6 @@ FORUM_CATEGORIES = {
     'general':      {'label': 'General',        'icon': 'bi-chat-dots-fill',      'color': '#4E97D9'},
     'parenting':    {'label': 'Parenting Tips',  'icon': 'bi-people-fill',          'color': '#9B59B6'},
     'nutrition':    {'label': 'Nutrition',       'icon': 'bi-apple',               'color': '#5CAD5C'},
-    'health':       {'label': 'Child Health',    'icon': 'bi-heart-pulse-fill',    'color': '#E74C3C'},
     'safety':       {'label': 'Safety',          'icon': 'bi-shield-check',        'color': '#FF8C42'},
 }
 
@@ -35,6 +34,8 @@ def forum_home():
     query = ForumPost.query.filter_by(is_hidden=False)
     if category and category in FORUM_CATEGORIES:
         query = query.filter_by(category=category)
+    elif category:
+        query = query.filter(ForumPost.id == -1)
     # Pinned posts first, then newest
     posts = query.order_by(
         ForumPost.is_pinned.desc(),

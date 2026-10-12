@@ -8,11 +8,13 @@ import base64
 import functools
 import hashlib
 import secrets
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import pyotp
 import qrcode
+from sqlalchemy import or_
 
 from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash, session, abort, send_file, Response, current_app,
@@ -21,8 +23,9 @@ from werkzeug.utils import secure_filename
 from app import db
 from models import (ClinicAccount, Clinic, ClinicSchedule, LearningModule,
                     ClinicAnnouncement, ParentChildResource, PasswordResetToken,
-                    ClinicRegistration, ChildProfile, Newsletter, NewsletterMedia,
-                    ModuleQuizQuestion)
+                    ClinicRegistration, ChildProfile, User, Newsletter, NewsletterMedia,
+                    ModuleQuizQuestion, FeverReading, RespiratoryEpisode,
+                    DiarrheaEpisode, HealthChecklist)
 
 clinic_portal_bp = Blueprint('clinic_portal', __name__, url_prefix='/clinic')
 
@@ -31,7 +34,6 @@ CATEGORY_META = {
     'parenting':     {'label': 'Parenting',    'icon': 'bi-people-fill',      'color': '#4E97D9'},
     'nutrition':     {'label': 'Nutrition',    'icon': 'bi-apple',            'color': '#5CAD5C'},
     'safety':        {'label': 'Safety',       'icon': 'bi-shield-check',     'color': '#FF8C42'},
-    'health':        {'label': 'Child Health', 'icon': 'bi-heart-pulse-fill', 'color': '#E74C3C'},
 }
 MIN_PASSWORD_LENGTH = 8
 
@@ -87,6 +89,37 @@ def _clinic_child_registration(account, child_id):
     return registration
 
 
+def _clinic_parent_registration_for_child(account, child_id):
+    child = db.session.get(ChildProfile, child_id)
+    if not child:
+        return None
+    registration = ClinicRegistration.query.filter_by(
+        clinic_id=account.clinic.id,
+        user_id=child.user_id,
+    ).first()
+    if not registration or registration.user_id != child.user_id:
+        return None
+    return registration
+
+
+try:
+    MANILA_TIMEZONE = ZoneInfo('Asia/Manila')
+except ZoneInfoNotFoundError:
+    # Windows installations without the optional IANA tzdata use Manila's
+    # fixed UTC+8 offset; Manila has no daylight-saving transitions.
+    MANILA_TIMEZONE = timezone(timedelta(hours=8))
+
+
+def _format_manila_time(value):
+    if not value:
+        return 'Not recorded'
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(MANILA_TIMEZONE).strftime(
+        '%b %d, %Y %H:%M Manila time'
+    )
+
+
 def _newsletter_media_from_form(form):
     media = []
     types = form.getlist('media_type')
@@ -114,8 +147,9 @@ def _newsletter_media_from_form(form):
 
 
 def _replace_newsletter_media(newsletter, form):
+    media = _newsletter_media_from_form(form)
     newsletter.media.clear()
-    newsletter.media.extend(_newsletter_media_from_form(form))
+    newsletter.media.extend(media)
 
 
 def _ampm_to_24h(hour, minute, period):
@@ -345,7 +379,9 @@ def dashboard():
     if not account.clinic:
         return redirect(url_for('clinic_portal.setup_clinic'))
     clinic = account.clinic
-    modules = LearningModule.query.filter_by(clinic_account_id=account.id).order_by(LearningModule.id.desc()).all()
+    modules = LearningModule.query.filter_by(clinic_account_id=account.id).filter(
+        LearningModule.category.in_(CATEGORY_META)
+    ).order_by(LearningModule.id.desc()).all()
     schedules = ClinicSchedule.query.filter_by(clinic_id=clinic.id).all()
     return render_template('clinic_portal/dashboard.html',
                            account=account,
@@ -404,8 +440,9 @@ def manage_modules():
     account = _current_clinic_account()
     if not account.clinic:
         return redirect(url_for('clinic_portal.setup_clinic'))
-    modules = LearningModule.query.filter_by(clinic_account_id=account.id)\
-                                  .order_by(LearningModule.id.desc()).all()
+    modules = LearningModule.query.filter_by(clinic_account_id=account.id).filter(
+        LearningModule.category.in_(CATEGORY_META)
+    ).order_by(LearningModule.id.desc()).all()
     resources = ParentChildResource.query.filter_by(clinic_account_id=account.id)\
                                          .order_by(ParentChildResource.id.desc()).all()
     return render_template('clinic_portal/manage_modules.html',
@@ -474,11 +511,70 @@ def add_module():
     # Handle optional PDF upload
     file = request.files.get('pdf_file')
     if file and file.filename.lower().endswith('.pdf'):
-        module.pdf_data = file.read()
-        module.pdf_filename = secure_filename(file.filename)
+        pdf_data = file.read()
+        if pdf_data.startswith(b'%PDF'):
+            module.pdf_data = pdf_data
+            module.pdf_filename = secure_filename(file.filename)
     db.session.commit()
     flash(f'Module "{module.title}" created. Add content and quiz questions below.', 'success')
     return redirect(url_for('clinic_portal.module_editor', module_id=module.id))
+
+
+def _module_form_values():
+    return {
+        'title': request.form.get('title', '').strip(),
+        'description': request.form.get('description', '').strip(),
+        'content': request.form.get('content', '').strip(),
+        'category': request.form.get('category', '').strip(),
+        'age_group': request.form.get('age_group', '').strip(),
+    }
+
+
+def _validate_and_save_module(module):
+    values = _module_form_values()
+    errors = []
+    if not values['title']:
+        errors.append('Module title is required.')
+    if values['category'] not in CATEGORY_META:
+        errors.append('Please select a valid module category.')
+
+    file = request.files.get('pdf_file')
+    pdf_data = None
+    if file and file.filename:
+        if not file.filename.lower().endswith('.pdf'):
+            errors.append('PDF uploads must use a .pdf filename.')
+        else:
+            pdf_data = file.read()
+            if not pdf_data.startswith(b'%PDF'):
+                errors.append('The uploaded file is not a valid PDF.')
+
+    if errors:
+        return values, errors
+
+    module.title = values['title']
+    module.description = values['description']
+    module.content = values['content']
+    module.category = values['category']
+    module.age_group = values['age_group']
+    if pdf_data is not None:
+        module.pdf_data = pdf_data
+        module.pdf_filename = secure_filename(file.filename)
+    db.session.commit()
+    return values, []
+
+
+def _render_module_editor(account, module, form_values=None, errors=None):
+    questions = ModuleQuizQuestion.query.filter_by(module_id=module.id)\
+        .order_by(ModuleQuizQuestion.sort_order, ModuleQuizQuestion.id).all()
+    return render_template(
+        'clinic_portal/module_editor.html',
+        account=account,
+        module=module,
+        questions=questions,
+        category_meta=CATEGORY_META,
+        form_values=form_values or {},
+        errors=errors or [],
+    )
 
 
 @clinic_portal_bp.route('/modules/<int:module_id>/edit', methods=['POST'])
@@ -486,21 +582,11 @@ def add_module():
 def edit_module(module_id):
     account = _current_clinic_account()
     module = LearningModule.query.filter_by(id=module_id, clinic_account_id=account.id).first_or_404()
-    title = request.form.get('title', '').strip()
-    if title:
-        module.title = title
-    module.description = request.form.get('description', '').strip()
-    module.content = request.form.get('content', '').strip()
-    cat = request.form.get('category', module.category)
-    if cat in CATEGORY_META:
-        module.category = cat
-    module.age_group = request.form.get('age_group', '').strip()
-    # Handle optional PDF upload
-    file = request.files.get('pdf_file')
-    if file and file.filename.lower().endswith('.pdf'):
-        module.pdf_data = file.read()
-        module.pdf_filename = secure_filename(file.filename)
-    db.session.commit()
+    values, errors = _validate_and_save_module(module)
+    if errors:
+        for error in errors:
+            flash(error, 'error')
+        return _render_module_editor(account, module, values, errors)
     flash(f'Module "{module.title}" updated.', 'success')
     return redirect(url_for('clinic_portal.manage_modules'))
 
@@ -527,31 +613,15 @@ def module_editor(module_id):
     module = LearningModule.query.filter_by(id=module_id, clinic_account_id=account.id).first_or_404()
 
     if request.method == 'POST':
-        title = request.form.get('title', '').strip()
-        if title:
-            module.title = title
-        module.description = request.form.get('description', '').strip()
-        module.content     = request.form.get('content', '').strip()
-        cat = request.form.get('category', module.category)
-        if cat in CATEGORY_META:
-            module.category = cat
-        module.age_group = request.form.get('age_group', '').strip()
-        file = request.files.get('pdf_file')
-        if file and file.filename.lower().endswith('.pdf'):
-            module.pdf_data     = file.read()
-            module.pdf_filename = secure_filename(file.filename)
-        db.session.commit()
+        values, errors = _validate_and_save_module(module)
+        if errors:
+            for error in errors:
+                flash(error, 'error')
+            return _render_module_editor(account, module, values, errors)
         flash(f'Module "{module.title}" saved successfully.', 'success')
-        return redirect(url_for('clinic_portal.module_editor', module_id=module.id))
+        return redirect(url_for('clinic_portal.manage_modules'))
 
-    questions = ModuleQuizQuestion.query.filter_by(module_id=module_id)\
-        .order_by(ModuleQuizQuestion.sort_order, ModuleQuizQuestion.id).all()
-
-    return render_template('clinic_portal/module_editor.html',
-                           account=account,
-                           module=module,
-                           questions=questions,
-                           category_meta=CATEGORY_META)
+    return _render_module_editor(account, module)
 
 
 # ── Quiz Question CRUD (AJAX) ─────────────────────────────────────────────────
@@ -827,15 +897,70 @@ def patients():
     account = _current_clinic_account()
     if not account.clinic:
         return redirect(url_for('clinic_portal.setup_clinic'))
-        
-    # Get all users registered to this clinic
-    from models import ClinicRegistration
-    registrations = ClinicRegistration.query.filter_by(clinic_id=account.clinic.id).order_by(ClinicRegistration.created_at.desc()).all()
-    
+    query = request.args.get('q', '').strip()
+    registrations_query = ClinicRegistration.query.join(
+        User, ClinicRegistration.user_id == User.id
+    ).filter(
+        ClinicRegistration.clinic_id == account.clinic.id
+    ).order_by(ClinicRegistration.created_at.desc())
+    if query:
+        pattern = f'%{query}%'
+        registrations_query = registrations_query.filter(
+            ClinicRegistration.clinic_id == account.clinic.id,
+            or_(
+                User.first_name.ilike(pattern),
+                User.last_name.ilike(pattern),
+                User.email.ilike(pattern),
+                User.children.any(ChildProfile.name.ilike(pattern)),
+            ),
+        )
+    registrations = registrations_query.all()
+
     return render_template('clinic_portal/patients.html',
                            account=account,
                            clinic=account.clinic,
-                           registrations=registrations)
+                           registrations=registrations,
+                           search_query=query)
+
+
+@clinic_portal_bp.route('/patients/<int:child_id>')
+@clinic_login_required
+def patient_health_details(child_id):
+    account = _current_clinic_account()
+    if not account.clinic:
+        return redirect(url_for('clinic_portal.setup_clinic'))
+    registration = _clinic_parent_registration_for_child(account, child_id)
+    if not registration:
+        abort(404)
+    child = db.session.get(ChildProfile, child_id)
+    fever_query = FeverReading.query.filter_by(child_id=child.id)
+    respiratory_query = RespiratoryEpisode.query.filter_by(child_id=child.id)
+    diarrhea_query = DiarrheaEpisode.query.filter_by(child_id=child.id)
+    checklist_query = HealthChecklist.query.filter_by(child_id=child.id)
+    return render_template(
+        'clinic_portal/patient_health_details.html',
+        account=account,
+        clinic=account.clinic,
+        registration=registration,
+        child=child,
+        fever_readings=fever_query.order_by(
+            FeverReading.recorded_at.desc(), FeverReading.id.desc()
+        ).limit(30).all(),
+        fever_total=fever_query.count(),
+        respiratory_episodes=respiratory_query.order_by(
+            RespiratoryEpisode.recorded_at.desc(), RespiratoryEpisode.id.desc()
+        ).limit(30).all(),
+        respiratory_total=respiratory_query.count(),
+        diarrhea_episodes=diarrhea_query.order_by(
+            DiarrheaEpisode.recorded_at.desc(), DiarrheaEpisode.id.desc()
+        ).limit(30).all(),
+        diarrhea_total=diarrhea_query.count(),
+        checklist_history=checklist_query.order_by(
+            HealthChecklist.date.desc(), HealthChecklist.id.desc()
+        ).limit(30).all(),
+        checklist_total=checklist_query.count(),
+        format_manila_time=_format_manila_time,
+    )
 
 
 # ── Child newsletters ────────────────────────────────────────────────────────
@@ -864,10 +989,11 @@ def add_newsletter():
     account = _current_clinic_account()
     if not account.clinic:
         return redirect(url_for('clinic_portal.setup_clinic'))
-    child_id = _parse_int(request.form.get('child_id'), 0)
-    registration = _clinic_child_registration(account, child_id)
-    if not registration:
-        abort(403)
+    min_age = _parse_int(request.form.get('target_age_min_years'), 0)
+    max_age = _parse_int(request.form.get('target_age_max_years'), 21)
+    if min_age < 0 or max_age > 21 or min_age > max_age:
+        flash('Choose a valid target age range from 0 to 21 years.', 'error')
+        return redirect(url_for('clinic_portal.newsletters'))
     title = request.form.get('title', '').strip()
     body = request.form.get('body', '').strip()
     if not title or not body:
@@ -881,8 +1007,9 @@ def add_newsletter():
     newsletter = Newsletter(
         title=title,
         body=body,
-        child_id=child_id,
         clinic_id=account.clinic.id,
+        target_age_min_years=min_age,
+        target_age_max_years=max_age,
         is_published=request.form.get('action') == 'publish',
     )
     newsletter.media.extend(media)
@@ -899,10 +1026,19 @@ def edit_newsletter(newsletter_id):
     newsletter = Newsletter.query.filter_by(
         id=newsletter_id, clinic_id=account.clinic.id
     ).first_or_404()
-    if not _clinic_child_registration(account, newsletter.child_id):
-        abort(403)
     title = request.form.get('title', '').strip()
     body = request.form.get('body', '').strip()
+    min_age = _parse_int(
+        request.form.get('target_age_min_years'),
+        newsletter.target_age_min_years,
+    )
+    max_age = _parse_int(
+        request.form.get('target_age_max_years'),
+        newsletter.target_age_max_years,
+    )
+    if min_age < 0 or max_age > 21 or min_age > max_age:
+        flash('Choose a valid target age range from 0 to 21 years.', 'error')
+        return redirect(url_for('clinic_portal.newsletters'))
     if not title or not body:
         flash('Newsletter title and body are required.', 'error')
         return redirect(url_for('clinic_portal.newsletters'))
@@ -913,6 +1049,8 @@ def edit_newsletter(newsletter_id):
         return redirect(url_for('clinic_portal.newsletters'))
     newsletter.title = title
     newsletter.body = body
+    newsletter.target_age_min_years = min_age
+    newsletter.target_age_max_years = max_age
     newsletter.is_published = request.form.get('action') == 'publish'
     db.session.commit()
     flash(f'Newsletter "{title}" updated.', 'success')
@@ -926,10 +1064,7 @@ def toggle_newsletter(newsletter_id):
     newsletter = Newsletter.query.filter_by(
         id=newsletter_id, clinic_id=account.clinic.id
     ).first_or_404()
-    if not _clinic_child_registration(account, newsletter.child_id):
-        abort(403)
     newsletter.is_published = not newsletter.is_published
     db.session.commit()
     flash('Newsletter published.' if newsletter.is_published else 'Newsletter unpublished.', 'success')
     return redirect(url_for('clinic_portal.newsletters'))
-

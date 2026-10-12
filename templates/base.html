@@ -64,23 +64,16 @@
         </li>
         <li>
           <a href="{{ url_for('modules.list_modules') }}"
-             class="nav-link {% if 'modules.' in (request.endpoint or '') and request.endpoint != 'modules.assessment' %}active{% endif %}">
+             class="nav-link {% if 'modules.' in (request.endpoint or '') %}active{% endif %}">
             <i class="bi bi-book-fill nav-icon"></i>
             <span>Learning Modules</span>
-          </a>
-        </li>
-        <li>
-          <a href="{{ url_for('modules.assessment') }}"
-             class="nav-link {% if request.endpoint == 'modules.assessment' %}active{% endif %}">
-            <i class="bi bi-clipboard2-check-fill nav-icon"></i>
-            <span>Preparedness Assessment</span>
           </a>
         </li>
         <li>
            <a href="{{ url_for('symptoms.fever_tracker') }}"
              class="nav-link {% if request.endpoint in ('symptoms.fever_tracker', 'symptoms.cough_cold_tracker', 'symptoms.diarrhea_tracker') %}active{% endif %}">
             <i class="bi bi-thermometer-half nav-icon"></i>
-            <span>Fever Tracker</span>
+            <span>Common Ailments Tracker</span>
           </a>
         </li>
 
@@ -310,6 +303,19 @@
 
     <!-- Page content -->
     <main class="app-content">
+      {% if feature_help %}
+      <section class="alert alert-primary alert-dismissible fade show mx-3 mt-3 mb-0 shadow-sm"
+               id="featureHelpPanel" role="status" aria-label="{{ feature_help.name }} instructions">
+        <h6 class="alert-heading mb-2"><i class="bi bi-stars me-1"></i>{{ feature_help.name }} help</h6>
+        <ol class="mb-0 ps-3">
+          {% for step in feature_help.steps %}
+          <li>{{ step }}</li>
+          {% endfor %}
+        </ol>
+        <button type="button" class="btn-close" aria-label="Close instructions"
+                onclick="dismissFeatureHelp()"></button>
+      </section>
+      {% endif %}
       {% block content %}{% endblock %}
     </main>
 
@@ -425,6 +431,13 @@
         launcher.dataset.state = isOpening ? 'open' : 'closed';
         launcher.setAttribute('aria-expanded', String(isOpening));
       }
+    }
+    function dismissFeatureHelp() {
+      const panel = document.getElementById('featureHelpPanel');
+      if (panel) panel.remove();
+      const url = new URL(window.location.href);
+      url.searchParams.delete('help');
+      window.history.replaceState({}, document.title, url);
     }
     function switchChatTab(tab) {
       const botTab = document.getElementById('tab-bot');

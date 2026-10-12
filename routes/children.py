@@ -38,8 +38,8 @@ def create_child():
                     (date.today().year - dob.year) * 12
                     + (date.today().month - dob.month)
                 )
-                if age_months > 72:
-                    errors.append('PaPrep supports children aged 0–5 years (up to 60 months).')
+                if age_months > 252:
+                    errors.append('PaPrep supports children aged 0–21 years.')
             except ValueError:
                 errors.append('Invalid date format.')
 
@@ -89,7 +89,15 @@ def edit_child(child_id):
 
         if dob_str:
             try:
-                child.date_of_birth = date.fromisoformat(dob_str)
+                dob = date.fromisoformat(dob_str)
+                age_months = (
+                    (date.today().year - dob.year) * 12
+                    + (date.today().month - dob.month)
+                )
+                if dob > date.today() or age_months > 252:
+                    flash('PaPrep supports children aged 0–21 years.', 'error')
+                    return redirect(url_for('children.edit_child', child_id=child_id))
+                child.date_of_birth = dob
             except ValueError:
                 flash('Invalid date format.', 'error')
                 return redirect(url_for('children.edit_child', child_id=child_id))
@@ -118,7 +126,8 @@ def delete_child(child_id):
     RespiratoryEpisode.query.filter_by(child_id=child.id).delete(synchronize_session=False)
     DiarrheaEpisode.query.filter_by(child_id=child.id).delete(synchronize_session=False)
     ClinicRegistration.query.filter_by(child_id=child.id).delete(synchronize_session=False)
-    Newsletter.query.filter_by(child_id=child.id).delete(synchronize_session=False)
+    for newsletter in Newsletter.query.filter_by(child_id=child.id).all():
+        newsletter.child_id = None
     NotificationRead.query.filter(
         NotificationRead.user_id == current_user.id,
         NotificationRead.notification_key.like(f'checklist_{child.id}_%')

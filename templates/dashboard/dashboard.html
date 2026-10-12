@@ -146,7 +146,7 @@
           </span>
           <span class="newsletter-author">
             <strong>{{ newsletter.clinic.name }}</strong>
-            <small><i class="bi bi-patch-check-fill" aria-hidden="true"></i> Verified clinic Â· {{ newsletter.created_at.strftime('%b %d') }}</small>
+            <small><i class="bi bi-patch-check-fill" aria-hidden="true"></i> Verified clinic Â· Updated {{ newsletter.updated_at.strftime('%b %d') }}</small>
           </span>
         </header>
         <div class="newsletter-content">
@@ -225,26 +225,16 @@
       <div class="module-card-icon"><i class="bi bi-book-fill"></i></div>
       <div class="module-card-body">
         <h5>Learning Modules</h5>
-        <p>Parenting, nutrition, safety, and child health education with downloadable guides.</p>
+        <p>Parenting, nutrition, and safety education with downloadable guides.</p>
       </div>
       <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
     </a>
 
-    <!-- Preparedness Assessment -->
-    <a href="{{ url_for('modules.assessment') }}" class="module-card module-card--assessment">
-      <div class="module-card-icon"><i class="bi bi-clipboard2-check-fill"></i></div>
-      <div class="module-card-body">
-        <h5>Preparedness Assessment</h5>
-        <p>Evaluate your parenting preparedness and track your progress with guided assessments.</p>
-      </div>
-      <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
-    </a>
-
-    <!-- Fever Tracker -->
+    <!-- Common Ailments Tracker -->
     <a href="{{ url_for('symptoms.fever_tracker') }}" class="module-card module-card--symptom">
       <div class="module-card-icon"><i class="bi bi-thermometer-half"></i></div>
       <div class="module-card-body">
-        <h5>Fever Tracker</h5>
+        <h5>Common Ailments Tracker</h5>
         <p>Log temperature readings, cough/cold episodes, and diarrhea episodes — all with age-aware, threshold-based monitoring guidance.</p>
       </div>
       <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>

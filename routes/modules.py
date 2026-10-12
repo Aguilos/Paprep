@@ -12,7 +12,6 @@ CATEGORY_META = {
     'parenting':     {'label': 'Parenting',    'icon': 'bi-people-fill',     'color': '#4E97D9'},
     'nutrition':     {'label': 'Nutrition',    'icon': 'bi-apple',           'color': '#5CAD5C'},
     'safety':        {'label': 'Safety',       'icon': 'bi-shield-check',    'color': '#FF8C42'},
-    'health':        {'label': 'Child Health', 'icon': 'bi-heart-pulse-fill','color': '#E74C3C'},
 }
 
 PASS_THRESHOLD = 70   # minimum quiz score (%) to mark a module complete
@@ -23,7 +22,7 @@ PASS_THRESHOLD = 70   # minimum quiz score (%) to mark a module complete
 @modules_bp.route('/')
 @login_required
 def list_modules():
-    query = LearningModule.query
+    query = LearningModule.query.filter(LearningModule.category.in_(CATEGORY_META))
     category = request.args.get('category', '')
     if category and category in CATEGORY_META:
         query = query.filter_by(category=category)
@@ -64,7 +63,10 @@ def list_modules():
 @modules_bp.route('/<int:module_id>')
 @login_required
 def module_detail(module_id):
-    module = LearningModule.query.get_or_404(module_id)
+    module = LearningModule.query.filter(
+        LearningModule.id == module_id,
+        LearningModule.category.in_(CATEGORY_META),
+    ).first_or_404()
     meta = CATEGORY_META.get(module.category, {})
 
     # User progress
@@ -101,7 +103,10 @@ def module_detail(module_id):
 @login_required
 def view_pdf(module_id):
     """Serve PDF stored in DB inline so users can read it in the browser."""
-    module = LearningModule.query.get_or_404(module_id)
+    module = LearningModule.query.filter(
+        LearningModule.id == module_id,
+        LearningModule.category.in_(CATEGORY_META),
+    ).first_or_404()
     if not module.pdf_data:
         abort(404)
     return Response(
@@ -115,7 +120,10 @@ def view_pdf(module_id):
 @login_required
 def download_module(module_id):
     """Download the PDF from DB (or fall back to HTML)."""
-    module = LearningModule.query.get_or_404(module_id)
+    module = LearningModule.query.filter(
+        LearningModule.id == module_id,
+        LearningModule.category.in_(CATEGORY_META),
+    ).first_or_404()
     safe_title = ''.join(c if c.isalnum() else '_' for c in module.title)
     if module.pdf_data:
         return send_file(
@@ -132,19 +140,16 @@ def download_module(module_id):
     return response
 
 
-@modules_bp.route('/assessment')
-@login_required
-def assessment():
-    return render_template('modules/assessment.html', page_title='Preparedness Assessment')
-
-
 # ── Interactive Progress API ─────────────────────────────────────────────────
 
 @modules_bp.route('/<int:module_id>/progress', methods=['POST'])
 @login_required
 def save_progress(module_id):
     """Save the user's last-read section index (called client-side on nav)."""
-    LearningModule.query.get_or_404(module_id)
+    LearningModule.query.filter(
+        LearningModule.id == module_id,
+        LearningModule.category.in_(CATEGORY_META),
+    ).first_or_404()
     data = request.get_json(silent=True) or {}
     section_index = int(data.get('section', 0))
 
@@ -175,7 +180,10 @@ def save_progress(module_id):
 @login_required
 def submit_quiz(module_id):
     """Score submitted quiz answers.  Returns score + pass/fail status."""
-    module = LearningModule.query.get_or_404(module_id)
+    module = LearningModule.query.filter(
+        LearningModule.id == module_id,
+        LearningModule.category.in_(CATEGORY_META),
+    ).first_or_404()
     questions = module.quiz_questions
     if not questions:
         return jsonify({'ok': False, 'error': 'No quiz questions for this module.'}), 400
@@ -232,7 +240,10 @@ def submit_quiz(module_id):
 @login_required
 def complete_module(module_id):
     """Directly mark a module as completed (no quiz path, e.g. no questions exist)."""
-    LearningModule.query.get_or_404(module_id)
+    LearningModule.query.filter(
+        LearningModule.id == module_id,
+        LearningModule.category.in_(CATEGORY_META),
+    ).first_or_404()
     progress = ModuleProgress.query.filter_by(
         user_id=current_user.id, module_id=module_id
     ).first()

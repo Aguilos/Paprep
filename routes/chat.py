@@ -1,5 +1,6 @@
 import os
 import uuid
+from difflib import get_close_matches
 from flask import Blueprint, request, render_template, jsonify, session, redirect, url_for, flash, current_app
 from flask_login import current_user, login_required
 from app import db, csrf, socketio
@@ -40,6 +41,118 @@ chat_bp = Blueprint('chat', __name__, url_prefix='/chat')
 
 ALLOWED_FILE_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'zip'}
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+FEATURE_REGISTRY = {
+    'dashboard': {
+        'name': 'Dashboard',
+        'url': '/dashboard',
+        'keywords': ('dashboard', 'home', 'overview', 'main page', 'summary'),
+        'steps': (
+            'Review your active child and the latest updates.',
+            'Choose a module or tracker from the quick actions.',
+            'Use the sidebar to move to another PaPrep feature.',
+        ),
+    },
+    'learning-modules': {
+        'name': 'Learning Modules',
+        'url': '/modules/',
+        'keywords': ('learning', 'module', 'modules', 'lesson', 'lessons', 'course', 'courses', 'parenting', 'nutrition', 'safety', 'parenting lessons', 'nutrition lessons', 'safety lessons'),
+        'steps': (
+            'Choose Parenting, Nutrition, or Safety.',
+            'Open a module to read its guide and available quiz.',
+            'Use Start, Continue, or Review to manage your progress.',
+        ),
+    },
+    'common-ailments': {
+        'name': 'Common Ailments Tracker',
+        'url': '/fever-tracker',
+        'keywords': ('fever', 'fever tracker', 'temperature', 'temperature log', 'temp log', 'tracker', 'cough', 'cold', 'diarrhea', 'common ailments', 'symptoms'),
+        'steps': (
+            'Choose Fever, Cough & Colds, or Diarrhea.',
+            'Enter the details for the symptom you want to record.',
+            'Save the entry and review the monitoring guidance.',
+        ),
+    },
+    'health-checklist': {
+        'name': 'Health Checklist',
+        'url': '/health-checklist',
+        'keywords': ('health checklist', 'daily checklist', 'nutrition tracker', 'meal tracker', 'feeding checklist', 'daily health', 'tracker'),
+        'steps': (
+            'Review the checklist for your active child.',
+            'Mark the completed nutrition and health items.',
+            'Save your progress and return later for an updated checklist.',
+        ),
+    },
+    'find-a-clinic': {
+        'name': 'Find a Clinic',
+        'url': '/clinics/',
+        'keywords': ('clinic', 'clinics', 'hospital', 'doctor', 'pediatrician', 'nearby care', 'medical center', 'find care'),
+        'steps': (
+            'Search the map or list for a nearby clinic.',
+            'Open a clinic to view its profile and schedule.',
+            'Use the available contact or registration actions.',
+        ),
+    },
+    'parent-community': {
+        'name': 'Parent Community',
+        'url': '/forum/',
+        'keywords': ('forum', 'community', 'discussion', 'discussions', 'parent community', 'parent group'),
+        'steps': (
+            'Browse discussions by topic.',
+            'Open a post to read replies and share a response.',
+            'Start a discussion when you have a question or experience to share.',
+        ),
+    },
+    'add-child': {
+        'name': 'Add Child Profile',
+        'url': '/children/create',
+        'keywords': ('add child', 'child profile', 'create child', 'new child', 'register child', 'child details'),
+        'steps': (
+            'Enter your child’s name and basic details.',
+            'Review the information before saving.',
+            'Use the child switcher to view that child’s personalized content.',
+        ),
+    },
+}
+for _feature_id, _feature in FEATURE_REGISTRY.items():
+    _feature['id'] = _feature_id
+
+
+def match_feature_request(text):
+    """Return a clear feature match, possible matches, or no match."""
+    normalized = ' '.join((text or '').lower().split())
+    if not normalized:
+        return {'match': None, 'matches': []}
+
+    request_words = normalized.split()
+    scored = []
+    for feature_id, feature in FEATURE_REGISTRY.items():
+        score = 0
+        for keyword in feature['keywords']:
+            keyword_words = keyword.split()
+            if keyword in normalized:
+                score += 3 + len(keyword_words)
+                continue
+
+            if all(
+                get_close_matches(word, request_words, n=1, cutoff=0.8)
+                for word in keyword_words
+                if len(word) >= 4
+            ):
+                score += 2 + len(keyword_words)
+        if score:
+            scored.append((score, feature_id))
+
+    if not scored:
+        return {'match': None, 'matches': []}
+
+    scored.sort(reverse=True)
+    top_score = scored[0][0]
+    top_matches = [feature_id for score, feature_id in scored if score == top_score]
+    if len(top_matches) == 1:
+        return {'match': top_matches[0], 'matches': top_matches}
+    return {'match': None, 'matches': top_matches[:3]}
+
 
 def _allowed(filename, allowed_set):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_set
@@ -448,7 +561,7 @@ def match_bot_intent(text):
 
     nav_shortcuts = [
         {'label': 'Nutrition Tracker', 'url': url_for('symptoms.health_checklist'), 'icon': 'bi-apple'},
-        {'label': 'Fever Tracker', 'url': url_for('symptoms.fever_tracker'), 'icon': 'bi-thermometer-half'},
+        {'label': 'Common Ailments Tracker', 'url': url_for('symptoms.fever_tracker'), 'icon': 'bi-thermometer-half'},
         {'label': 'Find a Clinic', 'url': url_for('clinics.clinic_locator'), 'icon': 'bi-hospital'},
         {'label': 'Learning Modules', 'url': url_for('modules.list_modules'), 'icon': 'bi-book'},
     ]
@@ -472,13 +585,38 @@ def match_bot_intent(text):
             "🚨 **Emergency Alert**: If your child is experiencing difficulty breathing, seizures, "
             "loss of consciousness, or severe trauma, please **call emergency services (911 / 112)** "
             "or proceed to the nearest Emergency Room immediately.\n\n"
-            "For temperature monitoring, use our Fever Tracker."
+            "For temperature monitoring, use our Common Ailments Tracker."
         )
         shortcuts = [
-            {'label': 'Fever Tracker', 'url': url_for('symptoms.fever_tracker'), 'icon': 'bi-thermometer-half'},
+            {'label': 'Common Ailments Tracker', 'url': url_for('symptoms.fever_tracker'), 'icon': 'bi-thermometer-half'},
             {'label': 'Find Nearest Clinic', 'url': url_for('clinics.clinic_locator'), 'icon': 'bi-hospital'},
         ]
         return reply, shortcuts, ["What are red flag symptoms?", "Fever guidance", "Find a clinic"]
+
+    feature_result = match_feature_request(text)
+    if feature_result['match']:
+        feature_id = feature_result['match']
+        feature = FEATURE_REGISTRY[feature_id]
+        return (
+            f"I can help you use **{feature['name']}**. Choose the button below to open it.",
+            [{
+                'label': feature['name'],
+                'url': f"{feature['url']}?help={feature_id}",
+                'icon': 'bi-arrow-right-circle',
+            }],
+            [],
+        )
+    if feature_result['matches']:
+        matches = feature_result['matches']
+        return (
+            "Which feature do you mean?",
+            [{
+                'label': FEATURE_REGISTRY[feature_id]['name'],
+                'url': f"{FEATURE_REGISTRY[feature_id]['url']}?help={feature_id}",
+                'icon': 'bi-arrow-right-circle',
+            } for feature_id in matches],
+            [],
+        )
 
     # ── Lightweight navigation intent detection ────────────────────────────
     # Return one route-backed shortcut for clear "find/go to/show me" requests
@@ -497,10 +635,10 @@ def match_bot_intent(text):
         (
             ('fever', 'temperature', 'temp', 'health concern'),
             ('check', 'checker', 'show me', 'go to', 'use', 'where is', 'what do i do', 'should i', 'worried', 'concerned'),
-            'Fever Tracker',
+            'Common Ailments Tracker',
             'symptoms.fever_tracker',
             'bi-thermometer-half',
-            "You can use the PaPrep Fever Tracker here.",
+            "You can use the PaPrep Common Ailments Tracker here.",
             {},
         ),
         (
@@ -541,21 +679,12 @@ def match_bot_intent(text):
             {'category': 'safety'},
         ),
         (
-            ('child health', 'immunization', 'vaccine schedule', 'vaccination schedule'),
-            ('learn', 'learning', 'module', 'show me', 'go to', 'where is', 'about', 'schedule', 'tips'),
-            'Child Health Modules',
-            'modules.list_modules',
-            'bi-heart-pulse-fill',
-            "Here are the PaPrep learning modules about child health and immunization.",
-            {'category': 'health'},
-        ),
-        (
             ('parenting', 'development', 'sleep training'),
             ('learn', 'learning', 'module', 'show me', 'go to', 'where is', 'about', 'schedule', 'tips'),
             'Learning Modules',
             'modules.list_modules',
             'bi-book',
-            "Here are the PaPrep learning modules for parenting and child health.",
+            "Here are the PaPrep learning modules for parenting, nutrition, and safety.",
             {},
         ),
     ]
@@ -583,20 +712,29 @@ def match_bot_intent(text):
     if any(k in text_lower for k in ('clinic', 'hospital', 'pediatrician', 'doctor', 'checkup', 'check-up')):
         add_topic_shortcut('Find a Clinic', 'clinics.clinic_locator', 'bi-hospital')
     elif any(k in text_lower for k in ('fever', 'temperature', 'temp', 'health concern')):
-        add_topic_shortcut('Fever Tracker', 'symptoms.fever_tracker', 'bi-thermometer-half')
+        add_topic_shortcut('Common Ailments Tracker', 'symptoms.fever_tracker', 'bi-thermometer-half')
     elif any(k in text_lower for k in ('add child', 'add my child', 'child profile', 'new child', 'register my child', "kid's account", 'kids account')):
         add_topic_shortcut('Add Child Profile', 'children.create_child', 'bi-person-plus')
     elif any(k in text_lower for k in ('health checklist', 'daily checklist', 'nutrition tracker', 'meal tracker', "child's health", 'what should i be checking')):
         add_topic_shortcut('Health Checklist', 'symptoms.health_checklist', 'bi-clipboard2-heart')
 
-    elif any(k in text_lower for k in ('vaccine', 'vaccination', 'immunization')):
-        add_topic_shortcut('Child Health Modules', 'modules.list_modules', 'bi-heart-pulse-fill', {'category': 'health'})
     elif any(k in text_lower for k in ('nutrition', 'feeding', 'deworming')):
         add_topic_shortcut('Nutrition Modules', 'modules.list_modules', 'bi-apple', {'category': 'nutrition'})
     elif any(k in text_lower for k in ('safety', 'safe', 'injury prevention', 'childproof')):
         add_topic_shortcut('Safety Modules', 'modules.list_modules', 'bi-shield-check', {'category': 'safety'})
     elif any(k in text_lower for k in ('parenting', 'development', 'sleep training')):
         add_topic_shortcut('Learning Modules', 'modules.list_modules', 'bi-book')
+
+    available_features = [{
+        'label': feature['name'],
+        'url': f"{feature['url']}?help={feature_id}",
+        'icon': 'bi-arrow-right-circle',
+    } for feature_id, feature in FEATURE_REGISTRY.items()]
+    return (
+        "I couldn't match that request to a PaPrep feature. Choose one of these:",
+        available_features,
+        [],
+    )
 
     # ── All other queries → Gemini AI (Red Book first) ────────────────────
     from config import Config
@@ -614,7 +752,7 @@ def match_bot_intent(text):
 
             system_prompt = (
                 "You are the PaPrep Assistant, a warm, empathetic, and knowledgeable AI parenting companion "
-                "built into the PaPrep app — a platform for parents of children aged 0-5 years in the Philippines. "
+                "built into the PaPrep app — a platform for parents of children aged 0-21 years in the Philippines. "
                 "You help parents with questions about child health, nutrition, development, safety, and well-being.\n\n"
                 "CRITICAL INSTRUCTION — Knowledge priority:\n"
                 "1. ALWAYS consult the attached PaPrep Red Book PDF first. "
@@ -677,6 +815,6 @@ def bot_reply():
         'degraded': degraded,
         'shortcuts': shortcuts,
         'actions': actions,
+        'auto_redirect': reply_text.startswith('I can help you use **'),
         'created_at': datetime.utcnow().isoformat()
     })
-

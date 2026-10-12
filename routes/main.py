@@ -130,7 +130,18 @@ def get_accessible_newsletter(newsletter_id):
     newsletter = Newsletter.query.filter_by(
         id=newsletter_id, is_published=True
     ).first_or_404()
-    if newsletter.child_id not in {child.id for child in current_user.children}:
+    active_child_id = session.get('active_child_id')
+    active_child = next(
+        (child for child in current_user.children if child.id == active_child_id),
+        current_user.children[0] if current_user.children else None,
+    )
+    if active_child is None:
+        abort(404)
+    child_age_years = active_child.age_months // 12
+    if not (
+        newsletter.target_age_min_years <= child_age_years <=
+        newsletter.target_age_max_years
+    ):
         abort(404)
     return newsletter
 
@@ -268,8 +279,11 @@ def dashboard():
         ParentChildResource.created_at.desc(), ParentChildResource.id.desc()
     ).limit(6).all()
 
-    newsletters = Newsletter.query.filter_by(
-        child_id=active_child.id, is_published=True
+    active_child_age_years = active_child.age_months // 12
+    newsletters = Newsletter.query.filter(
+        Newsletter.is_published.is_(True),
+        Newsletter.target_age_min_years <= active_child_age_years,
+        Newsletter.target_age_max_years >= active_child_age_years,
     ).order_by(Newsletter.created_at.desc(), Newsletter.id.desc()).all()
     liked_newsletter_ids = {
         like.newsletter_id

@@ -76,10 +76,22 @@ def create_app():
             'active_child_id': None,
         }
 
+    @app.context_processor
+    def inject_feature_help():
+        from routes.chat import FEATURE_REGISTRY
+        feature_id = request.args.get('help', '')
+        feature = FEATURE_REGISTRY.get(feature_id)
+        if feature:
+            feature_path = feature['url'].rstrip('/')
+            request_path = request.path.rstrip('/')
+            if feature_path != request_path:
+                feature = None
+        return {'feature_help': feature}
+
     with app.app_context():
         db.create_all()
         try:
-            from sqlalchemy import text
+            from sqlalchemy import text, or_
             migrations = [
                 "ALTER TABLE clinic_messages ADD COLUMN attachment_url VARCHAR(512)",
                 "ALTER TABLE clinic_messages ADD COLUMN attachment_type VARCHAR(16)",
@@ -109,6 +121,8 @@ def create_app():
                 "ALTER TABLE respiratory_episodes ADD COLUMN created_at TIMESTAMP",
                 "ALTER TABLE fever_readings ADD COLUMN recorded_at TIMESTAMP",
                 "ALTER TABLE fever_readings ADD COLUMN created_at TIMESTAMP",
+                "ALTER TABLE newsletters ADD COLUMN target_age_min_years INTEGER",
+                "ALTER TABLE newsletters ADD COLUMN target_age_max_years INTEGER",
             ]
             with db.engine.connect() as conn:
                 for query in migrations:
@@ -121,6 +135,21 @@ def create_app():
                     except Exception:
                         pass
                 conn.commit()
+            from models import Newsletter
+            legacy_newsletters = Newsletter.query.filter(
+                Newsletter.child_id.isnot(None),
+                or_(
+                    Newsletter.target_age_min_years.is_(None),
+                    Newsletter.target_age_max_years.is_(None),
+                ),
+            ).all()
+            for newsletter in legacy_newsletters:
+                age_months = newsletter.child.age_months
+                age_years = min(21, age_months // 12)
+                newsletter.target_age_min_years = age_years
+                newsletter.target_age_max_years = age_years
+            if legacy_newsletters:
+                db.session.commit()
         except Exception as e:
             app.logger.warning(f"Schema update notice: {e}")
 

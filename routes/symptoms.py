@@ -10,7 +10,7 @@ from models import FeverReading, HealthChecklist, RespiratoryEpisode, DiarrheaEp
 symptoms_bp = Blueprint('symptoms', __name__)
 
 FEVER_DISCLAIMER = (
-    "IMPORTANT DISCLAIMER: This Fever Tracker provides general temperature monitoring "
+    "IMPORTANT DISCLAIMER: This Common Ailments Tracker provides general temperature monitoring "
     "guidance only. It is NOT a substitute for professional medical advice, diagnosis, "
     "or treatment. Contact your child's pediatrician for medical advice. In an emergency, "
     "call emergency services (911 / 112) or go to the nearest emergency room immediately."
@@ -215,7 +215,7 @@ def fever_tracker():
         diarr_guidance=diarr_guidance,
         disclaimer=FEVER_DISCLAIMER,
         guidance_source=GUIDANCE_ATTRIBUTION,
-        page_title='Fever Tracker',
+        page_title='Common Ailments Tracker',
     )
 
 
@@ -246,14 +246,14 @@ def fever_readings_api():
 @symptoms_bp.route('/cough-cold-tracker', methods=['GET', 'POST'])
 @login_required
 def cough_cold_tracker():
-    # Merged into the Fever Tracker – redirect to the Cough & Colds tab.
+    # Merged into the Common Ailments Tracker – redirect to the Cough & Colds tab.
     return redirect(url_for('symptoms.fever_tracker', tab='cough'))
 
 
 @symptoms_bp.route('/diarrhea-tracker', methods=['GET', 'POST'])
 @login_required
 def diarrhea_tracker():
-    # Merged into the Fever Tracker – redirect to the Diarrhea tab.
+    # Merged into the Common Ailments Tracker – redirect to the Diarrhea tab.
     return redirect(url_for('symptoms.fever_tracker', tab='diarrhea'))
 
 

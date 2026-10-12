@@ -19,6 +19,7 @@ ENV/
 # Database
 *.db
 *.sqlite3
+instance/
 
 # Node / Next.js (unused)
 node_modules/

@@ -198,6 +198,11 @@
 
 {% block content %}
 <div class="editor-page">
+  {% if errors %}
+  <div class="alert alert-danger" role="alert">
+    {% for error in errors %}<div>{{ error }}</div>{% endfor %}
+  </div>
+  {% endif %}
 
   <!-- ── Sticky top bar ────────────────────────────────────────── -->
   <form method="POST" id="editorForm" enctype="multipart/form-data">
@@ -209,7 +214,7 @@
         <i class="bi bi-arrow-left me-1"></i> Modules
       </a>
       <input type="text" name="title" class="module-title-input"
-             value="{{ module.title }}" placeholder="Module title…" required id="editorTitleInput">
+             value="{{ form_values.get('title', module.title) }}" placeholder="Module title…" required id="editorTitleInput">
       <button type="submit" class="btn btn-primary btn-sm px-4" id="saveBtn">
         <i class="bi bi-check-lg me-1"></i> Save
       </button>
@@ -225,7 +230,7 @@
           <label class="form-label fw-semibold">Category</label>
           <select name="category" class="form-select">
             {% for key, cmeta in category_meta.items() %}
-            <option value="{{ key }}" {% if module.category == key %}selected{% endif %}>
+            <option value="{{ key }}" {% if form_values.get('category', module.category) == key %}selected{% endif %}>
               {{ cmeta.label }}
             </option>
             {% endfor %}
@@ -234,7 +239,7 @@
         <div class="col-md-4">
           <label class="form-label fw-semibold">Age Group</label>
           <input type="text" name="age_group" class="form-control"
-                 value="{{ module.age_group or '' }}" placeholder="e.g. 6–12 months">
+                 value="{{ form_values.get('age_group', module.age_group or '') }}" placeholder="e.g. 6–12 months">
         </div>
         <div class="col-md-4">
           <label class="form-label fw-semibold">PDF <small class="text-muted">(optional)</small></label>
@@ -253,7 +258,7 @@
           <label class="form-label fw-semibold">Short Description
             <small class="text-muted">(shown on module card)</small></label>
           <textarea name="description" class="form-control" rows="2"
-                    placeholder="Brief overview…">{{ module.description or '' }}</textarea>
+                    placeholder="Brief overview…">{{ form_values.get('description', module.description or '') }}</textarea>
         </div>
       </div>
     </div>
@@ -703,7 +708,7 @@ document.getElementById('editorForm').addEventListener('submit', function() {
 });
 
 // ── Init: load existing content as section cards ──────────────────────────────
-const seedContent = {{ (module.content or '') | tojson }};
+const seedContent = {{ form_values.get('content', module.content or '') | tojson }};
 const parsedSections = parseSectionsFromHTML(seedContent);
 
 if (parsedSections.length > 0) {

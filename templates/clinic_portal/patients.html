@@ -8,6 +8,18 @@
   <p class="text-muted">Families who have registered with your clinic via PaPrep.</p>
 </div>
 
+<form method="GET" class="card border-0 shadow-sm mb-3" style="border-radius:14px;">
+  <div class="card-body">
+    <label for="patientSearch" class="form-label fw-semibold">Search registered patients</label>
+    <div class="input-group">
+      <input id="patientSearch" name="q" value="{{ search_query }}" class="form-control"
+             placeholder="Search by parent name, email, or child name">
+      <button class="btn btn-primary" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+      {% if search_query %}<a class="btn btn-outline-secondary" href="{{ url_for('clinic_portal.patients') }}">Clear</a>{% endif %}
+    </div>
+  </div>
+</form>
+
 <div class="card border-0 shadow-sm" style="border-radius:14px;">
   <div class="card-header bg-white border-bottom fw-700 p-3" style="border-radius:14px 14px 0 0;">
     <i class="bi bi-people-fill text-primary me-2"></i> Patient Directory
@@ -50,11 +62,14 @@
                 {% if reg.user.children %}
                   <div class="d-flex flex-column gap-1">
                     {% for child in reg.user.children %}
-                      <div class="d-inline-flex align-items-center gap-2">
-                        <span class="badge" style="background-color: {{ child.profile_color or '#4E97D9' }};">
-                          {{ child.name }} ({{ child.age_display }})
-                        </span>
-                      </div>
+                    <div class="d-inline-flex align-items-center gap-2">
+                      <span class="badge" style="background-color: {{ child.profile_color or '#4E97D9' }};">
+                        <a href="{{ url_for('clinic_portal.patient_health_details', child_id=child.id) }}"
+                           class="text-white text-decoration-none">
+                          {{ child.name }} ({{ child.age_display }}) <i class="bi bi-activity ms-1"></i>
+                        </a>
+                      </span>
+                    </div>
                     {% endfor %}
                   </div>
                 {% else %}
@@ -72,8 +87,8 @@
     {% else %}
       <div class="text-center py-5 text-muted">
         <i class="bi bi-people fs-1 d-block mb-3 opacity-50"></i>
-        <h5>No patients registered yet.</h5>
-        <p class="mb-0">When parents register with your clinic to send messages, they will appear here.</p>
+        <h5>{% if search_query %}No matching patients found.{% else %}No patients registered yet.{% endif %}</h5>
+        <p class="mb-0">{% if search_query %}Try a different parent or child name.{% else %}When parents register with your clinic to send messages, they will appear here.{% endif %}</p>
       </div>
     {% endif %}
   </div>

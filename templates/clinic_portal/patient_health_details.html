@@ -1,0 +1,83 @@
+{% extends 'clinic_portal/base.html' %}
+{% block title %}{{ child.name }} Health Details{% endblock %}
+{% block page_title %}Patient Health Details{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <a href="{{ url_for('clinic_portal.patients') }}" class="text-decoration-none small">
+      <i class="bi bi-arrow-left me-1"></i>Registered Patients
+    </a>
+    <h4 class="page-heading mt-2 mb-1">{{ child.name }}</h4>
+    <p class="text-muted mb-0">
+      Parent: {{ registration.user.first_name }} {{ registration.user.last_name }}
+      · {{ registration.user.email }}
+    </p>
+  </div>
+  <span class="badge bg-primary">{{ child.age_display }}</span>
+</div>
+
+<div class="alert alert-info small">
+  <i class="bi bi-info-circle me-1"></i>
+  This is a read-only history shared by the parent through PaPrep. It is not a diagnosis.
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-thermometer-half me-2 text-danger"></i>Temperature history{% if fever_total > 30 %}<div class="small text-muted fw-normal mt-1">Showing the newest 30 of {{ fever_total }} entries.</div>{% endif %}</div>
+      <div class="card-body">
+        {% for reading in fever_readings %}
+        <div class="border-bottom py-2">
+          <strong>{{ reading.display_value }}</strong>
+          <span class="text-muted small ms-2">{{ format_manila_time(reading.recorded_at) }}</span>
+          <div class="small text-muted">Method: {{ reading.method or 'Not recorded' }}</div>
+        </div>
+        {% else %}<p class="text-muted mb-0">No temperature readings recorded.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-lungs me-2 text-warning"></i>Cough & cold history{% if respiratory_total > 30 %}<div class="small text-muted fw-normal mt-1">Showing the newest 30 of {{ respiratory_total }} entries.</div>{% endif %}</div>
+      <div class="card-body">
+        {% for episode in respiratory_episodes %}
+        <div class="border-bottom py-2">
+          <strong>{{ episode.symptom_type|title }}</strong> · {{ episode.severity|title }}
+          <span class="text-muted small ms-2">{{ format_manila_time(episode.recorded_at) }}</span>
+          <div class="small text-muted">Duration: {{ episode.duration_days }} day(s){% if episode.fever_present %} · Fever reported{% endif %}{% if episode.wheezing %} · Wheezing{% endif %}{% if episode.difficulty_breathing %} · Breathing difficulty{% endif %}</div>
+        </div>
+        {% else %}<p class="text-muted mb-0">No cough or cold episodes recorded.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-droplet-half me-2 text-info"></i>Diarrhea history{% if diarrhea_total > 30 %}<div class="small text-muted fw-normal mt-1">Showing the newest 30 of {{ diarrhea_total }} entries.</div>{% endif %}</div>
+      <div class="card-body">
+        {% for episode in diarrhea_episodes %}
+        <div class="border-bottom py-2">
+          <strong>{{ episode.episodes_per_day }} episode(s)/day</strong> · {{ episode.consistency|title }}
+          <span class="text-muted small ms-2">{{ format_manila_time(episode.recorded_at) }}</span>
+          <div class="small text-muted">Duration: {{ episode.duration_days }} day(s) · Dehydration: {{ episode.dehydration_signs|title }}{% if episode.blood_present %} · Blood reported{% endif %}</div>
+        </div>
+        {% else %}<p class="text-muted mb-0">No diarrhea episodes recorded.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold"><i class="bi bi-clipboard2-heart me-2 text-success"></i>Health checklist history{% if checklist_total > 30 %}<div class="small text-muted fw-normal mt-1">Showing the newest 30 of {{ checklist_total }} entries.</div>{% endif %}</div>
+      <div class="card-body">
+        {% for record in checklist_history %}
+        <div class="border-bottom py-2">
+          <strong>{{ record.date.strftime('%b %d, %Y') }}</strong>
+          <span class="text-muted small ms-2">{{ record.get_checked()|length }} completed</span>
+          {% if record.notes %}<div class="small text-muted">{{ record.notes }}</div>{% endif %}
+        </div>
+        {% else %}<p class="text-muted mb-0">No health checklist history recorded.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

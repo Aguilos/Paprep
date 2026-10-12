@@ -46,6 +46,8 @@ def clinic_detail(clinic_id):
     if clinic.clinic_account_id:
         clinic_modules = LearningModule.query.filter_by(
             clinic_account_id=clinic.clinic_account_id
+        ).filter(
+            LearningModule.category.in_(('parenting', 'nutrition', 'safety'))
         ).order_by(LearningModule.sort_order, LearningModule.id).all()
         
         # Check if the current user has registered with this clinic

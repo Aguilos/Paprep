@@ -310,6 +310,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const list = document.getElementById('bot_messages_list');
     if (!list) return;
 
+    if (data.auto_redirect && data.shortcuts && data.shortcuts.length === 1) {
+      window.location.href = data.shortcuts[0].url;
+      return;
+    }
+
     const botDiv = document.createElement('div');
     botDiv.className = 'chat-msg assistant bg-light text-dark p-2 rounded-3 mb-2 small shadow-sm';
     botDiv.style.maxWidth = '90%';
@@ -359,4 +364,3 @@ document.addEventListener('DOMContentLoaded', function() {
   window.handleBotSubmit = handleBotSubmit;
   window.sendBotQuickQuery = sendBotQuickQuery;
 });
-

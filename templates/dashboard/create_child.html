@@ -117,7 +117,7 @@ document.getElementById('childForm').addEventListener('submit', function(e) {
     if (ageMonths > 72) {
       e.preventDefault();
       document.getElementById('dob').classList.add('is-invalid');
-      document.getElementById('dob').nextElementSibling.textContent = 'PaPrep supports children aged 0–5 years only.';
+      document.getElementById('dob').nextElementSibling.textContent = 'PaPrep supports children aged 0–21 years only.';
       document.getElementById('dob').nextElementSibling.style.display = 'block';
       return;
     }
