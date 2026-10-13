@@ -1,0 +1,318 @@
+{
+  "nutrition": {
+    "id": "nutrition",
+    "title": "Nutrition Guide",
+    "filename": "Nutrition.pptx",
+    "slide_count": 23,
+    "slides": [
+      {
+        "filename": "slide-001.jpg",
+        "alt": "NUTRITION GUIDE, slide 1 of 23"
+      },
+      {
+        "filename": "slide-002.jpg",
+        "alt": "Pick a topic to explore, slide 2 of 23"
+      },
+      {
+        "filename": "slide-003.jpg",
+        "alt": "Breastfeeding: how long and why, slide 3 of 23"
+      },
+      {
+        "filename": "slide-004.jpg",
+        "alt": "Starting solids at 6 months, slide 4 of 23"
+      },
+      {
+        "filename": "slide-005.jpg",
+        "alt": "Textures and how often, slide 5 of 23"
+      },
+      {
+        "filename": "slide-006.jpg",
+        "alt": "Iron supplementation, slide 6 of 23"
+      },
+      {
+        "filename": "slide-007.jpg",
+        "alt": "Vitamin A and zinc, slide 7 of 23"
+      },
+      {
+        "filename": "slide-008.jpg",
+        "alt": "Deworming every 6 months, slide 8 of 23"
+      },
+      {
+        "filename": "slide-009.jpg",
+        "alt": "Iron deficiency anemia, slide 9 of 23"
+      },
+      {
+        "filename": "slide-010.jpg",
+        "alt": "QUICK QUIZ, slide 10 of 23"
+      },
+      {
+        "filename": "slide-011.jpg",
+        "alt": "Question 1 of 4, slide 11 of 23"
+      },
+      {
+        "filename": "slide-012.jpg",
+        "alt": "Correct!, slide 12 of 23"
+      },
+      {
+        "filename": "slide-013.jpg",
+        "alt": "Not quite, slide 13 of 23"
+      },
+      {
+        "filename": "slide-014.jpg",
+        "alt": "Question 2 of 4, slide 14 of 23"
+      },
+      {
+        "filename": "slide-015.jpg",
+        "alt": "Correct!, slide 15 of 23"
+      },
+      {
+        "filename": "slide-016.jpg",
+        "alt": "Not quite, slide 16 of 23"
+      },
+      {
+        "filename": "slide-017.jpg",
+        "alt": "Question 3 of 4, slide 17 of 23"
+      },
+      {
+        "filename": "slide-018.jpg",
+        "alt": "Correct!, slide 18 of 23"
+      },
+      {
+        "filename": "slide-019.jpg",
+        "alt": "Not quite, slide 19 of 23"
+      },
+      {
+        "filename": "slide-020.jpg",
+        "alt": "Question 4 of 4, slide 20 of 23"
+      },
+      {
+        "filename": "slide-021.jpg",
+        "alt": "Correct!, slide 21 of 23"
+      },
+      {
+        "filename": "slide-022.jpg",
+        "alt": "Not quite, slide 22 of 23"
+      },
+      {
+        "filename": "slide-023.jpg",
+        "alt": "WELL DONE, slide 23 of 23"
+      }
+    ]
+  },
+  "parenting": {
+    "id": "parenting",
+    "title": "Parenting Guide",
+    "filename": "Parenting.pptx",
+    "slide_count": 23,
+    "slides": [
+      {
+        "filename": "slide-001.jpg",
+        "alt": "PARENTING GUIDE, slide 1 of 23"
+      },
+      {
+        "filename": "slide-002.jpg",
+        "alt": "Pick a topic to explore, slide 2 of 23"
+      },
+      {
+        "filename": "slide-003.jpg",
+        "alt": "The first hour matters, slide 3 of 23"
+      },
+      {
+        "filename": "slide-004.jpg",
+        "alt": "Going home early, slide 4 of 23"
+      },
+      {
+        "filename": "slide-005.jpg",
+        "alt": "Breastfeeding: position and latch, slide 5 of 23"
+      },
+      {
+        "filename": "slide-006.jpg",
+        "alt": "How long can expressed milk keep?, slide 6 of 23"
+      },
+      {
+        "filename": "slide-007.jpg",
+        "alt": "Read aloud, every day, slide 7 of 23"
+      },
+      {
+        "filename": "slide-008.jpg",
+        "alt": "Protecting children from harm, slide 8 of 23"
+      },
+      {
+        "filename": "slide-009.jpg",
+        "alt": "Teens: the HEEADSSS check-in, slide 9 of 23"
+      },
+      {
+        "filename": "slide-010.jpg",
+        "alt": "QUICK QUIZ, slide 10 of 23"
+      },
+      {
+        "filename": "slide-011.jpg",
+        "alt": "Question 1 of 4, slide 11 of 23"
+      },
+      {
+        "filename": "slide-012.jpg",
+        "alt": "Correct!, slide 12 of 23"
+      },
+      {
+        "filename": "slide-013.jpg",
+        "alt": "Not quite, slide 13 of 23"
+      },
+      {
+        "filename": "slide-014.jpg",
+        "alt": "Question 2 of 4, slide 14 of 23"
+      },
+      {
+        "filename": "slide-015.jpg",
+        "alt": "Correct!, slide 15 of 23"
+      },
+      {
+        "filename": "slide-016.jpg",
+        "alt": "Not quite, slide 16 of 23"
+      },
+      {
+        "filename": "slide-017.jpg",
+        "alt": "Question 3 of 4, slide 17 of 23"
+      },
+      {
+        "filename": "slide-018.jpg",
+        "alt": "Correct!, slide 18 of 23"
+      },
+      {
+        "filename": "slide-019.jpg",
+        "alt": "Not quite, slide 19 of 23"
+      },
+      {
+        "filename": "slide-020.jpg",
+        "alt": "Question 4 of 4, slide 20 of 23"
+      },
+      {
+        "filename": "slide-021.jpg",
+        "alt": "Correct!, slide 21 of 23"
+      },
+      {
+        "filename": "slide-022.jpg",
+        "alt": "Not quite, slide 22 of 23"
+      },
+      {
+        "filename": "slide-023.jpg",
+        "alt": "WELL DONE, slide 23 of 23"
+      }
+    ]
+  },
+  "safety": {
+    "id": "safety",
+    "title": "Safety Guide",
+    "filename": "Safety.pptx",
+    "slide_count": 27,
+    "slides": [
+      {
+        "filename": "slide-001.jpg",
+        "alt": "SAFETY GUIDE, slide 1 of 27"
+      },
+      {
+        "filename": "slide-002.jpg",
+        "alt": "Pick a topic to explore, slide 2 of 27"
+      },
+      {
+        "filename": "slide-003.jpg",
+        "alt": "Keep small objects out of reach, slide 3 of 27"
+      },
+      {
+        "filename": "slide-004.jpg",
+        "alt": "Safe sleep for every nap, slide 4 of 27"
+      },
+      {
+        "filename": "slide-005.jpg",
+        "alt": "Hands on, always, slide 5 of 27"
+      },
+      {
+        "filename": "slide-006.jpg",
+        "alt": "Childproof the home, slide 6 of 27"
+      },
+      {
+        "filename": "slide-007.jpg",
+        "alt": "Water safety and bath time, slide 7 of 27"
+      },
+      {
+        "filename": "slide-008.jpg",
+        "alt": "A safe crib, slide 8 of 27"
+      },
+      {
+        "filename": "slide-009.jpg",
+        "alt": "Highchair and infant swing, slide 9 of 27"
+      },
+      {
+        "filename": "slide-010.jpg",
+        "alt": "Car seat and baby gear, slide 10 of 27"
+      },
+      {
+        "filename": "slide-011.jpg",
+        "alt": "Clothes and pacifiers, slide 11 of 27"
+      },
+      {
+        "filename": "slide-012.jpg",
+        "alt": "Active and protected, slide 12 of 27"
+      },
+      {
+        "filename": "slide-013.jpg",
+        "alt": "Child protection strategies, slide 13 of 27"
+      },
+      {
+        "filename": "slide-014.jpg",
+        "alt": "QUICK QUIZ, slide 14 of 27"
+      },
+      {
+        "filename": "slide-015.jpg",
+        "alt": "Question 1 of 4, slide 15 of 27"
+      },
+      {
+        "filename": "slide-016.jpg",
+        "alt": "Correct!, slide 16 of 27"
+      },
+      {
+        "filename": "slide-017.jpg",
+        "alt": "Not quite, slide 17 of 27"
+      },
+      {
+        "filename": "slide-018.jpg",
+        "alt": "Question 2 of 4, slide 18 of 27"
+      },
+      {
+        "filename": "slide-019.jpg",
+        "alt": "Correct!, slide 19 of 27"
+      },
+      {
+        "filename": "slide-020.jpg",
+        "alt": "Not quite, slide 20 of 27"
+      },
+      {
+        "filename": "slide-021.jpg",
+        "alt": "Question 3 of 4, slide 21 of 27"
+      },
+      {
+        "filename": "slide-022.jpg",
+        "alt": "Correct!, slide 22 of 27"
+      },
+      {
+        "filename": "slide-023.jpg",
+        "alt": "Not quite, slide 23 of 27"
+      },
+      {
+        "filename": "slide-024.jpg",
+        "alt": "Question 4 of 4, slide 24 of 27"
+      },
+      {
+        "filename": "slide-025.jpg",
+        "alt": "Correct!, slide 25 of 27"
+      },
+      {
+        "filename": "slide-026.jpg",
+        "alt": "Not quite, slide 26 of 27"
+      },
+      {
+        "filename": "slide-027.jpg",
+        "alt": "WELL DONE, slide 27 of 27"
+      }
+    ]
+  }
+}

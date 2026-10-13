@@ -45,6 +45,7 @@ firebase_credentials.json
 !package.json
 !package-lock.json
 !vercel.json
+!given_modules_assets/manifest.json
 
 # Runtime logs / temp files
 ping.txt
