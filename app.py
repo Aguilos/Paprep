@@ -14,6 +14,7 @@ socketio = SocketIO(cors_allowed_origins='*')
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
 
     db.init_app(app)
     csrf.init_app(app)

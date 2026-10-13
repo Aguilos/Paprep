@@ -64,6 +64,7 @@
                     style="background-color:#5CAD5C;color:#fff;border-color:#5CAD5C;"
                     data-given-id="nutrition"
                     data-module-title="{{ gm.title }}"
+                    data-slide-count="{{ gm.slide_count }}"
                     data-slide-alts="{{ gm.slides|map(attribute='alt')|list|tojson|forceescape }}"
                     data-slide-base="{{ url_for('modules.given_module_slide', given_id='nutrition', slide_number=1).rsplit('/', 1)[0] }}">
               <i class="bi bi-play-fill me-1"></i>Play
@@ -101,6 +102,7 @@
                     style="background-color:#4E97D9;color:#fff;border-color:#4E97D9;"
                     data-given-id="parenting"
                     data-module-title="{{ gm.title }}"
+                    data-slide-count="{{ gm.slide_count }}"
                     data-slide-alts="{{ gm.slides|map(attribute='alt')|list|tojson|forceescape }}"
                     data-slide-base="{{ url_for('modules.given_module_slide', given_id='parenting', slide_number=1).rsplit('/', 1)[0] }}">
               <i class="bi bi-play-fill me-1"></i>Play
@@ -138,6 +140,7 @@
                     style="background-color:#FF8C42;color:#fff;border-color:#FF8C42;"
                     data-given-id="safety"
                     data-module-title="{{ gm.title }}"
+                    data-slide-count="{{ gm.slide_count }}"
                     data-slide-alts="{{ gm.slides|map(attribute='alt')|list|tojson|forceescape }}"
                     data-slide-base="{{ url_for('modules.given_module_slide', given_id='safety', slide_number=1).rsplit('/', 1)[0] }}">
               <i class="bi bi-play-fill me-1"></i>Play
@@ -274,15 +277,7 @@
           </span>
         </div>
         <div class="d-flex align-items-center gap-2">
-          <!-- Slide Duration Selector -->
-          <div class="d-flex align-items-center me-2">
-            <label for="givenModuleSpeed" class="text-white-50 small me-1 d-none d-sm-inline" style="font-size: 0.75rem;">Speed:</label>
-            <select id="givenModuleSpeed" class="form-select form-select-sm bg-dark text-white border-secondary py-0 px-2" style="font-size: 0.75rem; width: auto; height: 28px;">
-              <option value="3000">Fast (3s)</option>
-              <option value="5000" selected>Normal (5s)</option>
-              <option value="8000">Slow (8s)</option>
-            </select>
-          </div>
+
           <!-- Fullscreen Toggle -->
           <button type="button" class="btn btn-sm btn-outline-light py-1 px-2" id="givenModuleFullscreenToggle" title="Toggle Fullscreen">
             <i class="bi bi-arrows-fullscreen"></i>
@@ -299,9 +294,12 @@
 
       <!-- Slide Display Body -->
       <div class="modal-body p-0 d-flex flex-column justify-content-center align-items-center position-relative" style="background: #0d0f12; overflow: hidden;">
-        <img id="givenModuleSlide" class="img-fluid"
-             style="max-height: calc(100vh - 120px); max-width: 100%; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,0.6); transition: opacity 0.2s ease-in-out;"
-             alt="">
+        <div class="slide-wrapper">
+          <img id="givenModuleSlide" class="img-fluid"
+               style="max-height: calc(100vh - 120px); max-width: 100%; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,0.6); transition: opacity 0.2s ease-in-out; display: block;"
+               alt="">
+          <div id="hotspotLayer" aria-hidden="true"></div>
+        </div>
       </div>
 
       <!-- Bottom Control Toolbar -->
@@ -310,9 +308,8 @@
           <i class="bi bi-chevron-left me-1"></i>Previous
         </button>
 
-        <button type="button" class="btn btn-sm btn-success px-3 fw-semibold d-inline-flex align-items-center" id="givenModulePlayPause">
-          <i class="bi bi-pause-fill me-1" id="givenModulePlayPauseIcon"></i>
-          <span id="givenModulePlayPauseText">Pause</span>
+        <button type="button" class="btn btn-sm btn-outline-warning px-3 fw-semibold d-inline-flex align-items-center" id="givenModuleRestart" title="Restart from slide 1">
+          <i class="bi bi-arrow-repeat me-1"></i>Restart
         </button>
 
         <span class="text-white mx-2 px-2 py-1 rounded small bg-white bg-opacity-10 font-monospace fw-bold" id="givenModuleCounter" aria-live="polite">
@@ -349,108 +346,247 @@
   let total = 1;
   let slideBase = '';
   let alts = [];
-  let isPlaying = true;
-  let slideDuration = 5000; // ms
-  let timerInterval = null;
-  let progressStepInterval = null;
-  let progressElapsed = 0;
-  const TICK_MS = 50;
 
-  function setBadgeState(state) {
-    if (!statusBadge) return;
-    if (state === 'playing') {
-      statusBadge.className = 'badge bg-success bg-opacity-75 ms-2 small d-inline-flex align-items-center';
-      statusBadge.innerHTML = '<span class="spinner-grow spinner-grow-sm me-1" style="width: 0.55rem; height: 0.55rem;" role="status"></span>Auto-Presenting';
-      if (playPauseBtn) {
-        playPauseBtn.className = 'btn btn-sm btn-success px-3 fw-semibold d-inline-flex align-items-center';
-        playPauseIcon.className = 'bi bi-pause-fill me-1';
-        playPauseText.textContent = 'Pause';
-      }
-    } else if (state === 'paused') {
-      statusBadge.className = 'badge bg-secondary ms-2 small d-inline-flex align-items-center';
-      statusBadge.innerHTML = '<i class="bi bi-pause-circle me-1"></i>Paused';
-      if (playPauseBtn) {
-        playPauseBtn.className = 'btn btn-sm btn-primary px-3 fw-semibold d-inline-flex align-items-center';
-        playPauseIcon.className = 'bi bi-play-fill me-1';
-        playPauseText.textContent = 'Resume';
-      }
-    } else if (state === 'finished') {
-      statusBadge.className = 'badge bg-info ms-2 small d-inline-flex align-items-center';
-      statusBadge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Finished';
-      if (playPauseBtn) {
-        playPauseBtn.className = 'btn btn-sm btn-outline-warning px-3 fw-semibold d-inline-flex align-items-center';
-        playPauseIcon.className = 'bi bi-arrow-repeat me-1';
-        playPauseText.textContent = 'Replay';
-      }
+  // Hide the progress bar — no auto-advance, so it serves no purpose.
+  if (progressBar) progressBar.parentElement.style.display = 'none';
+
+  // ── Hotspot CSS ──────────────────────────────────────────────────────────
+  (function injectHotspotCSS() {
+    if (document.getElementById('hotspot-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'hotspot-styles';
+    s.textContent = [
+      '.slide-wrapper{position:relative;display:inline-flex;line-height:0;max-height:calc(100vh - 120px);max-width:100%;}',
+      '#hotspotLayer{position:absolute;inset:0;pointer-events:none;}',
+      '.slide-hotspot{position:absolute;pointer-events:auto;cursor:pointer;background:transparent;border:none;outline:none;-webkit-tap-highlight-color:transparent;}',
+      '.slide-hotspot:focus-visible{outline:3px solid #38bdf8;outline-offset:2px;border-radius:6px;}',
+    ].join('');
+    document.head.appendChild(s);
+  })();
+
+  const hotspotLayer = document.getElementById('hotspotLayer');
+  let currentModuleId = '';
+
+  // ── Full navigation map for every slide in every given module ─────────────
+  // Coordinates are exact percentages extracted directly from the original PPTX files
+  // measured against the standard 16:9 canvas (9,144,000 × 5,143,500 EMU).
+
+  // Slide 1 Cover buttons
+  function coverButtons(menuSlide, quizSlide, isParenting) {
+    if (isParenting) {
+      return [
+        { x: 6.00, y: 81.78, w: 20.00, h: 8.18, target: menuSlide, label: 'Start exploring' },
+        { x: 28.00, y: 81.78, w: 18.00, h: 8.18, target: quizSlide, label: 'Take the quiz' },
+      ];
     }
+    return [
+      { x: 6.00, y: 81.78, w: 17.50, h: 8.18, target: menuSlide, label: 'Start exploring' },
+      { x: 25.00, y: 81.78, w: 16.50, h: 8.18, target: quizSlide, label: 'Take the quiz' },
+    ];
   }
 
-  function resetProgressBar() {
-    progressElapsed = 0;
-    if (progressBar) progressBar.style.width = '0%';
+  // Header Menu button on content and question slides
+  function menuHotspot(menuSlide) {
+    return { x: 83.50, y: 7.11, w: 11.50, h: 7.11, target: menuSlide, label: 'Menu' };
   }
 
-  function stopPresentationTimer() {
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-    }
-    if (progressStepInterval) {
-      clearInterval(progressStepInterval);
-      progressStepInterval = null;
-    }
+  // Bottom Back button on content slides
+  function backHotspot(prevSlide) {
+    return { x: 70.50, y: 90.13, w: 11.50, h: 6.76, target: prevSlide, label: 'Back' };
   }
 
-  function startPresentationTimer() {
-    stopPresentationTimer();
-    if (!isPlaying) return;
-
-    resetProgressBar();
-    progressStepInterval = setInterval(function () {
-      if (!isPlaying) return;
-      progressElapsed += TICK_MS;
-      const pct = Math.min(100, (progressElapsed / slideDuration) * 100);
-      if (progressBar) progressBar.style.width = pct + '%';
-      if (progressElapsed >= slideDuration) {
-        advanceSlide();
-      }
-    }, TICK_MS);
+  // Bottom Next / Quiz button on content slides
+  function nextHotspot(nextSlide, label) {
+    return { x: 83.00, y: 90.13, w: 12.00, h: 6.76, target: nextSlide, label: label || 'Next' };
   }
 
-  function advanceSlide() {
-    if (current < total) {
-      showSlide(current + 1);
-    } else {
-      // Reached the end
-      isPlaying = false;
-      stopPresentationTimer();
-      setBadgeState('finished');
-      if (progressBar) progressBar.style.width = '100%';
-    }
+  // Quiz Intro buttons (Slide 10 in Nutrition/Parenting, Slide 14 in Safety)
+  function quizIntroButtons(q1Slide, menuSlide) {
+    return [
+      { x: 6.00, y: 77.33, w: 18.00, h: 8.18, target: q1Slide, label: 'Start quiz' },
+      { x: 26.00, y: 77.33, w: 14.00, h: 8.18, target: menuSlide, label: 'Menu' },
+    ];
+  }
+
+  // Question slide answer options (A, B, C)
+  function answerRows(correctLetter, correctSlide, wrongSlide) {
+    var rows = [
+      { x: 5.00, y: 41.78, w: 90.00, h: 13.51, label: 'A' },
+      { x: 5.00, y: 57.42, w: 90.00, h: 13.51, label: 'B' },
+      { x: 5.00, y: 73.07, w: 90.00, h: 13.51, label: 'C' },
+    ];
+    rows.forEach(function (r) {
+      r.target = (r.label === correctLetter) ? correctSlide : wrongSlide;
+    });
+    return rows;
+  }
+
+  // Quiz Feedback buttons (Slide 12, 13, etc.)
+  function feedbackButtons(actionSlide, menuSlide, actionLabel) {
+    return [
+      { x: 72.00, y: 77.33, w: 23.00, h: 8.89, target: actionSlide, label: actionLabel || 'Next question' },
+      { x: 5.00, y: 77.33, w: 14.00, h: 8.89, target: menuSlide, label: 'Menu' },
+    ];
+  }
+
+  // Quiz completion buttons (Well done slide)
+  function completionButtons(menuSlide, retakeSlide) {
+    return [
+      { x: 6.00, y: 80.89, w: 20.00, h: 8.18, target: menuSlide, label: 'Back to menu' },
+      { x: 28.00, y: 80.89, w: 18.00, h: 8.18, target: retakeSlide, label: 'Retake quiz' },
+    ];
+  }
+
+  // Menu Slide Topic Cards (Slide 2 in all decks)
+  function menuTopicCards(targets, quizSlide) {
+    return [
+      { x: 74.50, y: 7.11, w: 20.50, h: 7.11, target: quizSlide, label: 'Take the quiz' },
+      { x: 5.00, y: 23.11, w: 28.00, h: 31.11, target: targets[0], label: 'Topic 1' },
+      { x: 36.00, y: 23.11, w: 28.00, h: 31.11, target: targets[1], label: 'Topic 2' },
+      { x: 67.00, y: 23.11, w: 28.00, h: 31.11, target: targets[2], label: 'Topic 3' },
+      { x: 5.00, y: 56.89, w: 28.00, h: 31.11, target: targets[3], label: 'Topic 4' },
+      { x: 36.00, y: 56.89, w: 28.00, h: 31.11, target: targets[4], label: 'Topic 5' },
+      { x: 67.00, y: 56.89, w: 28.00, h: 31.11, target: targets[5], label: 'Topic 6' },
+    ];
+  }
+
+  var SLIDE_MAPS = {
+    // ── NUTRITION (23 slides) ────────────────────────────────────────────────
+    nutrition: {
+      1:  coverButtons(2, 10, false),
+      2:  menuTopicCards([3, 4, 6, 7, 8, 9], 10),
+      3:  [menuHotspot(2), backHotspot(2), nextHotspot(4)],
+      4:  [menuHotspot(2), backHotspot(3), nextHotspot(5)],
+      5:  [menuHotspot(2), backHotspot(4), nextHotspot(6)],
+      6:  [menuHotspot(2), backHotspot(5), nextHotspot(7)],
+      7:  [menuHotspot(2), backHotspot(6), nextHotspot(8)],
+      8:  [menuHotspot(2), backHotspot(7), nextHotspot(9)],
+      9:  [menuHotspot(2), backHotspot(8), nextHotspot(10, 'Quiz')],
+      10: quizIntroButtons(11, 2),
+      11: answerRows('A', 12, 13).concat([menuHotspot(2)]),
+      12: feedbackButtons(14, 2, 'Next question'),
+      13: feedbackButtons(11, 2, 'Try again'),
+      14: answerRows('C', 15, 16).concat([menuHotspot(2)]),
+      15: feedbackButtons(17, 2, 'Next question'),
+      16: feedbackButtons(14, 2, 'Try again'),
+      17: answerRows('B', 18, 19).concat([menuHotspot(2)]),
+      18: feedbackButtons(20, 2, 'Next question'),
+      19: feedbackButtons(17, 2, 'Try again'),
+      20: answerRows('C', 21, 22).concat([menuHotspot(2)]),
+      21: feedbackButtons(23, 2, 'Finish'),
+      22: feedbackButtons(20, 2, 'Try again'),
+      23: completionButtons(2, 11),
+    },
+
+    // ── PARENTING (23 slides) ────────────────────────────────────────────────
+    parenting: {
+      1:  coverButtons(2, 10, true),
+      2:  menuTopicCards([3, 4, 5, 7, 8, 9], 10),
+      3:  [menuHotspot(2), backHotspot(2), nextHotspot(4)],
+      4:  [menuHotspot(2), backHotspot(3), nextHotspot(5)],
+      5:  [menuHotspot(2), { x: 65.50, y: 90.13, w: 11.50, h: 6.76, target: 4, label: 'Back' }, { x: 78.00, y: 90.13, w: 17.00, h: 6.76, target: 6, label: 'Milk storage' }],
+      6:  [menuHotspot(2), backHotspot(5), nextHotspot(7)],
+      7:  [menuHotspot(2), backHotspot(6), nextHotspot(8)],
+      8:  [menuHotspot(2), backHotspot(7), nextHotspot(9)],
+      9:  [menuHotspot(2), backHotspot(8), nextHotspot(10, 'Quiz')],
+      10: quizIntroButtons(11, 2),
+      11: answerRows('B', 12, 13).concat([menuHotspot(2)]),
+      12: feedbackButtons(14, 2, 'Next question'),
+      13: feedbackButtons(11, 2, 'Try again'),
+      14: answerRows('C', 15, 16).concat([menuHotspot(2)]),
+      15: feedbackButtons(17, 2, 'Next question'),
+      16: feedbackButtons(14, 2, 'Try again'),
+      17: answerRows('A', 18, 19).concat([menuHotspot(2)]),
+      18: feedbackButtons(20, 2, 'Next question'),
+      19: feedbackButtons(17, 2, 'Try again'),
+      20: answerRows('B', 21, 22).concat([menuHotspot(2)]),
+      21: feedbackButtons(23, 2, 'Finish'),
+      22: feedbackButtons(20, 2, 'Try again'),
+      23: completionButtons(2, 11),
+    },
+
+    // ── SAFETY (27 slides) ───────────────────────────────────────────────────
+    safety: {
+      1:  coverButtons(2, 14, false),
+      2:  menuTopicCards([3, 4, 5, 7, 8, 12], 14),
+      3:  [menuHotspot(2), backHotspot(2), nextHotspot(4)],
+      4:  [menuHotspot(2), backHotspot(3), nextHotspot(5)],
+      5:  [menuHotspot(2), backHotspot(4), nextHotspot(6)],
+      6:  [menuHotspot(2), backHotspot(5), nextHotspot(7)],
+      7:  [menuHotspot(2), backHotspot(6), nextHotspot(8)],
+      8:  [menuHotspot(2), backHotspot(7), nextHotspot(9)],
+      9:  [menuHotspot(2), backHotspot(8), nextHotspot(10)],
+      10: [menuHotspot(2), backHotspot(9), nextHotspot(11)],
+      11: [menuHotspot(2), backHotspot(10), nextHotspot(12)],
+      12: [menuHotspot(2), backHotspot(11), nextHotspot(13)],
+      13: [menuHotspot(2), backHotspot(12), nextHotspot(14, 'Quiz')],
+      14: quizIntroButtons(15, 2),
+      15: answerRows('B', 16, 17).concat([menuHotspot(2)]),
+      16: feedbackButtons(18, 2, 'Next question'),
+      17: feedbackButtons(15, 2, 'Try again'),
+      18: answerRows('C', 19, 20).concat([menuHotspot(2)]),
+      19: feedbackButtons(21, 2, 'Next question'),
+      20: feedbackButtons(18, 2, 'Try again'),
+      21: answerRows('A', 22, 23).concat([menuHotspot(2)]),
+      22: feedbackButtons(24, 2, 'Next question'),
+      23: feedbackButtons(21, 2, 'Try again'),
+      24: answerRows('C', 25, 26).concat([menuHotspot(2)]),
+      25: feedbackButtons(27, 2, 'Finish'),
+      26: feedbackButtons(24, 2, 'Try again'),
+      27: completionButtons(2, 15),
+    },
+  };
+
+  // ── renderHotspots: called every time a new slide is shown ────────────────
+  function renderHotspots(slideNumber) {
+    if (!hotspotLayer) return;
+    hotspotLayer.innerHTML = '';
+    var map = SLIDE_MAPS[currentModuleId];
+    if (!map) return;
+    var spots = map[slideNumber];
+    if (!spots || !spots.length) return;
+    spots.forEach(function (h) {
+      var btn = document.createElement('div');
+      btn.className = 'slide-hotspot';
+      btn.style.cssText = 'left:' + h.x + '%;top:' + h.y + '%;width:' + h.w + '%;height:' + h.h + '%;';
+      if (h.label) btn.setAttribute('aria-label', h.label);
+      btn.setAttribute('role', 'button');
+      btn.setAttribute('tabindex', '0');
+      var target = h.target;
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        showSlide(target);
+      });
+      btn.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          showSlide(target);
+        }
+      });
+      hotspotLayer.appendChild(btn);
+    });
   }
 
   function showSlide(number) {
     current = Math.max(1, Math.min(total, number));
     slide.style.opacity = '0.7';
+    slide.onload = function () { slide.style.opacity = '1'; };
     slide.src = slideBase + '/' + current;
-    slide.onload = function () {
-      slide.style.opacity = '1';
-    };
+    if (slide.complete && slide.naturalWidth > 0) slide.style.opacity = '1';
+
     slide.alt = alts[current - 1] || title.textContent + ', slide ' + current + ' of ' + total;
     counter.textContent = current + ' of ' + total;
     previous.disabled = current === 1;
     next.disabled = current === total;
 
+    // Render clickable hotspots over visual buttons on this slide
+    renderHotspots(current);
+
     // Preload next slide
     if (current < total) {
       const preload = new Image();
       preload.src = slideBase + '/' + (current + 1);
-    }
-
-    if (isPlaying) {
-      startPresentationTimer();
-    } else {
-      resetProgressBar();
     }
   }
 
@@ -478,29 +614,11 @@
     fullscreenToggle.addEventListener('click', toggleFullscreen);
   }
 
-  if (speedSelect) {
-    speedSelect.addEventListener('change', function () {
-      slideDuration = parseInt(speedSelect.value, 10) || 5000;
-      if (isPlaying) startPresentationTimer();
-    });
-  }
-
-  if (playPauseBtn) {
-    playPauseBtn.addEventListener('click', function () {
-      if (current === total && !isPlaying) {
-        // Replay from beginning
-        isPlaying = true;
-        setBadgeState('playing');
-        showSlide(1);
-        return;
-      }
-      isPlaying = !isPlaying;
-      setBadgeState(isPlaying ? 'playing' : 'paused');
-      if (isPlaying) {
-        startPresentationTimer();
-      } else {
-        stopPresentationTimer();
-      }
+  // Restart button — go back to slide 1
+  const restartBtn = document.getElementById('givenModuleRestart');
+  if (restartBtn) {
+    restartBtn.addEventListener('click', function () {
+      showSlide(1);
     });
   }
 
@@ -508,17 +626,14 @@
   document.querySelectorAll('.given-module-play').forEach(function (button) {
     button.addEventListener('click', function () {
       slideBase = button.dataset.slideBase;
-      total = parseInt(button.closest('.learning-card').querySelector('.badge').textContent, 10) || 23;
+      total = parseInt(button.dataset.slideCount, 10) || parseInt(button.closest('.learning-card').querySelector('.badge').textContent, 10) || 23;
       alts = JSON.parse(button.dataset.slideAlts || '[]');
       title.textContent = button.dataset.moduleTitle || 'Given Module';
-      
-      // Request fullscreen immediately inside the direct user-click stack
+      currentModuleId = button.dataset.givenId || '';
+
+      // Open fullscreen immediately (must be inside a direct user-click handler)
       requestFullscreenNow();
 
-      // Start in automated presentation mode
-      isPlaying = true;
-      slideDuration = parseInt(speedSelect ? speedSelect.value : 5000, 10) || 5000;
-      setBadgeState('playing');
       showSlide(1);
 
       const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
@@ -526,38 +641,23 @@
     });
   });
 
-  // Manual Previous/Next buttons
+  // Previous / Next buttons
   previous.addEventListener('click', function () {
-    if (current > 1) {
-      showSlide(current - 1);
-      if (isPlaying) startPresentationTimer();
-    }
+    if (current > 1) showSlide(current - 1);
   });
 
   next.addEventListener('click', function () {
-    if (current < total) {
-      showSlide(current + 1);
-      if (isPlaying) startPresentationTimer();
-    }
+    if (current < total) showSlide(current + 1);
   });
 
   // Keyboard navigation
   document.addEventListener('keydown', function (event) {
     if (!modalElement.classList.contains('show')) return;
-    if (event.key === 'ArrowLeft') {
-      if (current > 1) {
-        showSlide(current - 1);
-        if (isPlaying) startPresentationTimer();
-      }
-    } else if (event.key === 'ArrowRight') {
-      if (current < total) {
-        showSlide(current + 1);
-        if (isPlaying) startPresentationTimer();
-      }
-    } else if (event.key === ' ') {
+    if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
+      if (current > 1) showSlide(current - 1);
+    } else if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') {
       event.preventDefault();
-      // Space toggles Play/Pause
-      if (playPauseBtn) playPauseBtn.click();
+      if (current < total) showSlide(current + 1);
     }
   });
 
@@ -569,20 +669,13 @@
   slide.addEventListener('touchend', function (event) {
     const delta = event.changedTouches[0].screenX - touchStartX;
     if (Math.abs(delta) > 40) {
-      if (delta < 0 && current < total) {
-        showSlide(current + 1);
-      } else if (delta > 0 && current > 1) {
-        showSlide(current - 1);
-      }
-      if (isPlaying) startPresentationTimer();
+      if (delta < 0 && current < total) showSlide(current + 1);
+      else if (delta > 0 && current > 1) showSlide(current - 1);
     }
   });
 
   // Modal Cleanup on Close
   modalElement.addEventListener('hidden.bs.modal', function () {
-    stopPresentationTimer();
-    isPlaying = false;
-    resetProgressBar();
     if (document.fullscreenElement && document.exitFullscreen) {
       document.exitFullscreen();
     }
