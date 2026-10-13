@@ -31,6 +31,130 @@
     {% endfor %}
   </div>
 
+  {% if given_modules %}
+  <section class="modules-section mb-5" aria-labelledby="given-modules-heading">
+    <div class="modules-section-header" style="border-left: 4px solid #6f42c1;">
+      <i class="bi bi-easel2-fill" style="color: #6f42c1;"></i>
+      <h5 class="mb-0" id="given-modules-heading">Given Modules</h5>
+    </div>
+    <p class="text-muted small mt-2">Built-in presentation guides provided for every parent.</p>
+    <div class="row g-3 mt-1">
+
+      {# ── Nutrition Guide ── #}
+      {% set gm = given_modules.get('nutrition') %}
+      {% if gm %}
+      <div class="col-md-6 col-lg-4">
+        <div class="learning-card">
+          <div class="learning-card-header" style="background-color: #5CAD5C;">
+            <i class="bi bi-apple"></i>
+          </div>
+          <div class="learning-card-body">
+            <span class="badge border small mb-2"
+                  style="background-color:rgba(92,173,92,.12);color:#3a7d3a;border-color:rgba(92,173,92,.3)!important;">
+              {{ gm.slide_count }} slides
+            </span>
+            <h6 class="learning-card-title">{{ gm.title }}</h6>
+            <p class="learning-card-desc text-muted small">
+              Evidence-based feeding guidance — from breastfeeding to first foods and beyond.
+            </p>
+          </div>
+          <div class="learning-card-footer">
+            <button type="button"
+                    class="btn btn-sm flex-grow-1 given-module-play"
+                    style="background-color:#5CAD5C;color:#fff;border-color:#5CAD5C;"
+                    data-given-id="nutrition"
+                    data-module-title="{{ gm.title }}"
+                    data-slide-alts="{{ gm.slides|map(attribute='alt')|list|tojson|forceescape }}"
+                    data-slide-base="{{ url_for('modules.given_module_slide', given_id='nutrition', slide_number=1).rsplit('/', 1)[0] }}">
+              <i class="bi bi-play-fill me-1"></i>Play
+            </button>
+            <a href="{{ url_for('modules.given_module_viewer', given_id='nutrition') }}"
+               class="btn btn-sm btn-outline-secondary" title="Open viewer page">
+              <i class="bi bi-box-arrow-up-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── Parenting Guide ── #}
+      {% set gm = given_modules.get('parenting') %}
+      {% if gm %}
+      <div class="col-md-6 col-lg-4">
+        <div class="learning-card">
+          <div class="learning-card-header" style="background-color: #4E97D9;">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div class="learning-card-body">
+            <span class="badge border small mb-2"
+                  style="background-color:rgba(78,151,217,.12);color:#1e5f9c;border-color:rgba(78,151,217,.3)!important;">
+              {{ gm.slide_count }} slides
+            </span>
+            <h6 class="learning-card-title">{{ gm.title }}</h6>
+            <p class="learning-card-desc text-muted small">
+              Practical tips on newborn care, reading aloud, and raising healthy children through every stage.
+            </p>
+          </div>
+          <div class="learning-card-footer">
+            <button type="button"
+                    class="btn btn-sm flex-grow-1 given-module-play"
+                    style="background-color:#4E97D9;color:#fff;border-color:#4E97D9;"
+                    data-given-id="parenting"
+                    data-module-title="{{ gm.title }}"
+                    data-slide-alts="{{ gm.slides|map(attribute='alt')|list|tojson|forceescape }}"
+                    data-slide-base="{{ url_for('modules.given_module_slide', given_id='parenting', slide_number=1).rsplit('/', 1)[0] }}">
+              <i class="bi bi-play-fill me-1"></i>Play
+            </button>
+            <a href="{{ url_for('modules.given_module_viewer', given_id='parenting') }}"
+               class="btn btn-sm btn-outline-secondary" title="Open viewer page">
+              <i class="bi bi-box-arrow-up-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── Safety Guide ── #}
+      {% set gm = given_modules.get('safety') %}
+      {% if gm %}
+      <div class="col-md-6 col-lg-4">
+        <div class="learning-card">
+          <div class="learning-card-header" style="background-color: #FF8C42;">
+            <i class="bi bi-shield-check"></i>
+          </div>
+          <div class="learning-card-body">
+            <span class="badge border small mb-2"
+                  style="background-color:rgba(255,140,66,.12);color:#b85c00;border-color:rgba(255,140,66,.3)!important;">
+              {{ gm.slide_count }} slides
+            </span>
+            <h6 class="learning-card-title">{{ gm.title }}</h6>
+            <p class="learning-card-desc text-muted small">
+              Essential safety practices for every stage — safe sleep, childproofing, water safety, and more.
+            </p>
+          </div>
+          <div class="learning-card-footer">
+            <button type="button"
+                    class="btn btn-sm flex-grow-1 given-module-play"
+                    style="background-color:#FF8C42;color:#fff;border-color:#FF8C42;"
+                    data-given-id="safety"
+                    data-module-title="{{ gm.title }}"
+                    data-slide-alts="{{ gm.slides|map(attribute='alt')|list|tojson|forceescape }}"
+                    data-slide-base="{{ url_for('modules.given_module_slide', given_id='safety', slide_number=1).rsplit('/', 1)[0] }}">
+              <i class="bi bi-play-fill me-1"></i>Play
+            </button>
+            <a href="{{ url_for('modules.given_module_viewer', given_id='safety') }}"
+               class="btn btn-sm btn-outline-secondary" title="Open viewer page">
+              <i class="bi bi-box-arrow-up-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </section>
+  {% endif %}
+
   <!-- Module Grid -->
   {% if grouped %}
     {% for cat_key, mods in grouped.items() %}
@@ -76,9 +200,9 @@
                 </div>
               </div>
               {% endif %}
-              {% if module.pdf_data %}
+              {% if module.presentation_filename %}
               <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 small">
-                <i class="bi bi-file-earmark-pdf-fill me-1"></i>PDF Available
+                <i class="bi bi-file-earmark-slides-fill me-1"></i>Presentation Available
               </span>
               {% endif %}
             </div>
@@ -99,7 +223,14 @@
                 <i class="bi bi-book-fill me-1"></i>Start
               </a>
               {% endif %}
-              {% if module.pdf_data %}
+              {% if module.presentation_filename %}
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger module-fullscreen-btn"
+                      data-pdf-url="{{ url_for('modules.view_presentation', module_id=module.id) }}"
+                      data-module-title="{{ module.title }}"
+                      title="Open presentation fullscreen">
+                <i class="bi bi-arrows-fullscreen"></i>
+              </button>
               <a href="{{ url_for('modules.download_module', module_id=module.id) }}"
                  class="btn btn-sm btn-danger" title="Download PDF">
                 <i class="bi bi-file-earmark-pdf"></i>
@@ -126,4 +257,123 @@
   {% endif %}
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<div class="modal fade" id="givenModuleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content bg-dark">
+      <div class="modal-header border-0 py-2">
+        <h5 class="modal-title text-white" id="givenModuleTitle"></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0 d-flex flex-column justify-content-center align-items-center">
+        <img id="givenModuleSlide" class="img-fluid" style="max-height: calc(100vh - 130px); object-fit: contain;"
+             alt="">
+        <div class="d-flex align-items-center gap-2 mt-2">
+          <button type="button" class="btn btn-outline-light" id="givenModulePrevious">Previous</button>
+          <span class="text-white" id="givenModuleCounter" aria-live="polite"></span>
+          <button type="button" class="btn btn-outline-light" id="givenModuleNext">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const modalElement = document.getElementById('givenModuleModal');
+  const slide = document.getElementById('givenModuleSlide');
+  const counter = document.getElementById('givenModuleCounter');
+  const previous = document.getElementById('givenModulePrevious');
+  const next = document.getElementById('givenModuleNext');
+  const title = document.getElementById('givenModuleTitle');
+  if (!modalElement || !slide) return;
+  let current = 1;
+  let total = 1;
+  let slideBase = '';
+  let alts = [];
+
+  function showSlide(number) {
+    current = Math.max(1, Math.min(total, number));
+    slide.src = slideBase + '/' + current;
+    slide.alt = alts[current - 1] || title.textContent + ', slide ' + current + ' of ' + total;
+    counter.textContent = current + ' of ' + total;
+    previous.disabled = current === 1;
+    next.disabled = current === total;
+    if (current < total) {
+      const preload = new Image();
+      preload.src = slideBase + '/' + (current + 1);
+    }
+  }
+
+  function requestFullscreen() {
+    const request = modalElement.requestFullscreen ||
+      modalElement.webkitRequestFullscreen || modalElement.msRequestFullscreen;
+    if (request) {
+      const result = request.call(modalElement);
+      if (result && result.catch) result.catch(function () {});
+    }
+  }
+
+  document.querySelectorAll('.given-module-play').forEach(function (button) {
+    button.addEventListener('click', function () {
+      slideBase = button.dataset.slideBase;
+      total = parseInt(button.closest('.learning-card').querySelector('.badge').textContent, 10);
+      alts = JSON.parse(button.dataset.slideAlts);
+      title.textContent = button.dataset.moduleTitle || 'Given Module';
+      showSlide(1);
+      const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+      modal.show();
+      requestFullscreen();
+    });
+  });
+
+  previous.addEventListener('click', function () { showSlide(current - 1); });
+  next.addEventListener('click', function () { showSlide(current + 1); });
+  document.addEventListener('keydown', function (event) {
+    if (!modalElement.classList.contains('show')) return;
+    if (event.key === 'ArrowLeft') showSlide(current - 1);
+    if (event.key === 'ArrowRight' || event.key === ' ') {
+      event.preventDefault();
+      showSlide(current + 1);
+    }
+  });
+  let touchStartX = 0;
+  slide.addEventListener('touchstart', function (event) { touchStartX = event.changedTouches[0].screenX; });
+  slide.addEventListener('touchend', function (event) {
+    const delta = event.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(delta) > 40) showSlide(current + (delta < 0 ? 1 : -1));
+  });
+  modalElement.addEventListener('hidden.bs.modal', function () {
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+    slide.removeAttribute('src');
+  });
+})();
+</script>
+<script>
+(function () {
+  const modalElement = document.getElementById('moduleFullscreenModal');
+  const frame = document.getElementById('moduleFullscreenFrame');
+  const title = document.getElementById('moduleFullscreenTitle');
+  if (!modalElement || !frame) return;
+  document.querySelectorAll('.module-fullscreen-btn').forEach(function (button) {
+    button.addEventListener('click', function () {
+      frame.src = button.dataset.pdfUrl;
+      title.textContent = button.dataset.moduleTitle || 'Module presentation';
+      bootstrap.Modal.getOrCreateInstance(modalElement).show();
+      const request = modalElement.requestFullscreen || modalElement.webkitRequestFullscreen;
+      if (request) {
+        const result = request.call(modalElement);
+        if (result && result.catch) result.catch(function () {});
+      }
+    });
+  });
+  modalElement.addEventListener('hidden.bs.modal', function () {
+    frame.src = '';
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+  });
+})();
+</script>
 {% endblock %}

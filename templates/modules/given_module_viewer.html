@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}{{ given_module.title }}{% endblock %}
+{% block page_title %}{{ given_module.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+  <a href="{{ url_for('modules.list_modules') }}" class="btn btn-link ps-0">Back to modules</a>
+  <p class="text-muted">Use Start to open the presentation. Fullscreen may be unavailable in some mobile browsers.</p>
+  <button type="button" class="btn btn-primary" id="givenViewerStart">
+    <i class="bi bi-play-fill me-1"></i>Start presentation
+  </button>
+  <div id="givenViewer" class="bg-dark mt-3 p-2 text-center" hidden>
+    <img id="givenViewerSlide" class="img-fluid" style="max-height:75vh;object-fit:contain;" alt="">
+    <div class="d-flex justify-content-center align-items-center gap-2 mt-2">
+      <button type="button" class="btn btn-outline-light" id="givenViewerPrevious">Previous</button>
+      <span class="text-white" id="givenViewerCounter" aria-live="polite"></span>
+      <button type="button" class="btn btn-outline-light" id="givenViewerNext">Next</button>
+      <button type="button" class="btn btn-outline-light" id="givenViewerExit">Exit fullscreen</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const viewer = document.getElementById('givenViewer');
+  const start = document.getElementById('givenViewerStart');
+  const slide = document.getElementById('givenViewerSlide');
+  const counter = document.getElementById('givenViewerCounter');
+  const previous = document.getElementById('givenViewerPrevious');
+  const next = document.getElementById('givenViewerNext');
+  const exit = document.getElementById('givenViewerExit');
+  const base = {{ url_for('modules.given_module_slide', given_id=given_module.id, slide_number=1).rsplit('/', 1)[0]|tojson }};
+  const fallbackAltTitle = {{ given_module.title|tojson }};
+  const total = {{ given_module.slide_count }};
+  const alts = {{ given_module.slides|map(attribute='alt')|list|tojson }};
+  let current = 1;
+
+  function showSlide(number) {
+    current = Math.max(1, Math.min(total, number));
+    slide.src = base + '/' + current;
+    slide.alt = alts[current - 1] || fallbackAltTitle + ', slide ' + current + ' of ' + total;
+    counter.textContent = current + ' of ' + total;
+    previous.disabled = current === 1;
+    next.disabled = current === total;
+    if (current < total) {
+      const preload = new Image();
+      preload.src = base + '/' + (current + 1);
+    }
+  }
+  function requestFullscreen() {
+    const request = viewer.requestFullscreen || viewer.webkitRequestFullscreen;
+    if (request) {
+      const result = request.call(viewer);
+      if (result && result.catch) result.catch(function () {});
+    }
+  }
+  start.addEventListener('click', function () {
+    viewer.hidden = false;
+    showSlide(1);
+    requestFullscreen();
+    start.hidden = true;
+  });
+  previous.addEventListener('click', function () { showSlide(current - 1); });
+  next.addEventListener('click', function () { showSlide(current + 1); });
+  exit.addEventListener('click', function () {
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+  });
+  document.addEventListener('keydown', function (event) {
+    if (viewer.hidden) return;
+    if (event.key === 'ArrowLeft') showSlide(current - 1);
+    if (event.key === 'ArrowRight' || event.key === ' ') {
+      event.preventDefault();
+      showSlide(current + 1);
+    }
+  });
+})();
+</script>
+{% endblock %}

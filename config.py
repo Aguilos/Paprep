@@ -69,4 +69,5 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads', 'modules')
+    GIVEN_MODULES_FOLDER = os.path.join(BASE_DIR, 'given_modules_assets')
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50 MB max upload

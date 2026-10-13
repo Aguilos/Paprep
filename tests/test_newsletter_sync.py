@@ -288,6 +288,40 @@ class NewsletterSyncTests(unittest.TestCase):
         self.assertIn(b'Age-matched update', parent_page.data)
         self.assertNotIn(b'Older-child update', parent_page.data)
 
+    def test_dashboard_provides_child_tabs_for_age_filtered_newsletters(self):
+        with self.app.app_context():
+            older_child = ChildProfile(
+                user_id=self.parent_id,
+                name='Older Child',
+                date_of_birth=date(2017, 1, 1),
+            )
+            db.session.add(older_child)
+            db.session.add(Newsletter(
+                title='Younger-child update',
+                body='For the younger child age range.',
+                child_id=None,
+                clinic_id=self.clinic_id,
+                target_age_min_years=0,
+                target_age_max_years=5,
+                is_published=True,
+            ))
+            db.session.add(Newsletter(
+                title='Older-child update',
+                body='For the older child age range.',
+                child_id=None,
+                clinic_id=self.clinic_id,
+                target_age_min_years=6,
+                target_age_max_years=10,
+                is_published=True,
+            ))
+            db.session.commit()
+
+        parent_page = self.parent_client().get('/dashboard')
+        self.assertIn(b'class="btn btn-sm btn-primary newsletter-child-tab"', parent_page.data)
+        self.assertIn(b'Older Child', parent_page.data)
+        self.assertIn(b'Younger-child update', parent_page.data)
+        self.assertNotIn(b'Older-child update', parent_page.data)
+
 
 if __name__ == '__main__':
     unittest.main()

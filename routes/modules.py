@@ -1,6 +1,10 @@
 from io import BytesIO
+import json
+import os
+from pathlib import Path
 from flask import Blueprint, render_template, request, make_response, jsonify, \
     send_file, abort, Response
+from flask import current_app
 from flask_login import login_required, current_user
 from models import LearningModule, ModuleProgress, ModuleQuizQuestion
 from app import db
@@ -15,6 +19,28 @@ CATEGORY_META = {
 }
 
 PASS_THRESHOLD = 70   # minimum quiz score (%) to mark a module complete
+
+PRESENTATION_FILES = {
+    'parenting': 'Parenting.pdf',
+    'nutrition': 'Nutrition.pdf',
+    'safety': 'Safety.pdf',
+}
+
+GIVEN_MODULES_MANIFEST = 'manifest.json'
+
+
+def given_module_registry():
+    manifest_path = Path(current_app.config['GIVEN_MODULES_FOLDER']) / GIVEN_MODULES_MANIFEST
+    try:
+        with manifest_path.open(encoding='utf-8') as manifest_file:
+            manifest = json.load(manifest_file)
+    except (OSError, ValueError):
+        return {}
+    return manifest if isinstance(manifest, dict) else {}
+
+
+def presentation_filename(module):
+    return PRESENTATION_FILES.get(module.category)
 
 
 # ── Public routes (all logged-in users) ─────────────────────────────────────
@@ -47,6 +73,7 @@ def list_modules():
         m.in_progress    = prog.status == 'in_progress' if prog else False
         m.last_section   = prog.last_section if prog else 0
         m.quiz_score     = prog.quiz_score if prog else None
+        m.presentation_filename = presentation_filename(m)
 
     grouped = {}
     for m in modules:
@@ -55,6 +82,7 @@ def list_modules():
     return render_template('modules/modules.html',
                            modules=modules,
                            grouped=grouped,
+                           given_modules=given_module_registry(),
                            category_meta=CATEGORY_META,
                            active_category=category,
                            page_title='Learning Modules')
@@ -91,12 +119,44 @@ def module_detail(module_id):
 
     return render_template('modules/module_detail.html',
                            module=module,
+                           presentation_filename=presentation_filename(module),
                            meta=meta,
                            progress=progress,
                            questions=questions,
                            questions_data=questions_data,
                            pass_threshold=PASS_THRESHOLD,
                            page_title=module.title)
+
+
+@modules_bp.route('/given/<given_id>')
+@login_required
+def given_module_viewer(given_id):
+    given_module = given_module_registry().get(given_id)
+    if not given_module:
+        abort(404)
+    return render_template(
+        'modules/given_module_viewer.html',
+        given_module=given_module,
+        page_title=given_module['title'],
+    )
+
+
+@modules_bp.route('/given/<given_id>/slide/<int:slide_number>')
+@login_required
+def given_module_slide(given_id, slide_number):
+    given_module = given_module_registry().get(given_id)
+    if not given_module or not 1 <= slide_number <= given_module.get('slide_count', 0):
+        abort(404)
+    slides = given_module.get('slides', [])
+    if slide_number > len(slides):
+        abort(404)
+    filename = slides[slide_number - 1].get('filename')
+    if not isinstance(filename, str) or Path(filename).name != filename:
+        abort(404)
+    slide_path = Path(current_app.config['GIVEN_MODULES_FOLDER']) / given_id / filename
+    if not slide_path.is_file():
+        abort(404)
+    return send_file(slide_path, mimetype='image/jpeg', conditional=False)
 
 
 @modules_bp.route('/<int:module_id>/pdf')
@@ -113,6 +173,30 @@ def view_pdf(module_id):
         BytesIO(module.pdf_data),
         mimetype='application/pdf',
         headers={'Content-Disposition': 'inline'}
+    )
+
+
+@modules_bp.route('/<int:module_id>/presentation')
+@login_required
+def view_presentation(module_id):
+    """Serve the category presentation converted from the supplied PPTX."""
+    module = LearningModule.query.filter(
+        LearningModule.id == module_id,
+        LearningModule.category.in_(CATEGORY_META),
+    ).first_or_404()
+    filename = presentation_filename(module)
+    if not filename:
+        abort(404)
+    presentation_path = os.path.join(
+        current_app.config['UPLOAD_FOLDER'], filename
+    )
+    if not os.path.isfile(presentation_path):
+        abort(404)
+    return send_file(
+        presentation_path,
+        mimetype='application/pdf',
+        as_attachment=False,
+        download_name=filename,
     )
 
 

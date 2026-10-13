@@ -137,6 +137,19 @@
         <p class="text-muted small mb-0">Updates written by clinics monitoring {{ active_child.name }}.</p>
       </div>
     </div>
+    {% if children|length > 1 %}
+    <div class="newsletter-child-tabs d-flex flex-wrap gap-2 mb-3" role="tablist" aria-label="Choose a child for age-appropriate newsletters">
+      {% for child in children %}
+      <button type="button"
+              class="btn btn-sm {% if child.id == active_child.id %}btn-primary{% else %}btn-outline-primary{% endif %} newsletter-child-tab"
+              data-newsletter-child-id="{{ child.id }}"
+              role="tab"
+              aria-selected="{{ 'true' if child.id == active_child.id else 'false' }}">
+        {{ child.name }} <span class="small">({{ child.age_display }})</span>
+      </button>
+      {% endfor %}
+    </div>
+    {% endif %}
     <div class="newsletter-feed">
       {% for newsletter in newsletters %}
       <article class="newsletter-item">
@@ -487,6 +500,32 @@
     openPanel({{ expanded_child_id }});
     {% endif %}
 
+  })();
+
+  /* ── Newsletter child tabs ───────────────────────────────── */
+  (function () {
+    const setActiveUrl = '{{ url_for("children.set_active_child") }}';
+    const dashboardUrl = '{{ url_for("main.dashboard") }}';
+    const csrfToken = '{{ csrf_token() }}';
+
+    document.querySelectorAll('.newsletter-child-tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        const childId = Number(tab.dataset.newsletterChildId);
+        fetch(setActiveUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({ child_id: childId })
+        }).then(function (response) {
+          if (!response.ok) throw new Error('Unable to switch child');
+          window.location.href = dashboardUrl;
+        }).catch(function () {
+          window.location.href = dashboardUrl;
+        });
+      });
+    });
   })();
 </script>
 {% endblock %}

@@ -394,13 +394,18 @@
       </div><!-- /reader-content-panel -->
 
       <!-- PDF section (if available) -->
-      {% if module.pdf_data %}
+      {% if module.pdf_data or presentation_filename %}
       <div class="reader-content-panel mt-4">
         <div class="reader-header">
-          <i class="bi bi-file-earmark-pdf-fill text-danger fs-5 me-2"></i>
-          <strong>PDF Reference</strong>
+          <i class="bi bi-file-earmark-slides-fill text-danger fs-5 me-2"></i>
+          <strong>Presentation Reference</strong>
           <div class="ms-auto d-flex gap-2">
-            <a href="{{ url_for('modules.view_pdf', module_id=module.id) }}"
+            <button type="button" class="btn btn-sm btn-outline-danger"
+                    id="pdfFullscreenBtn"
+                    onclick="openPdfFullscreen()">
+              <i class="bi bi-arrows-fullscreen me-1"></i>Fullscreen
+            </button>
+            <a href="{{ url_for('modules.view_pdf' if module.pdf_data else 'modules.view_presentation', module_id=module.id) }}"
                class="btn btn-sm btn-outline-danger" target="_blank">
               <i class="bi bi-box-arrow-up-right me-1"></i>Open
             </a>
@@ -411,8 +416,10 @@
           </div>
         </div>
         <div style="padding:0 16px 16px;">
-          <iframe src="{{ url_for('modules.view_pdf', module_id=module.id) }}"
-                  class="pdf-embed-frame" title="PDF – {{ module.title }}"
+          <iframe src="{{ url_for('modules.view_pdf' if module.pdf_data else 'modules.view_presentation', module_id=module.id) }}"
+                  class="pdf-embed-frame" title="Presentation – {{ module.title }}"
+                  id="modulePdfFrame"
+                  allowfullscreen
                   style="width:100%;height:420px;border:none;border-radius:8px;"></iframe>
         </div>
       </div>
@@ -433,6 +440,26 @@
 // ── Data from server ─────────────────────────────────────────────────────────
 const RAW_CONTENT   = {{ (module.content or '') | tojson }};
 const QUESTIONS     = {{ (questions_data or []) | tojson }};
+
+function openPdfFullscreen() {
+  const frame = document.getElementById('modulePdfFrame');
+  if (!frame) return;
+
+  const requestFullscreen = frame.requestFullscreen ||
+    frame.webkitRequestFullscreen ||
+    frame.msRequestFullscreen;
+  if (requestFullscreen) {
+    const fullscreenRequest = requestFullscreen.call(frame);
+    if (fullscreenRequest && fullscreenRequest.catch) {
+      fullscreenRequest.catch(function () {
+        window.open(frame.src, '_blank', 'noopener');
+      });
+    }
+    return;
+  }
+
+  window.open(frame.src, '_blank', 'noopener');
+}
 const LAST_SECTION  = {{ progress.last_section }};
 const IS_COMPLETED  = {{ ('true' if progress.status == 'completed' else 'false') }};
 const MODULE_ID     = {{ module.id }};
