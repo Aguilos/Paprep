@@ -593,6 +593,28 @@ def match_bot_intent(text):
         ]
         return reply, shortcuts, ["What are red flag symptoms?", "Fever guidance", "Find a clinic"]
 
+    # ── Greetings & small talk ─────────────────────────────────────────────
+    greeting_triggers = (
+        'hi', 'hello', 'hey', 'hiya', 'howdy', 'sup', "what's up", 'good morning',
+        'good afternoon', 'good evening', 'good day', 'how are you', 'kamusta',
+        'mabuhay', 'helo', 'ello', 'greetings',
+    )
+    if any(text_lower == g or text_lower.startswith(g + ' ') or text_lower.startswith(g + '!')
+           for g in greeting_triggers):
+        user_name = ''
+        try:
+            from flask_login import current_user as _cu
+            if _cu and _cu.is_authenticated:
+                user_name = f', {_cu.first_name}' if getattr(_cu, 'first_name', None) else ''
+        except Exception:
+            pass
+        reply = (
+            f"👋 **Hi{user_name}! I'm your PaPrep Assistant.**\n\n"
+            "Ask me about fever care, nutrition, safety, or any parenting question — "
+            "or pick a quick shortcut below!"
+        )
+        return reply, nav_shortcuts, default_actions
+
     feature_result = match_feature_request(text)
     if feature_result['match']:
         feature_id = feature_result['match']
@@ -725,17 +747,6 @@ def match_bot_intent(text):
     elif any(k in text_lower for k in ('parenting', 'development', 'sleep training')):
         add_topic_shortcut('Learning Modules', 'modules.list_modules', 'bi-book')
 
-    available_features = [{
-        'label': feature['name'],
-        'url': f"{feature['url']}?help={feature_id}",
-        'icon': 'bi-arrow-right-circle',
-    } for feature_id, feature in FEATURE_REGISTRY.items()]
-    return (
-        "I couldn't match that request to a PaPrep feature. Choose one of these:",
-        available_features,
-        [],
-    )
-
     # ── All other queries → Gemini AI (Red Book first) ────────────────────
     from config import Config
     gemini_key = getattr(Config, 'GEMINI_API_KEY', None)
@@ -787,13 +798,17 @@ def match_bot_intent(text):
             'Gemini assistant unavailable: GEMINI_API_KEY is not configured'
         )
 
-    # ── Fallback if API is unavailable ─────────────────────────────────────
-    reply = (
-        "👋 **Hi! I'm your PaPrep Assistant.**\n"
-        "I'm having a little trouble connecting right now. Please try again in a moment, "
-        "or choose a topic below to get started!"
+    # ── Fallback if Gemini is unavailable ─────────────────────────────────
+    available_features = [{
+        'label': feature['name'],
+        'url': f"{feature['url']}?help={feature_id}",
+        'icon': 'bi-arrow-right-circle',
+    } for feature_id, feature in FEATURE_REGISTRY.items()]
+    return (
+        "I couldn't match that request to a PaPrep feature. Choose one of these:",
+        available_features if not topic_shortcuts else topic_shortcuts,
+        [],
     )
-    return reply, topic_shortcuts, default_actions
 
 
 

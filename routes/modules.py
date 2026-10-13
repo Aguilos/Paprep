@@ -30,13 +30,43 @@ GIVEN_MODULES_MANIFEST = 'manifest.json'
 
 
 def given_module_registry():
-    manifest_path = Path(current_app.config['GIVEN_MODULES_FOLDER']) / GIVEN_MODULES_MANIFEST
+    base = Path(current_app.config['GIVEN_MODULES_FOLDER'])
+    manifest_path = base / GIVEN_MODULES_MANIFEST
     try:
         with manifest_path.open(encoding='utf-8') as manifest_file:
             manifest = json.load(manifest_file)
+            if isinstance(manifest, dict) and manifest:
+                return manifest
     except (OSError, ValueError):
-        return {}
-    return manifest if isinstance(manifest, dict) else {}
+        pass
+
+    # Auto-generate fallback if manifest is missing or invalid
+    titles = {
+        'nutrition': ('Nutrition Guide', 'Nutrition.pptx'),
+        'parenting': ('Parenting Guide', 'Parenting.pptx'),
+        'safety': ('Safety Guide', 'Safety.pptx'),
+    }
+    manifest = {}
+    for mod_id, (title, filename) in titles.items():
+        mod_dir = base / mod_id
+        if not mod_dir.is_dir():
+            continue
+        slides = sorted([f.name for f in mod_dir.glob('slide-*.jpg')])
+        if slides:
+            manifest[mod_id] = {
+                'id': mod_id,
+                'title': title,
+                'filename': filename,
+                'slide_count': len(slides),
+                'slides': [{'filename': s, 'alt': f'{title}, slide {i+1} of {len(slides)}'} for i, s in enumerate(slides)]
+            }
+    if manifest:
+        try:
+            with manifest_path.open('w', encoding='utf-8') as f:
+                json.dump(manifest, f, indent=2)
+        except OSError:
+            pass
+    return manifest
 
 
 def presentation_filename(module):
