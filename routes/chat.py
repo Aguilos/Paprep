@@ -593,15 +593,28 @@ def match_bot_intent(text):
         ]
         return reply, shortcuts, ["What are red flag symptoms?", "Fever guidance", "Find a clinic"]
 
-    # ── Greetings & small talk ─────────────────────────────────────────────
+    # ── Greetings & small talk (English + Filipino) ──────────────────────────
     greeting_triggers = (
         'hi', 'hello', 'hey', 'hiya', 'howdy', 'sup', "what's up", 'good morning',
         'good afternoon', 'good evening', 'good day', 'how are you', 'kamusta',
         'mabuhay', 'helo', 'ello', 'greetings',
     )
+    # Filipino/Tagalog small-talk phrases that should get a friendly greeting response
+    tagalog_small_talk = (
+        'mag tagalog', 'matagalog', 'nag tagalog', 'nagsasalita ng tagalog',
+        'alam mo ba', 'marunong ka', 'marunong kang magtagalog',
+        'nag tatagalog', 'nagtatalog', 'kumusta', 'kumusta ka',
+        'anong pangalan mo', 'ikaw ay', 'sino ka', 'ano ka',
+        'mag-usap tayo', 'usap tayo', 'tagalog lang', 'tagalog po',
+        'salamat', 'salamat po', 'ingat', 'ingat ka', 'paalam',
+        'oo', 'hindi', 'sige', 'sige po', 'ok po', 'okay po',
+        'ayos lang', 'ayos po', 'magandang umaga', 'magandang hapon', 'magandang gabi',
+    )
     clean_text = text_lower.strip(' .,!?~:;')
-    if any(clean_text == g or clean_text.startswith(g + ' ') or text_lower.startswith(g + '!')
-           for g in greeting_triggers):
+    is_greeting = any(clean_text == g or clean_text.startswith(g + ' ') or text_lower.startswith(g + '!')
+                      for g in greeting_triggers)
+    is_tagalog_small_talk = any(k in clean_text for k in tagalog_small_talk)
+    if is_greeting or is_tagalog_small_talk:
         user_name = ''
         try:
             from flask_login import current_user as _cu
@@ -609,11 +622,19 @@ def match_bot_intent(text):
                 user_name = f', {_cu.first_name}' if getattr(_cu, 'first_name', None) else ''
         except Exception:
             pass
-        reply = (
-            f"👋 **Hi{user_name}! I'm your PaPrep Assistant.**\n\n"
-            "Ask me about fever care, nutrition, safety, or any parenting question — "
-            "or pick a quick shortcut below!"
-        )
+        if is_tagalog_small_talk and not is_greeting:
+            reply = (
+                f"Kumusta{user_name}! 👋 **Ako ay ang inyong PaPrep Assistant.**\n\n"
+                "Puwede kayong magtanong sa akin tungkol sa pag-aalaga ng bata, "
+                "nutrisyon, kaligtasan, at iba pang katanungan bilang magulang — "
+                "sa Tagalog o Ingles!"
+            )
+        else:
+            reply = (
+                f"👋 **Hi{user_name}! I'm your PaPrep Assistant.**\n\n"
+                "Ask me about fever care, nutrition, safety, or any parenting question — "
+                "or pick a quick shortcut below!"
+            )
         return reply, nav_shortcuts, default_actions
 
     feature_result = match_feature_request(text)
@@ -800,15 +821,27 @@ def match_bot_intent(text):
         )
 
     # ── Fallback if Gemini is unavailable ─────────────────────────────────
-    available_features = [{
-        'label': feature['name'],
-        'url': f"{feature['url']}?help={feature_id}",
-        'icon': 'bi-arrow-right-circle',
-    } for feature_id, feature in FEATURE_REGISTRY.items()]
+    if topic_shortcuts:
+        return (
+            "👋 **I'm having a little trouble connecting right now.**\n\n"
+            "Here is a shortcut that might help with your question:",
+            topic_shortcuts,
+            default_actions,
+        )
+
+    user_name = ''
+    try:
+        from flask_login import current_user as _cu
+        if _cu and _cu.is_authenticated:
+            user_name = f' {_cu.first_name}' if getattr(_cu, 'first_name', None) else ''
+    except Exception:
+        pass
     return (
-        "I couldn't match that request to a PaPrep feature. Choose one of these:",
-        available_features if not topic_shortcuts else topic_shortcuts,
-        [],
+        f"👋 **Hi{user_name}! I'm your PaPrep Assistant.**\n\n"
+        "I'm having a little trouble connecting right now — please try again in a moment. "
+        "In the meantime, pick a feature below to get started!",
+        nav_shortcuts,
+        default_actions,
     )
 
 
