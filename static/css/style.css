@@ -2197,3 +2197,210 @@ img, iframe, video, canvas { max-width: 100%; }
 .btn-xs {
   padding: 2px 7px; font-size: .72rem; border-radius: 5px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Dashboard Adaptive Recommendations & News Feed
+═══════════════════════════════════════════════════════════════ */
+.dashboard-recommendations-section {
+  position: relative;
+}
+
+.recommendations-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.recommendations-badge-context {
+  background: #EBF4FD;
+  color: #2D7EC4;
+  border: 1px solid #D0E4FA;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.recommendations-badge-context.is-ailment {
+  background: #FFF3EA;
+  color: #D35400;
+  border-color: #FCD6BD;
+}
+
+.recommendations-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.rec-topic-pill {
+  border: 1px solid var(--border);
+  background: #FFFFFF;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  outline: none;
+}
+
+.rec-topic-pill:hover {
+  background: var(--gray-100);
+  color: var(--text);
+  border-color: var(--gray-300);
+}
+
+.rec-topic-pill.active {
+  background: var(--primary);
+  color: #FFFFFF;
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(78, 151, 217, 0.35);
+}
+
+.rec-topic-pill.is-ailment-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(255, 140, 66, 0.35);
+}
+
+.rec-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.rec-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  border-color: #CBD5E0;
+}
+
+.rec-card-media {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  background: #E2E8F0;
+}
+
+.rec-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.rec-card:hover .rec-card-media img {
+  transform: scale(1.04);
+}
+
+.rec-card-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(26, 32, 44, 0.78);
+  backdrop-filter: blur(4px);
+  color: #FFFFFF;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 12px;
+  text-transform: capitalize;
+}
+
+.rec-card-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.rec-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.rec-card-meta-source {
+  font-weight: 600;
+  color: var(--primary-dark);
+  max-width: 65%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--gray-900);
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rec-card-desc {
+  font-size: 0.82rem;
+  color: var(--gray-500);
+  line-height: 1.45;
+  margin-bottom: 14px;
+  flex-grow: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rec-card-footer {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rec-card-link {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.15s ease;
+}
+
+.rec-card-link:hover {
+  color: var(--primary-dark);
+}
+
+.rec-loading-overlay {
+  display: none;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+

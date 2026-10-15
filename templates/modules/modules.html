@@ -31,7 +31,7 @@
     {% endfor %}
   </div>
 
-  {% if given_modules %}
+  {% if given_modules and not active_category %}
   <section class="modules-section mb-5" aria-labelledby="given-modules-heading">
     <div class="modules-section-header" style="border-left: 4px solid #6f42c1;">
       <i class="bi bi-easel2-fill" style="color: #6f42c1;"></i>

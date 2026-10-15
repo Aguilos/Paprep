@@ -3,7 +3,7 @@ import json
 import os
 from pathlib import Path
 from flask import Blueprint, render_template, request, make_response, jsonify, \
-    send_file, abort, Response
+    send_file, abort, Response, session
 from flask import current_app
 from flask_login import login_required, current_user
 from models import LearningModule, ModuleProgress, ModuleQuizQuestion
@@ -81,6 +81,7 @@ def list_modules():
     query = LearningModule.query.filter(LearningModule.category.in_(CATEGORY_META))
     category = request.args.get('category', '')
     if category and category in CATEGORY_META:
+        session['last_module_topic'] = category
         query = query.filter_by(category=category)
     modules = query.order_by(LearningModule.sort_order, LearningModule.id).all()
 
@@ -125,6 +126,7 @@ def module_detail(module_id):
         LearningModule.id == module_id,
         LearningModule.category.in_(CATEGORY_META),
     ).first_or_404()
+    session['last_module_topic'] = module.category
     meta = CATEGORY_META.get(module.category, {})
 
     # User progress
@@ -164,11 +166,25 @@ def given_module_viewer(given_id):
     given_module = given_module_registry().get(given_id)
     if not given_module:
         abort(404)
+    if given_id in CATEGORY_META:
+        session['last_module_topic'] = given_id
     return render_template(
         'modules/given_module_viewer.html',
         given_module=given_module,
         page_title=given_module['title'],
     )
+
+
+@modules_bp.route('/api/track-interaction', methods=['POST'])
+@login_required
+def track_interaction():
+    data = request.get_json(silent=True) or {}
+    category = (data.get('category') or '').strip().lower()
+    if category in CATEGORY_META:
+        session['last_module_topic'] = category
+        session.modified = True
+        return jsonify({'ok': True, 'category': category})
+    return jsonify({'ok': False, 'error': 'Invalid category'}), 400
 
 
 @modules_bp.route('/given/<given_id>/slide/<int:slide_number>')

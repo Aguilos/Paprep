@@ -93,51 +93,83 @@
   {# ── Rest of dashboard content (hidden when quick-view is open) ── #}
   <div id="dashboardRestContent">
 
-  <!-- Parent & Child Resources -->
-  <section class="dashboard-resource-section mb-4">
-    <div class="dashboard-section-heading">
+
+
+  <!-- ── Context-Aware Adaptive Recommendations & Live News ── -->
+  <section class="dashboard-recommendations-section mb-4" id="recommendationsSection" aria-label="Personalized child care and parenting recommendations">
+    <div class="recommendations-header">
       <div>
-        <h5 class="section-label mb-1"><i class="bi bi-collection-play me-2"></i>Parent &amp; Child Resources</h5>
-        <p class="text-muted small mb-0">Curated resources for {{ active_child.name }}'s current stage.</p>
+        <h5 class="section-label mb-1">
+          <i class="bi bi-compass me-2 text-primary"></i>Recommended for You
+        </h5>
+        <p class="text-muted small mb-0" id="recReasonText">{{ rec_context.reason if rec_context else 'Personalized pediatric guidance & parenting news.' }}</p>
       </div>
-      <a href="{{ url_for('modules.list_modules') }}" class="small fw-semibold">Browse modules <i class="bi bi-arrow-right"></i></a>
-    </div>
-    {% if resources %}
-    <div class="resource-widget-grid">
-      {% for resource in resources %}
-      <article class="dashboard-resource-card">
-        {% if resource.resource_type == 'video' and resource.embed_url %}
-        <div class="resource-video-wrap video-facade" data-embed-url="{{ resource.embed_url|replace('www.youtube.com', 'www.youtube-nocookie.com') }}" data-title="{{ resource.title }}">
-          {% if resource.thumbnail_image %}
-          <img src="{{ resource.thumbnail_image }}" alt="{{ resource.title }}" class="resource-thumbnail" loading="lazy" onerror="this.style.display='none';this.parentElement.classList.add('no-thumb');">
-          {% endif %}
-          <div class="resource-thumbnail-fallback">
-            <i class="bi bi-play-circle-fill"></i>
-          </div>
-          <button type="button" class="video-play-btn" aria-label="Play video: {{ resource.title }}">
-            <i class="bi bi-play-fill"></i>
-          </button>
-        </div>
-        {% elif resource.thumbnail_image or resource.thumbnail_url %}
-        <img src="{{ resource.thumbnail_image or resource.thumbnail_url }}" alt="{{ resource.title }}" class="resource-thumbnail" loading="lazy">
+      <div>
+        {% if rec_context %}
+        <span class="recommendations-badge-context {% if rec_context.has_active_ailment %}is-ailment{% endif %}" id="recContextBadge">
+          <i class="bi {{ rec_context.badge_icon }} me-1" id="recContextIcon"></i>
+          <span id="recContextText">{{ rec_context.badge_text }}</span>
+        </span>
         {% endif %}
-        <div class="dashboard-resource-body">
-          <span class="resource-type-label"><i class="bi bi-{{ 'play-btn' if resource.resource_type == 'video' else 'link-45deg' }} me-1"></i>{{ resource.category|title }}</span>
-          <h6>{{ resource.title }}</h6>
-          <p>{{ resource.description }}</p>
-          <a href="{{ resource.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
-            {{ 'Watch video' if resource.resource_type == 'video' else 'Open resource' }} <i class="bi bi-box-arrow-up-right ms-1"></i>
-          </a>
-        </div>
-      </article>
+      </div>
+    </div>
+
+    <!-- Topic filter pills -->
+    <div class="recommendations-pills" role="tablist" aria-label="Recommendation Topics">
+      <button type="button" class="rec-topic-pill {% if not rec_context or (not rec_context.has_active_ailment and rec_context.priority == 3) %}active{% endif %}" data-topic="all">
+        <i class="bi bi-grid-fill"></i> All Topics
+      </button>
+      {% if rec_context and rec_context.has_active_ailment %}
+      <button type="button" class="rec-topic-pill is-ailment-pill active" data-topic="ailment">
+        <i class="bi bi-heart-pulse-fill"></i> Active Symptom Care
+      </button>
+      {% endif %}
+      <button type="button" class="rec-topic-pill {% if rec_context and rec_context.topic == 'parenting' and not rec_context.has_active_ailment %}active{% endif %}" data-topic="parenting">
+        <i class="bi bi-people-fill"></i> Parenting
+      </button>
+      <button type="button" class="rec-topic-pill {% if rec_context and rec_context.topic == 'nutrition' and not rec_context.has_active_ailment %}active{% endif %}" data-topic="nutrition">
+        <i class="bi bi-apple"></i> Nutrition
+      </button>
+      <button type="button" class="rec-topic-pill {% if rec_context and rec_context.topic == 'safety' and not rec_context.has_active_ailment %}active{% endif %}" data-topic="safety">
+        <i class="bi bi-shield-check"></i> Safety Guide
+      </button>
+    </div>
+
+    <!-- Loading spinner placeholder -->
+    <div class="rec-loading-overlay" id="recLoadingSpinner">
+      <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+      <span class="small">Fetching latest pediatric updates...</span>
+    </div>
+
+    <!-- Articles Grid -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3" id="recArticlesGrid">
+      {% for article in recommended_articles %}
+      <div class="col">
+        <article class="rec-card">
+          <div class="rec-card-media">
+            <img src="{{ article.urlToImage }}" alt="{{ article.title }}" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&w=800&q=80';">
+            <span class="rec-card-badge">{{ article.category }}</span>
+          </div>
+          <div class="rec-card-body">
+            <div class="rec-card-meta">
+              <span class="rec-card-meta-source"><i class="bi bi-newspaper me-1"></i>{{ article.source }}</span>
+              <span>{{ article.publishedAt }}</span>
+            </div>
+            <h6 class="rec-card-title" title="{{ article.title }}">{{ article.title }}</h6>
+            <p class="rec-card-desc">{{ article.description }}</p>
+            <div class="rec-card-footer">
+              <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" class="rec-card-link">
+                Read Article <i class="bi bi-box-arrow-up-right"></i>
+              </a>
+              <span class="text-muted small"><i class="bi bi-shield-check text-success me-1"></i>Verified</span>
+            </div>
+          </div>
+        </article>
+      </div>
       {% endfor %}
     </div>
-    {% else %}
-    <div class="dashboard-empty-resource">Resources for this age group will appear here as they are added.</div>
-    {% endif %}
   </section>
 
-  <!-- Child Newsletter -->
   <section class="child-newsletter-section mb-4">
     <div class="dashboard-section-heading">
       <div>
@@ -547,5 +579,85 @@
     facade.innerHTML = '<iframe src="' + embedUrl + sep + 'autoplay=1" title="' + title.replace(/"/g, '&quot;') + '" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
     facade.classList.remove('video-facade');
   });
+
+  /* ── Adaptive Recommendations Topic Filter & Live Fetch ── */
+  (function () {
+    const pills = document.querySelectorAll('.rec-topic-pill');
+    const grid = document.getElementById('recArticlesGrid');
+    const spinner = document.getElementById('recLoadingSpinner');
+    const apiUrl = '/api/recommendations';
+
+    pills.forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const topic = pill.getAttribute('data-topic');
+        pills.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+
+        if (spinner) spinner.style.display = 'block';
+        if (grid) grid.style.opacity = '0.35';
+
+        fetch(apiUrl + '?topic=' + encodeURIComponent(topic))
+          .then(res => {
+            if (!res.ok) throw new Error('API returned status ' + res.status);
+            return res.json();
+          })
+          .then(data => {
+            if (spinner) spinner.style.display = 'none';
+            if (grid) grid.style.opacity = '1';
+
+            if (data.ok && Array.isArray(data.articles)) {
+              renderArticles(data.articles);
+            }
+          })
+          .catch(err => {
+            if (spinner) spinner.style.display = 'none';
+            if (grid) grid.style.opacity = '1';
+            console.error('Failed to load topic articles:', err);
+          });
+      });
+    });
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderArticles(articles) {
+      if (!grid) return;
+      if (!articles || articles.length === 0) {
+        grid.innerHTML = '<div class="col-12 py-4 text-center text-muted"><p>No articles found for this topic at the moment.</p></div>';
+        return;
+      }
+
+      grid.innerHTML = articles.map(article => `
+        <div class="col">
+          <article class="rec-card">
+            <div class="rec-card-media">
+              <img src="${escapeHtml(article.urlToImage)}" alt="${escapeHtml(article.title)}" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&w=800&q=80';">
+              <span class="rec-card-badge">${escapeHtml(article.category || 'health')}</span>
+            </div>
+            <div class="rec-card-body">
+              <div class="rec-card-meta">
+                <span class="rec-card-meta-source"><i class="bi bi-newspaper me-1"></i>${escapeHtml(article.source || 'Pediatric News')}</span>
+                <span>${escapeHtml(article.publishedAt || 'Recent')}</span>
+              </div>
+              <h6 class="rec-card-title" title="${escapeHtml(article.title)}">${escapeHtml(article.title)}</h6>
+              <p class="rec-card-desc">${escapeHtml(article.description || '')}</p>
+              <div class="rec-card-footer">
+                <a href="${escapeHtml(article.url || '#')}" target="_blank" rel="noopener noreferrer" class="rec-card-link">
+                  Read Article <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+                <span class="text-muted small"><i class="bi bi-shield-check text-success me-1"></i>Verified</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      `).join('');
+    }
+  })();
 </script>
 {% endblock %}

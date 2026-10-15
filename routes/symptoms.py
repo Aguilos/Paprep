@@ -108,7 +108,7 @@ def fever_tracker():
         return redirect(url_for('children.create_child'))
 
     tab = request.args.get('tab', 'fever')
-    if tab not in ('fever', 'cough', 'diarrhea'):
+    if tab not in ('fever', 'cough', 'colds', 'diarrhea'):
         tab = 'fever'
 
     if request.method == 'POST':
@@ -141,8 +141,10 @@ def fever_tracker():
             return redirect(url_for('symptoms.fever_tracker', tab='fever'))
 
         elif form_type == 'cough':
+            # Handles both Cough and Colds tabs (shared backend type)
             try:
-                symptom_type = request.form['symptom_type']
+                # Cough tab sends a hidden symptom_type='cough'; Colds tab sends a select
+                symptom_type = request.form.get('symptom_type', 'cough')
                 severity = request.form['severity']
                 duration_days = int(request.form['duration_days'])
                 if symptom_type not in ('cough', 'runny/stuffy nose', 'sore throat', 'other'):
@@ -151,8 +153,9 @@ def fever_tracker():
                     raise ValueError
                 recorded_at = _parse_recorded_at(request.form)
             except (KeyError, TypeError, ValueError):
-                flash('Enter valid cough/cold details.', 'error')
-                return redirect(url_for('symptoms.fever_tracker', tab='cough'))
+                flash('Enter valid details.', 'error')
+                redirect_tab = 'cough' if request.form.get('symptom_type', 'cough') == 'cough' else 'colds'
+                return redirect(url_for('symptoms.fever_tracker', tab=redirect_tab))
             episode = RespiratoryEpisode(
                 child_id=child.id, symptom_type=symptom_type, severity=severity,
                 duration_days=duration_days, fever_present='fever_present' in request.form,
@@ -162,8 +165,9 @@ def fever_tracker():
             )
             db.session.add(episode)
             db.session.commit()
-            flash('Cough/cold episode saved.', 'success')
-            return redirect(url_for('symptoms.fever_tracker', tab='cough'))
+            redirect_tab = 'cough' if symptom_type == 'cough' else 'colds'
+            flash('Episode saved.', 'success')
+            return redirect(url_for('symptoms.fever_tracker', tab=redirect_tab))
 
         elif form_type == 'diarrhea':
             try:
@@ -194,9 +198,17 @@ def fever_tracker():
     resp_episodes = RespiratoryEpisode.query.filter_by(child_id=child.id).order_by(RespiratoryEpisode.recorded_at.desc(), RespiratoryEpisode.id.desc()).limit(30).all()
     diarr_episodes = DiarrheaEpisode.query.filter_by(child_id=child.id).order_by(DiarrheaEpisode.recorded_at.desc(), DiarrheaEpisode.id.desc()).limit(30).all()
 
-    resp_guidance = _respiratory_guidance(resp_episodes[0]) if resp_episodes else {
-        'severity': 'general', 'title': 'No cough/cold episodes yet',
+    # Separate cough-only and colds-only episodes for split tabs
+    cough_episodes = [e for e in resp_episodes if e.symptom_type == 'cough']
+    colds_episodes = [e for e in resp_episodes if e.symptom_type != 'cough']
+
+    resp_guidance = _respiratory_guidance(cough_episodes[0]) if cough_episodes else {
+        'severity': 'general', 'title': 'No cough episodes yet',
         'message': 'Log an episode to receive monitoring guidance.', 'actions': []
+    }
+    colds_guidance = _respiratory_guidance(colds_episodes[0]) if colds_episodes else {
+        'severity': 'general', 'title': 'No cold episodes yet',
+        'message': 'Log a cold symptom to receive monitoring guidance.', 'actions': []
     }
     diarr_guidance = _diarrhea_guidance(diarr_episodes[0]) if diarr_episodes else {
         'severity': 'general', 'title': 'No diarrhea episodes yet',
@@ -212,6 +224,7 @@ def fever_tracker():
         diarr_episodes=diarr_episodes,
         guidance=_reading_guidance(child, readings),
         resp_guidance=resp_guidance,
+        colds_guidance=colds_guidance,
         diarr_guidance=diarr_guidance,
         disclaimer=FEVER_DISCLAIMER,
         guidance_source=GUIDANCE_ATTRIBUTION,
@@ -246,7 +259,7 @@ def fever_readings_api():
 @symptoms_bp.route('/cough-cold-tracker', methods=['GET', 'POST'])
 @login_required
 def cough_cold_tracker():
-    # Merged into the Common Ailments Tracker – redirect to the Cough & Colds tab.
+    # Merged into the Common Ailments Tracker – redirect to the Cough tab.
     return redirect(url_for('symptoms.fever_tracker', tab='cough'))
 
 

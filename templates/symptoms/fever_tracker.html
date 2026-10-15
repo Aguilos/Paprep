@@ -9,30 +9,48 @@
     <div class="disclaimer-text"><strong>Medical Disclaimer:</strong> {{ disclaimer }}</div>
   </div>
 
-  <!-- Tab navigation -->
-  <ul class="nav nav-pills mb-4 mt-3 gap-2" id="trackerTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link {% if active_tab == 'fever' %}active{% endif %}" id="tab-fever-btn" data-bs-toggle="pill"
-        data-bs-target="#tab-fever" type="button" role="tab" aria-controls="tab-fever"
-        aria-selected="{{ 'true' if active_tab == 'fever' else 'false' }}">
-        <i class="bi bi-thermometer-half me-1"></i> Fever
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link {% if active_tab == 'cough' %}active{% endif %}" id="tab-cough-btn" data-bs-toggle="pill"
-        data-bs-target="#tab-cough" type="button" role="tab" aria-controls="tab-cough"
-        aria-selected="{{ 'true' if active_tab == 'cough' else 'false' }}">
-        <i class="bi bi-lungs me-1"></i> Cough &amp; Colds
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link {% if active_tab == 'diarrhea' %}active{% endif %}" id="tab-diarrhea-btn"
-        data-bs-toggle="pill" data-bs-target="#tab-diarrhea" type="button" role="tab" aria-controls="tab-diarrhea"
-        aria-selected="{{ 'true' if active_tab == 'diarrhea' else 'false' }}">
-        <i class="bi bi-droplet-half me-1"></i> Diarrhea
-      </button>
-    </li>
-  </ul>
+  <!-- Tab navigation + History button row -->
+  <div class="d-flex align-items-center flex-wrap gap-2 mb-4 mt-3">
+    <ul class="nav nav-pills gap-2 flex-grow-1" id="trackerTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link {% if active_tab == 'fever' %}active{% endif %}" id="tab-fever-btn"
+          data-bs-toggle="pill" data-bs-target="#tab-fever" type="button" role="tab"
+          aria-controls="tab-fever" aria-selected="{{ 'true' if active_tab == 'fever' else 'false' }}">
+          <i class="bi bi-thermometer-half me-1"></i> Fever
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link {% if active_tab == 'cough' %}active{% endif %}" id="tab-cough-btn"
+          data-bs-toggle="pill" data-bs-target="#tab-cough" type="button" role="tab"
+          aria-controls="tab-cough" aria-selected="{{ 'true' if active_tab == 'cough' else 'false' }}">
+          <i class="bi bi-lungs me-1"></i> Cough
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link {% if active_tab == 'colds' %}active{% endif %}" id="tab-colds-btn"
+          data-bs-toggle="pill" data-bs-target="#tab-colds" type="button" role="tab"
+          aria-controls="tab-colds" aria-selected="{{ 'true' if active_tab == 'colds' else 'false' }}">
+          <i class="bi bi-moisture me-1"></i> Colds
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link {% if active_tab == 'diarrhea' %}active{% endif %}" id="tab-diarrhea-btn"
+          data-bs-toggle="pill" data-bs-target="#tab-diarrhea" type="button" role="tab"
+          aria-controls="tab-diarrhea" aria-selected="{{ 'true' if active_tab == 'diarrhea' else 'false' }}">
+          <i class="bi bi-droplet-half me-1"></i> Diarrhea
+        </button>
+      </li>
+    </ul>
+
+    <!-- History button — right side of the tab row -->
+    <button type="button"
+            class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 flex-shrink-0"
+            id="historyNavBtn"
+            title="View symptom history">
+      <i class="bi bi-clock-history"></i>
+      <span>History</span>
+    </button>
+  </div>
 
   <div class="tab-content" id="trackerTabContent">
 
@@ -99,42 +117,10 @@
           </section>
         </div>
       </div>
-
-      <section class="symptom-panel mt-4">
-        <div class="symptom-panel-header">
-          <i class="bi bi-clock-history me-2"></i>
-          <h5 class="mb-0">Temperature history</h5>
-        </div>
-        {% if readings %}
-        <div class="table-responsive">
-          <table class="table align-middle mb-0">
-            <thead>
-              <tr>
-                <th>Date and time</th>
-                <th>Reading</th>
-                <th>Method</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for reading in readings %}
-              <tr>
-                <td>{{ reading.recorded_at.strftime('%b %d, %Y %I:%M %p') }}</td>
-                <td class="fw-bold">{{ reading.display_value }}</td>
-                <td>{{ reading.method|title if reading.method else 'Not specified' }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        {% else %}
-        <div class="dashboard-empty-resource">No temperature readings yet for {{ active_child.name }}. Add the first
-          reading above.</div>
-        {% endif %}
-      </section>
     </div>
 
     <!-- ============================================================
-         COUGH & COLDS TAB
+         COUGH TAB
          ============================================================ -->
     <div class="tab-pane fade {% if active_tab == 'cough' %}show active{% endif %}" id="tab-cough" role="tabpanel"
       aria-labelledby="tab-cough-btn">
@@ -143,20 +129,12 @@
           <section class="symptom-panel">
             <div class="symptom-panel-header">
               <i class="bi bi-lungs me-2"></i>
-              <h5 class="mb-0">Log symptoms for {{ active_child.name }}</h5>
+              <h5 class="mb-0">Log cough symptoms for {{ active_child.name }}</h5>
             </div>
             <form method="POST" class="symptom-panel-body">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="_form_type" value="cough">
-              <div class="mb-3">
-                <label class="form-label fw-semibold">Main symptom</label>
-                <select name="symptom_type" class="form-select" required>
-                  <option value="cough">Cough</option>
-                  <option value="runny/stuffy nose">Runny or stuffy nose</option>
-                  <option value="sore throat">Sore throat</option>
-                  <option value="other">Other cold symptom</option>
-                </select>
-              </div>
+              <input type="hidden" name="symptom_type" value="cough">
               <div class="mb-3">
                 <label class="form-label fw-semibold">Severity</label>
                 <select name="severity" class="form-select" required>
@@ -178,8 +156,7 @@
                 <label class="form-check-label" for="wheezing_cough">Wheezing</label>
               </div>
               <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" name="difficulty_breathing"
-                  id="difficulty_breathing_cough">
+                <input class="form-check-input" type="checkbox" name="difficulty_breathing" id="difficulty_breathing_cough">
                 <label class="form-check-label" for="difficulty_breathing_cough">Difficulty breathing</label>
               </div>
               <div class="mb-3">
@@ -187,7 +164,7 @@
                 <input type="datetime-local" name="recorded_at" class="form-control">
               </div>
               <button class="btn btn-primary w-100" type="submit">
-                <i class="bi bi-plus-circle me-2"></i>Save Episode
+                <i class="bi bi-plus-circle me-2"></i>Save Cough Episode
               </button>
             </form>
           </section>
@@ -197,8 +174,7 @@
           <section class="results-panel">
             <div class="d-flex align-items-center gap-2 mb-3">
               <h5 class="mb-0">Latest guidance</h5>
-              <span class="badge severity-{{ resp_guidance.severity }} ms-auto">{{ resp_guidance.severity|title
-                }}</span>
+              <span class="badge severity-{{ resp_guidance.severity }} ms-auto">{{ resp_guidance.severity|title }}</span>
             </div>
             <h6>{{ resp_guidance.title }}</h6>
             <p>{{ resp_guidance.message }}</p>
@@ -210,46 +186,79 @@
           </section>
         </div>
       </div>
+    </div>
 
-      <section class="symptom-panel mt-4">
-        <div class="symptom-panel-header">
-          <i class="bi bi-clock-history me-2"></i>
-          <h5 class="mb-0">Cough/cold history</h5>
+    <!-- ============================================================
+         COLDS TAB
+         ============================================================ -->
+    <div class="tab-pane fade {% if active_tab == 'colds' %}show active{% endif %}" id="tab-colds" role="tabpanel"
+      aria-labelledby="tab-colds-btn">
+      <div class="row g-4 mt-1">
+        <div class="col-lg-5">
+          <section class="symptom-panel">
+            <div class="symptom-panel-header">
+              <i class="bi bi-moisture me-2"></i>
+              <h5 class="mb-0">Log cold symptoms for {{ active_child.name }}</h5>
+            </div>
+            <form method="POST" class="symptom-panel-body">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="_form_type" value="cough">
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Main symptom</label>
+                <select name="symptom_type" class="form-select" required>
+                  <option value="runny/stuffy nose">Runny or stuffy nose</option>
+                  <option value="sore throat">Sore throat</option>
+                  <option value="other">Other cold symptom</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Severity</label>
+                <select name="severity" class="form-select" required>
+                  <option value="mild">Mild</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="severe">Severe</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Duration (days)</label>
+                <input type="number" name="duration_days" class="form-control" min="1" max="365" required>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="fever_present" id="fever_present_colds">
+                <label class="form-check-label" for="fever_present_colds">Fever present</label>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="difficulty_breathing" id="difficulty_breathing_colds">
+                <label class="form-check-label" for="difficulty_breathing_colds">Difficulty breathing</label>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Date and time</label>
+                <input type="datetime-local" name="recorded_at" class="form-control">
+              </div>
+              <button class="btn btn-primary w-100" type="submit">
+                <i class="bi bi-plus-circle me-2"></i>Save Cold Episode
+              </button>
+            </form>
+          </section>
         </div>
-        {% if resp_episodes %}
-        <div class="table-responsive">
-          <table class="table align-middle mb-0">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Symptom</th>
-                <th>Severity</th>
-                <th>Duration</th>
-                <th>Signs</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for episode in resp_episodes %}
-              <tr>
-                <td>{{ episode.recorded_at.strftime('%b %d, %Y %I:%M %p') }}</td>
-                <td>{{ episode.symptom_type|title }}</td>
-                <td>{{ episode.severity|title }}</td>
-                <td>{{ episode.duration_days }} day{% if episode.duration_days != 1 %}s{% endif %}</td>
-                <td>
-                  {% if episode.difficulty_breathing %}Breathing difficulty
-                  {% elif episode.wheezing %}Wheezing
-                  {% elif episode.fever_present %}Fever
-                  {% else %}None reported{% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+
+        <div class="col-lg-7">
+          <section class="results-panel">
+            {% set cg = colds_guidance if colds_guidance is defined and colds_guidance else {'severity': 'general', 'title': 'No cold episodes yet', 'message': 'Log a cold symptom to receive monitoring guidance.', 'actions': []} %}
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <h5 class="mb-0">Latest guidance</h5>
+              <span class="badge severity-{{ cg.severity }} ms-auto">{{ cg.severity|title }}</span>
+            </div>
+            <h6>{{ cg.title }}</h6>
+            <p>{{ cg.message }}</p>
+            {% if cg.actions %}
+            <ul class="rec-actions">{% for action in cg.actions %}<li>{{ action }}</li>{% endfor %}</ul>
+            {% endif %}
+            <div class="rec-disclaimer"><strong>Medical Disclaimer:</strong> {{ disclaimer }}</div>
+            <div class="small text-muted mt-2"><strong>Guidance source:</strong> {{ guidance_source }}</div>
+          </section>
         </div>
-        {% else %}
-        <div class="dashboard-empty-resource">No cough/cold episodes yet for {{ active_child.name }}.</div>
-        {% endif %}
-      </section>
+      </div>
     </div>
 
     <!-- ============================================================
@@ -310,8 +319,7 @@
           <section class="results-panel">
             <div class="d-flex align-items-center gap-2 mb-3">
               <h5 class="mb-0">Latest guidance</h5>
-              <span class="badge severity-{{ diarr_guidance.severity }} ms-auto">{{ diarr_guidance.severity|title
-                }}</span>
+              <span class="badge severity-{{ diarr_guidance.severity }} ms-auto">{{ diarr_guidance.severity|title }}</span>
             </div>
             <h6>{{ diarr_guidance.title }}</h6>
             <p>{{ diarr_guidance.message }}</p>
@@ -323,47 +331,244 @@
           </section>
         </div>
       </div>
-
-      <section class="symptom-panel mt-4">
-        <div class="symptom-panel-header">
-          <i class="bi bi-clock-history me-2"></i>
-          <h5 class="mb-0">Diarrhea history</h5>
-        </div>
-        {% if diarr_episodes %}
-        <div class="table-responsive">
-          <table class="table align-middle mb-0">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Episodes/day</th>
-                <th>Consistency</th>
-                <th>Duration</th>
-                <th>Signs</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for episode in diarr_episodes %}
-              <tr>
-                <td>{{ episode.recorded_at.strftime('%b %d, %Y %I:%M %p') }}</td>
-                <td>{{ episode.episodes_per_day }}</td>
-                <td>{{ episode.consistency|title }}</td>
-                <td>{{ episode.duration_days }} day{% if episode.duration_days != 1 %}s{% endif %}</td>
-                <td>
-                  {% if episode.blood_present %}Blood
-                  {% elif episode.dehydration_signs != 'none' %}{{ episode.dehydration_signs|title }} dehydration
-                  {% else %}None reported{% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        {% else %}
-        <div class="dashboard-empty-resource">No diarrhea episodes yet for {{ active_child.name }}.</div>
-        {% endif %}
-      </section>
     </div>
 
   </div>{# end tab-content #}
-</div>
+
+  <!-- ============================================================
+       SHARED HISTORY POPUP MODAL
+       ============================================================ -->
+  <div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title d-flex align-items-center gap-2" id="historyModalLabel">
+            <i class="bi bi-clock-history text-primary"></i>
+            <span id="historyModalTitle">History</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <!-- Inner tab selector inside modal -->
+        <div class="px-3 pt-3 pb-0 border-bottom">
+          <ul class="nav nav-tabs" id="historyInnerTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="hTab-fever-btn" data-history-inner="fever" type="button" role="tab">
+                <i class="bi bi-thermometer-half me-1"></i>Temperature
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="hTab-cough-btn" data-history-inner="cough" type="button" role="tab">
+                <i class="bi bi-lungs me-1"></i>Cough
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="hTab-colds-btn" data-history-inner="colds" type="button" role="tab">
+                <i class="bi bi-moisture me-1"></i>Colds
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="hTab-diarrhea-btn" data-history-inner="diarrhea" type="button" role="tab">
+                <i class="bi bi-droplet-half me-1"></i>Diarrhea
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="modal-body p-0">
+
+          <!-- ── FEVER HISTORY ── -->
+          <div id="historyPanelFever" class="history-panel">
+            {% if readings %}
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Date and time</th>
+                    <th>Reading</th>
+                    <th>Method</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for reading in readings %}
+                  <tr>
+                    <td>{{ reading.recorded_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                    <td class="fw-bold">{{ reading.display_value }}</td>
+                    <td>{{ reading.method|title if reading.method else 'Not specified' }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="dashboard-empty-resource p-4">No temperature readings yet for {{ active_child.name }}.</div>
+            {% endif %}
+          </div>
+
+          <!-- ── COUGH HISTORY ── -->
+          <div id="historyPanelCough" class="history-panel" style="display:none">
+            {% set cough_episodes = resp_episodes | selectattr('symptom_type', 'equalto', 'cough') | list %}
+            {% if cough_episodes %}
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Date</th>
+                    <th>Severity</th>
+                    <th>Duration</th>
+                    <th>Signs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for episode in cough_episodes %}
+                  <tr>
+                    <td>{{ episode.recorded_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                    <td>{{ episode.severity|title }}</td>
+                    <td>{{ episode.duration_days }} day{% if episode.duration_days != 1 %}s{% endif %}</td>
+                    <td>
+                      {% if episode.difficulty_breathing %}Breathing difficulty
+                      {% elif episode.wheezing %}Wheezing
+                      {% elif episode.fever_present %}Fever
+                      {% else %}None reported{% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="dashboard-empty-resource p-4">No cough episodes yet for {{ active_child.name }}.</div>
+            {% endif %}
+          </div>
+
+          <!-- ── COLDS HISTORY ── -->
+          <div id="historyPanelColds" class="history-panel" style="display:none">
+            {% set cold_episodes = resp_episodes | rejectattr('symptom_type', 'equalto', 'cough') | list %}
+            {% if cold_episodes %}
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Date</th>
+                    <th>Symptom</th>
+                    <th>Severity</th>
+                    <th>Duration</th>
+                    <th>Signs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for episode in cold_episodes %}
+                  <tr>
+                    <td>{{ episode.recorded_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                    <td>{{ episode.symptom_type|title }}</td>
+                    <td>{{ episode.severity|title }}</td>
+                    <td>{{ episode.duration_days }} day{% if episode.duration_days != 1 %}s{% endif %}</td>
+                    <td>
+                      {% if episode.difficulty_breathing %}Breathing difficulty
+                      {% elif episode.fever_present %}Fever
+                      {% else %}None reported{% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="dashboard-empty-resource p-4">No cold episodes yet for {{ active_child.name }}.</div>
+            {% endif %}
+          </div>
+
+          <!-- ── DIARRHEA HISTORY ── -->
+          <div id="historyPanelDiarrhea" class="history-panel" style="display:none">
+            {% if diarr_episodes %}
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Date</th>
+                    <th>Episodes/day</th>
+                    <th>Consistency</th>
+                    <th>Duration</th>
+                    <th>Signs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for episode in diarr_episodes %}
+                  <tr>
+                    <td>{{ episode.recorded_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+                    <td>{{ episode.episodes_per_day }}</td>
+                    <td>{{ episode.consistency|title }}</td>
+                    <td>{{ episode.duration_days }} day{% if episode.duration_days != 1 %}s{% endif %}</td>
+                    <td>
+                      {% if episode.blood_present %}Blood
+                      {% elif episode.dehydration_signs != 'none' %}{{ episode.dehydration_signs|title }} dehydration
+                      {% else %}None reported{% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="dashboard-empty-resource p-4">No diarrhea episodes yet for {{ active_child.name }}.</div>
+            {% endif %}
+          </div>
+
+        </div>{# end modal-body #}
+        <div class="modal-footer border-top">
+          <small class="text-muted me-auto">Showing the last 30 records.</small>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>{# end page-container #}
+
+<script>
+(function () {
+  var historyModal   = document.getElementById('historyModal');
+  var historyNavBtn  = document.getElementById('historyNavBtn');
+
+  var panelMap = {
+    fever:    document.getElementById('historyPanelFever'),
+    cough:    document.getElementById('historyPanelCough'),
+    colds:    document.getElementById('historyPanelColds'),
+    diarrhea: document.getElementById('historyPanelDiarrhea'),
+  };
+
+  if (!historyModal) return;
+
+  // ── Inner modal tab switching ───────────────────────────────
+  function showInnerTab(key) {
+    Object.keys(panelMap).forEach(function (k) {
+      if (panelMap[k]) panelMap[k].style.display = (k === key) ? '' : 'none';
+    });
+    document.querySelectorAll('#historyInnerTabs [data-history-inner]').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.historyInner === key);
+    });
+  }
+
+  document.querySelectorAll('#historyInnerTabs [data-history-inner]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      showInnerTab(btn.dataset.historyInner);
+    });
+  });
+
+  // ── Nav History button — open modal, sync to current active tab ─
+  if (historyNavBtn) {
+    historyNavBtn.addEventListener('click', function () {
+      // Which tracker tab is currently active?
+      var activePane = document.querySelector('#trackerTabContent .tab-pane.show.active');
+      var tabKey = 'fever';
+      if (activePane) {
+        var id = activePane.id; // tab-fever / tab-cough / tab-colds / tab-diarrhea
+        tabKey = id.replace('tab-', '');
+      }
+      showInnerTab(tabKey);
+      bootstrap.Modal.getOrCreateInstance(historyModal).show();
+    });
+  }
+})();
+</script>
 {% endblock %}

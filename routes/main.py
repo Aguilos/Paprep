@@ -12,6 +12,7 @@ from models import (
 )
 from app import db
 from utils import today_pht
+from services.news_service import determine_recommendation_context, fetch_news_articles
 
 main_bp = Blueprint('main', __name__)
 
@@ -300,6 +301,11 @@ def dashboard():
         for like in NewsletterLike.query.filter_by(user_id=current_user.id).all()
     }
 
+    # ── Context-Aware Adaptive Recommendations & News ────────
+    session_topic = session.get('last_module_topic')
+    rec_context = determine_recommendation_context(active_child, current_user, session_topic)
+    recommended_articles = fetch_news_articles(rec_context['topic'], limit=6)
+
     return render_template('dashboard/dashboard.html',
                            active_child=active_child,
                            children_dashboard=children_dashboard,
@@ -307,4 +313,38 @@ def dashboard():
                            resources=resources,
                            newsletters=newsletters,
                            liked_newsletter_ids=liked_newsletter_ids,
+                           rec_context=rec_context,
+                           recommended_articles=recommended_articles,
                            page_title='Dashboard')
+
+
+@main_bp.route('/api/recommendations', methods=['GET'])
+@login_required
+def get_recommendations_api():
+    active_child_id = session.get('active_child_id')
+    active_child = next(
+        (c for c in current_user.children if c.id == active_child_id),
+        current_user.children[0] if current_user.children else None
+    )
+    if not active_child:
+        return jsonify({'ok': False, 'error': 'No active child'}), 400
+
+    topic = request.args.get('topic', '').strip().lower()
+    session_topic = session.get('last_module_topic')
+    rec_context = determine_recommendation_context(active_child, current_user, session_topic)
+
+    if not topic or topic == 'auto' or topic == 'all':
+        target_topic = rec_context['topic'] if (topic == 'auto' or not topic) else 'all'
+    elif topic == 'ailment':
+        target_topic = rec_context.get('ailment_type') or 'fever'
+    else:
+        target_topic = topic
+
+    articles = fetch_news_articles(target_topic, limit=6)
+    return jsonify({
+        'ok': True,
+        'context': rec_context,
+        'active_topic': topic or 'auto',
+        'effective_topic': target_topic,
+        'articles': articles,
+    })
