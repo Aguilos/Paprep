@@ -5,16 +5,33 @@ from sqlalchemy.orm import deferred
 from app import db
 from utils import today_pht
 
+def youtube_video_id(url):
+    if not url:
+        return None
+    if 'youtube.com/watch' in url and 'v=' in url:
+        return url.split('v=', 1)[1].split('&', 1)[0].split('#', 1)[0]
+    if 'youtu.be/' in url:
+        return url.split('youtu.be/', 1)[1].split('?', 1)[0].split('&', 1)[0].split('#', 1)[0]
+    if 'youtube.com/embed/' in url:
+        return url.split('youtube.com/embed/', 1)[1].split('?', 1)[0].split('&', 1)[0].split('#', 1)[0]
+    if 'youtube.com/shorts/' in url:
+        return url.split('youtube.com/shorts/', 1)[1].split('?', 1)[0].split('&', 1)[0].split('#', 1)[0]
+    return None
+
 
 def youtube_embed_url(url):
-    if 'youtube.com/watch' in url and 'v=' in url:
-        video_id = url.split('v=', 1)[1].split('&', 1)[0]
-        return f'https://www.youtube.com/embed/{video_id}'
-    if 'youtu.be/' in url:
-        video_id = url.split('youtu.be/', 1)[1].split('?', 1)[0]
-        return f'https://www.youtube.com/embed/{video_id}'
-    if 'youtube.com/embed/' in url:
-        return url
+    vid = youtube_video_id(url)
+    if vid:
+        return f'https://www.youtube-nocookie.com/embed/{vid}'
+    if url and ('youtube.com' in url or 'youtu.be' in url):
+        return url.replace('www.youtube.com', 'www.youtube-nocookie.com')
+    return None
+
+
+def youtube_thumbnail_url(url):
+    vid = youtube_video_id(url)
+    if vid:
+        return f'https://img.youtube.com/vi/{vid}/hqdefault.jpg'
     return None
 
 
@@ -225,6 +242,14 @@ class ParentChildResource(db.Model):
         if self.resource_type != 'video':
             return None
         return youtube_embed_url(self.url) or self.url
+
+    @property
+    def thumbnail_image(self):
+        if self.thumbnail_url:
+            return self.thumbnail_url
+        if self.resource_type == 'video':
+            return youtube_thumbnail_url(self.url)
+        return None
 
     def __repr__(self):
         return f'<Resource {self.title}>'
@@ -630,6 +655,14 @@ class NewsletterMedia(db.Model):
     @property
     def embed_url(self):
         return youtube_embed_url(self.source)
+
+    @property
+    def thumbnail_image(self):
+        if self.media_type == 'image':
+            return self.source
+        if self.media_type == 'video':
+            return youtube_thumbnail_url(self.source)
+        return None
 
     def __repr__(self):
         return f'<NewsletterMedia newsletter={self.newsletter_id} type={self.media_type}>'

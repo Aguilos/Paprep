@@ -1,7 +1,8 @@
+import os
 from datetime import date, datetime, timedelta
 import json
 
-from flask import Blueprint, abort, render_template, redirect, url_for, session, jsonify, request
+from flask import Blueprint, abort, render_template, redirect, url_for, session, jsonify, request, send_from_directory, current_app
 from flask_login import login_required, current_user
 
 from models import (
@@ -198,6 +199,15 @@ def add_newsletter_comment(newsletter_id):
         },
     })
 
+
+
+@main_bp.route('/favicon.ico')
+def favicon():
+    return send_from_directory(
+        os.path.join(current_app.root_path, 'static', 'image'),
+        'Logo.png',
+        mimetype='image/png'
+    )
 
 
 @main_bp.route('/')

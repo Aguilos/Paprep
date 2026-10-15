@@ -599,7 +599,8 @@ def match_bot_intent(text):
         'good afternoon', 'good evening', 'good day', 'how are you', 'kamusta',
         'mabuhay', 'helo', 'ello', 'greetings',
     )
-    if any(text_lower == g or text_lower.startswith(g + ' ') or text_lower.startswith(g + '!')
+    clean_text = text_lower.strip(' .,!?~:;')
+    if any(clean_text == g or clean_text.startswith(g + ' ') or text_lower.startswith(g + '!')
            for g in greeting_triggers):
         user_name = ''
         try:

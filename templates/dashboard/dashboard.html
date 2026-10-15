@@ -107,11 +107,19 @@
       {% for resource in resources %}
       <article class="dashboard-resource-card">
         {% if resource.resource_type == 'video' and resource.embed_url %}
-        <div class="resource-video-wrap">
-          <iframe src="{{ resource.embed_url }}" title="{{ resource.title }}" loading="lazy" allowfullscreen></iframe>
+        <div class="resource-video-wrap video-facade" data-embed-url="{{ resource.embed_url|replace('www.youtube.com', 'www.youtube-nocookie.com') }}" data-title="{{ resource.title }}">
+          {% if resource.thumbnail_image %}
+          <img src="{{ resource.thumbnail_image }}" alt="{{ resource.title }}" class="resource-thumbnail" loading="lazy" onerror="this.style.display='none';this.parentElement.classList.add('no-thumb');">
+          {% endif %}
+          <div class="resource-thumbnail-fallback">
+            <i class="bi bi-play-circle-fill"></i>
+          </div>
+          <button type="button" class="video-play-btn" aria-label="Play video: {{ resource.title }}">
+            <i class="bi bi-play-fill"></i>
+          </button>
         </div>
-        {% elif resource.thumbnail_url %}
-        <img src="{{ resource.thumbnail_url }}" alt="" class="resource-thumbnail">
+        {% elif resource.thumbnail_image or resource.thumbnail_url %}
+        <img src="{{ resource.thumbnail_image or resource.thumbnail_url }}" alt="{{ resource.title }}" class="resource-thumbnail" loading="lazy">
         {% endif %}
         <div class="dashboard-resource-body">
           <span class="resource-type-label"><i class="bi bi-{{ 'play-btn' if resource.resource_type == 'video' else 'link-45deg' }} me-1"></i>{{ resource.category|title }}</span>
@@ -172,7 +180,7 @@
         {% if newsletter.media %}
         <div class="newsletter-media-preview">
           {% for media in newsletter.media %}
-          {% if media.media_type == 'image' %}<img src="{{ media.source }}" alt="{{ media.caption or newsletter.title }}" loading="lazy">{% elif media.embed_url %}<div class="newsletter-video-frame"><iframe src="{{ media.embed_url|replace('www.youtube.com', 'www.youtube-nocookie.com') }}?enablejsapi=1&amp;origin={{ request.host_url.rstrip('/')|urlencode }}&amp;widget_referrer={{ request.url|urlencode }}" title="{{ media.caption or newsletter.title }}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe><a class="newsletter-video-fallback" href="{{ media.source }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Video not visible? Watch on YouTube</a></div>{% endif %}
+          {% if media.media_type == 'image' %}<img src="{{ media.source }}" alt="{{ media.caption or newsletter.title }}" loading="lazy">{% elif media.embed_url %}<div class="newsletter-video-frame"><iframe src="{{ media.embed_url|replace('www.youtube.com', 'www.youtube-nocookie.com') }}" title="{{ media.caption or newsletter.title }}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe><a class="newsletter-video-fallback" href="{{ media.source }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Video not visible? Watch on YouTube</a></div>{% endif %}
           {% endfor %}
         </div>
         {% endif %}
@@ -527,5 +535,17 @@
       });
     });
   })();
+
+  /* ── Video facade click-to-play handler ─────────────────── */
+  document.addEventListener('click', function (e) {
+    const facade = e.target.closest('.video-facade');
+    if (!facade) return;
+    const embedUrl = facade.getAttribute('data-embed-url');
+    const title = facade.getAttribute('data-title') || 'Video';
+    if (!embedUrl) return;
+    const sep = embedUrl.includes('?') ? '&' : '?';
+    facade.innerHTML = '<iframe src="' + embedUrl + sep + 'autoplay=1" title="' + title.replace(/"/g, '&quot;') + '" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>';
+    facade.classList.remove('video-facade');
+  });
 </script>
 {% endblock %}

@@ -16,6 +16,9 @@ def create_app():
     app.config.from_object(Config)
     app.config['TEMPLATES_AUTO_RELOAD'] = True
 
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
+
     db.init_app(app)
     csrf.init_app(app)
     login_manager.init_app(app)

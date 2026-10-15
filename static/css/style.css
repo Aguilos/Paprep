@@ -902,8 +902,73 @@ body.child-quickview-open #dashboardRestContent {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm);
 }
-.resource-video-wrap { aspect-ratio: 16 / 9; background: var(--gray-900); }
-.resource-video-wrap iframe { width: 100%; height: 100%; border: 0; display: block; }
+.resource-video-wrap {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--gray-900);
+  overflow: hidden;
+}
+.resource-video-wrap iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+.video-facade {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.video-facade .resource-thumbnail {
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+.video-facade:hover .resource-thumbnail {
+  transform: scale(1.04);
+  filter: brightness(0.88);
+}
+.video-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(220, 38, 38, 0.95);
+  color: #fff;
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+.video-play-btn i {
+  margin-left: 3px;
+}
+.video-facade:hover .video-play-btn {
+  transform: translate(-50%, -50%) scale(1.12);
+  background: #b91c1c;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+.resource-thumbnail-fallback {
+  display: none;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: #94a3b8;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+.video-facade.no-thumb .resource-thumbnail-fallback,
+.video-facade:not(:has(.resource-thumbnail)) .resource-thumbnail-fallback {
+  display: flex;
+}
 .resource-thumbnail { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
 .dashboard-resource-body { padding: 14px; }
 .resource-type-label { color: var(--primary-dark); font-size: .7rem; font-weight: 800; text-transform: uppercase; }
