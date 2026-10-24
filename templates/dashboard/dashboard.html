@@ -112,6 +112,19 @@
         </span>
         {% endif %}
       </div>
+
+    <!-- Countdown timer ring -->
+    <div id="recCountdownWrap" title="Next topic refresh" style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      <svg id="recCountdownRing" width="32" height="32" viewBox="0 0 32 32"
+           style="transform:rotate(-90deg);" aria-hidden="true">
+        <circle cx="16" cy="16" r="13" fill="none" stroke="#e9ecef" stroke-width="3"/>
+        <circle id="recCountdownArc" cx="16" cy="16" r="13" fill="none"
+                stroke="#0d6efd" stroke-width="3"
+                stroke-dasharray="81.68" stroke-dashoffset="0"
+                style="transition:stroke-dashoffset 1s linear;"/>
+      </svg>
+      <span id="recCountdownLabel" style="font-size:11px;color:#6c757d;min-width:28px;">60s</span>
+    </div>
     </div>
 
     {# Determine the single active pill server-side to avoid multi-active bugs #}
@@ -541,6 +554,7 @@
           if (spinner) spinner.style.display = 'none';
           if (grid)    grid.style.opacity = '1';
           renderArticles(articles);
+          resetCountdown();
           /* Sync cycle to current topic */
           const idx = topicCycle.indexOf(topic);
           if (idx !== -1) cycleIndex = (idx + 1) % topicCycle.length;
@@ -548,21 +562,48 @@
       });
     });
 
-    /* ── Auto-refresh: every 60 s, move to next topic & append 3 cards ── */
+    /* ── Auto-refresh: every 60 s, rotate topic & REPLACE grid with 6 cards ── */
+    const REFRESH_INTERVAL = 60; /* seconds */
+    let secondsLeft = REFRESH_INTERVAL;
+    const arc     = document.getElementById('recCountdownArc');
+    const label   = document.getElementById('recCountdownLabel');
+    const FULL_DASH = 81.68; /* 2 * PI * r (r=13) */
+
+    function resetCountdown() {
+      secondsLeft = REFRESH_INTERVAL;
+      if (arc)   arc.style.strokeDashoffset = '0';
+      if (label) label.textContent = REFRESH_INTERVAL + 's';
+    }
+
+    /* 1-second tick for the visual ring */
+    setInterval(function () {
+      secondsLeft = Math.max(0, secondsLeft - 1);
+      const progress = 1 - (secondsLeft / REFRESH_INTERVAL);
+      if (arc)   arc.style.strokeDashoffset = String(FULL_DASH * progress);
+      if (label) label.textContent = secondsLeft + 's';
+    }, 1000);
+
+    /* 60-second topic rotation: replace grid entirely */
     setInterval(function () {
       const nextTopic = topicCycle[cycleIndex];
       cycleIndex = (cycleIndex + 1) % topicCycle.length;
 
-      /* Highlight the matching pill (visual cue) */
+      /* Update active pill */
       pills.forEach(function (p) {
-        const match = p.getAttribute('data-topic') === nextTopic;
-        p.classList.toggle('active', match);
+        p.classList.toggle('active', p.getAttribute('data-topic') === nextTopic);
       });
 
+      /* Show spinner, fade grid out */
+      if (spinner) spinner.style.display = 'flex';
+      if (grid)    { grid.style.opacity = '0.3'; grid.style.transition = 'opacity 0.4s'; }
+
       fetchTopic(nextTopic, function (articles) {
-        appendCards(articles);
+        if (spinner) spinner.style.display = 'none';
+        if (grid)    { grid.style.opacity = '1'; }
+        renderArticles(articles); /* REPLACE — no off-topic bleed */
+        resetCountdown();
       });
-    }, 60000); /* 60 000 ms = 1 minute */
+    }, REFRESH_INTERVAL * 1000);
 
   })();
 </script>
