@@ -114,23 +114,31 @@
       </div>
     </div>
 
-    <!-- Topic filter pills -->
+    {# Determine the single active pill server-side to avoid multi-active bugs #}
+    {% if rec_context and rec_context.has_active_ailment %}
+      {% set initial_topic = 'ailment' %}
+    {% elif rec_context and rec_context.topic %}
+      {% set initial_topic = rec_context.topic %}
+    {% else %}
+      {% set initial_topic = 'all' %}
+    {% endif %}
+
     <div class="recommendations-pills" role="tablist" aria-label="Recommendation Topics">
-      <button type="button" class="rec-topic-pill {% if not rec_context or (not rec_context.has_active_ailment and rec_context.priority == 3) %}active{% endif %}" data-topic="all">
+      <button type="button" class="rec-topic-pill{% if initial_topic == 'all' %} active{% endif %}" data-topic="all">
         <i class="bi bi-grid-fill"></i> All Topics
       </button>
       {% if rec_context and rec_context.has_active_ailment %}
-      <button type="button" class="rec-topic-pill is-ailment-pill active" data-topic="ailment">
+      <button type="button" class="rec-topic-pill{% if initial_topic == 'ailment' %} active{% endif %}" data-topic="ailment">
         <i class="bi bi-heart-pulse-fill"></i> Active Symptom Care
       </button>
       {% endif %}
-      <button type="button" class="rec-topic-pill {% if rec_context and rec_context.topic == 'parenting' and not rec_context.has_active_ailment %}active{% endif %}" data-topic="parenting">
+      <button type="button" class="rec-topic-pill{% if initial_topic == 'parenting' %} active{% endif %}" data-topic="parenting">
         <i class="bi bi-people-fill"></i> Parenting
       </button>
-      <button type="button" class="rec-topic-pill {% if rec_context and rec_context.topic == 'nutrition' and not rec_context.has_active_ailment %}active{% endif %}" data-topic="nutrition">
+      <button type="button" class="rec-topic-pill{% if initial_topic == 'nutrition' %} active{% endif %}" data-topic="nutrition">
         <i class="bi bi-apple"></i> Nutrition
       </button>
-      <button type="button" class="rec-topic-pill {% if rec_context and rec_context.topic == 'safety' and not rec_context.has_active_ailment %}active{% endif %}" data-topic="safety">
+      <button type="button" class="rec-topic-pill{% if initial_topic == 'safety' %} active{% endif %}" data-topic="safety">
         <i class="bi bi-shield-check"></i> Safety Guide
       </button>
     </div>
@@ -482,20 +490,26 @@
     function appendCards(articles) {
       if (!grid || !articles || articles.length === 0) return;
       const newHtml = articles.slice(0, 3).map(buildCard).join('');
-      const frag = document.createRange().createContextualFragment(newHtml);
-      /* Animate in */
-      frag.querySelectorAll('.rec-card-animated').forEach(function (el) {
+
+      /* Insert HTML and capture the live DOM nodes AFTER they are in the tree */
+      const countBefore = grid.children.length;
+      grid.insertAdjacentHTML('beforeend', newHtml);
+      const newEls = Array.from(grid.children).slice(countBefore);
+
+      /* Start from invisible/shifted, then animate to final on next frame */
+      newEls.forEach(function (el) {
         el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
+        el.style.transform = 'translateY(24px)';
         el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        el.classList.remove('rec-card-animated');
       });
-      grid.appendChild(frag);
-      /* Trigger animation after paint */
+      /* Double rAF ensures the browser has committed the initial styles first */
       requestAnimationFrame(function () {
-        grid.querySelectorAll('.rec-card-animated').forEach(function (el) {
-          el.style.opacity = '1';
-          el.style.transform = 'translateY(0)';
-          el.classList.remove('rec-card-animated');
+        requestAnimationFrame(function () {
+          newEls.forEach(function (el) {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+          });
         });
       });
     }
