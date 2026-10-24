@@ -1,0 +1,599 @@
+PaPrep System Breakdown & Pseudocode Specification
+Comprehensive Architectural Breakdown, Entity Schema, Module Flows & Algorithmic Logic
+Production Ready Specification · Version 2.0
+1. System Overview & Objectives
+PaPrep is an integrated digital healthcare and parenting empowerment web platform engineered for Filipino families raising children from infancy through adolescence (0–21 years). It unifies pediatric health tracking, evidence-based learning, clinic discovery, real-time clinical telemedicine communication, peer community engagement, and AI-assisted pediatric triage into a single, cohesive ecosystem.
+• 
+Daily Health & Nutrition Logging: Systematic logging of daily feeding habits, developmental milestones, and age-adapted nutritional checklists.
+• 
+Pediatric Common Ailments Tracker: Intelligent symptom tracking and triage for Fever, Cough & Colds, and Diarrhea with age-stratified emergency alerts.
+• 
+Educational Modules & Assessment: Structured learning materials in parenting, nutrition, and child safety with interactive slide decks, downloadable PDFs, and 70%-mastery quizzes.
+• 
+Clinic Discovery & Teleservices: Interactive Leaflet.js-based geo-locator, registered patient rosters, appointment scheduling, and bi-directional real-time chat with pediatric clinic staff.
+• 
+Multimodal AI Pediatric Companion: Gemini AI integrated with the PaPrep Red Book pediatric reference document to deliver rapid, localized, and context-grounded guidance.
+• 
+Dedicated Clinic Portal: Secure staff administration environment featuring PyOTP Time-based One-Time Password (TOTP) two-factor authentication, broadcast announcements, and newsletter authoring.
+2. Architectural Framework (5-Layer Model)
+The PaPrep application is designed following clean architectural separation, organized into five distinct operational tiers:
+Layer
+Architecture Tier
+Components & Technologies
+Responsibilities
+Layer 1
+User / Actor Tier
+Parents, Clinic Healthcare Staff, System Administrators, AI Bot Agent
+Authentication, identity segregation, role-based workflows, and action execution.
+Layer 2
+Presentation Tier
+Jinja2 HTML Templates, Bootstrap 5 UI, Vanilla CSS Design System, Vanilla JS, Leaflet.js, Socket.IO Client
+Responsive user interface rendering, DOM updates, interactive mapping, client-side validation, and WebSocket event dispatching.
+Layer 3
+Application / Logic Tier
+Flask 3.0 Application Factory, Blueprints (auth, main, children, modules, symptoms, clinics, chat, forum, clinic_portal)
+Route handling, session control, role-based access enforcement, business logic execution, and template context injection.
+Layer 4
+Integration & Services Tier
+Google Gemini AI (1.5/3.6 Flash + File API), Flask-SocketIO (Gevent), PyOTP/QRCode, REST Endpoints
+Multimodal AI pediatric query processing, WebSocket real-time message broadcasting, 2FA token generation, and RESTful APIs.
+Layer 5
+Data & Persistence Tier
+SQLAlchemy ORM 2.0, PostgreSQL (Supabase Production) / SQLite (Dev Fallback), Inline Schema Migrations
+Persistent storage across 24 relational models, transaction handling, relational integrity, foreign key cascades, and connection pooling.
+3. User Roles & Permission Matrix
+Role
+Authentication Mechanism
+Primary Capabilities
+Access Constraints
+Parent (User)
+Flask-Login (Session Cookie, 7-day TTL, PBKDF2 Password Hash)
+Manage child profiles; log temperature, cough, and diarrhea; check daily health lists; read modules and take quizzes; search clinics and message staff; post in forum; query AI assistant.
+Restricted to parent-facing routes. Blocked from Clinic Portal and administrative management routes.
+Clinic Staff
+Independent Flask Session (clinic_account_id) + Optional PyOTP TOTP 2FA
+Manage clinic profile, geolocation, and operating schedule; review registered patient rosters; view patient health logs; exchange live messages; publish newsletters and clinic modules.
+Blocked from parent-only views. Enforced via @clinic_login_required decorator.
+System Administrator
+Parent account with is_admin=True flag
+System-wide module authoring, forum moderation (hide/unhide posts/replies, resolve reported flags), global announcement oversight.
+Superuser capabilities over user-generated forum content and global reference modules.
+PaPrep AI Assistant
+Internal Automated Bot Engine (Socket.IO + REST POST /chat/bot)
+Processes natural language parenting questions; performs emergency triage; provides direct route shortcuts; answers via Gemini + Red Book RAG.
+Autonomous agent; cannot modify system state or database records without parent action.
+4. Core Subsystems & Blueprint Breakdown
+4.1 Authentication Subsystem (/auth)
+Routes: 
+Endpoints: /auth/login, /auth/signup, /auth/logout, /auth/forgot-password, /auth/reset-password/<token>, /auth/profile
+Logic: 
+Enforces secure signup and login using Werkzeug PBKDF2-SHA256 hashing. Upon login, checks if user has registered children; if child count is 0, forces immediate onboarding redirect to /children/create. Manages 30-minute time-limited, SHA-256 hashed password reset tokens.
+4.2 Main Dashboard & Notification Subsystem (/)
+Routes: 
+Endpoints: /dashboard, /api/notifications/mark-read, /newsletter/<id>/like, /newsletter/<id>/comment
+Logic: 
+Resolves active child context from session['active_child_id']. Aggregates 7-day checklist completion history, active clinic announcements, unread clinic messages, and age-matched educational resources and newsletters. Provides dismissal API that records keys into the notification_reads table.
+4.3 Child Profile Management (/children)
+Routes: 
+Endpoints: /children/, /children/create, /children/<id>/edit, /children/<id>/delete, /children/switch/<id>
+Logic: 
+Maintains child profiles including DOB, gender, special needs designation, and avatar color. Dynamically computes age_months, age_display (e.g., '2 yr 4 mo'), and categorical age_bracket (0-12m, 1-2y, 2-3y, 3-5y, 6-12y, 13-21y). Switch route instantly toggles active child across all sessions.
+4.4 Common Ailments Tracker & Health Checklist (/)
+Routes: 
+Endpoints: /fever-tracker, /fever-tracker/log, /fever-tracker/log-cough, /fever-tracker/log-diarrhea, /health-checklist, /health-checklist/save
+Logic: 
+Provides tabbed tracking for common childhood ailments with algorithmic pediatric severity assignment (emergency, high, monitor, general). Evaluates infant age thresholds (<3 months with >=38°C automatically triggers Emergency). Health checklist loads age-bracketed criteria and persists checked items as JSON.
+4.5 Learning Modules & Quizzes (/modules)
+Routes: 
+Endpoints: /modules/, /modules/<id>, /modules/<id>/slides, /modules/<id>/pdf, /modules/<id>/quiz, /modules/<id>/quiz/submit
+Logic: 
+Serves structured modules across parenting, nutrition, and safety categories. Supports JPEG slide projection, streaming binary PDF downloads, and interactive multiple-choice quizzes. Requires a 70% passing threshold to mark module progress as 'completed'.
+4.6 Clinic Locator & Patient Registration (/clinics)
+Routes: 
+Endpoints: /clinics/, /clinics/<id>, /clinics/<id>/register, /clinics/<id>/unregister, /api/clinics
+Logic: 
+Renders interactive Leaflet.js map with clinic markers and search filters. Allows parents to register their child with a verified clinic, establishing a ClinicRegistration link that unlocks direct messaging and clinic-authored newsletters.
+4.7 Real-Time Telemedicine Messaging & AI Assistant (/chat)
+Routes: 
+Endpoints: /chat/, /chat/upload, /chat/upload_reply, /chat/reply, /chat/bot, WebSockets (join, send_message, clinic_reply, bot_query, mark_read)
+Logic: 
+Bi-directional real-time chat between parents and clinics over isolated Socket.IO rooms (chat_{cid}_{uid}). Supports image/document uploads. Hosts the PaPrep AI Assistant engine integrating Red Book PDF RAG and Gemini generative responses.
+4.8 Parent Community Forum (/forum)
+Routes: 
+Endpoints: /forum/, /forum/new, /forum/<id>, /forum/<id>/reply, /forum/<id>/report, /forum/admin/...
+Logic: 
+Peer support bulletin board categorized by topic. Supports post creation, threaded replies, pinning, content moderation flagging, and administrative review.
+4.9 Clinic Healthcare Staff Portal (/clinic)
+Routes: 
+Endpoints: /clinic/login, /clinic/verify-totp, /clinic/dashboard, /clinic/registrations, /clinic/inbox, /clinic/newsletters, /clinic/announcements, /clinic/schedule, /clinic/2fa-setup
+Logic: 
+Dedicated management interface for clinical providers. Guarded by @clinic_login_required and PyOTP TOTP 2FA. Controls patient rosters, health logs inspection, weekly scheduling, announcements, and newsletter broadcasts.
+5. Relational Database Schema & Entities
+The PaPrep data model consists of 24 core tables mapped via SQLAlchemy ORM:
+Table Name
+Primary Key
+Foreign Keys & Constraints
+Key Attributes & Purpose
+users
+id
+Unique(email)
+Parent identity: first_name, last_name, phone, password_hash, role='Parent', is_admin.
+clinic_accounts
+id
+Unique(email)
+Clinic staff identity: contact_name, email, password_hash, totp_secret, totp_enabled.
+clinics
+id
+clinic_account_id -> clinic_accounts.id
+Clinic profile: name, address, city, latitude, longitude, phone, clinic_type, description.
+child_profiles
+id
+user_id -> users.id (Cascade delete)
+Child data: name, date_of_birth, gender, special_needs_type, profile_color.
+health_checklists
+id
+child_id -> child_profiles.id
+Daily health record: date, checked_items (JSON Array), notes, timestamps.
+fever_readings
+id
+child_id -> child_profiles.id
+Temperature log: value, unit ('C'/'F'), value_celsius, method, recorded_at.
+respiratory_episodes
+id
+child_id -> child_profiles.id
+Respiratory log: symptom_type, severity, duration_days, wheezing, difficulty_breathing.
+diarrhea_episodes
+id
+child_id -> child_profiles.id
+Diarrhea log: episodes_per_day, consistency, blood_present, dehydration_signs, duration_days.
+learning_modules
+id
+clinic_account_id -> clinic_accounts (nullable)
+Educational guides: title, description, category, content, pdf_filename, pdf_data (Blob).
+module_progress
+id
+Unique(user_id, module_id)
+Learning tracker: status ('in_progress'/'completed'), quiz_score, quiz_attempts.
+module_quiz_questions
+id
+module_id -> learning_modules.id
+Quiz items: question, option_a/b/c/d, correct answer ('a'/'b'/'c'/'d'), explanation.
+parent_child_resources
+id
+clinic_account_id -> clinic_accounts
+Curated links: title, description, url, thumbnail_url, resource_type, target_age.
+clinic_registrations
+id
+Unique(clinic_id, user_id)
+Link table connecting registered parents/children with medical clinics.
+clinic_messages
+id
+clinic_id, user_id -> clinics, users
+Chat messages: sender ('user'/'clinic'), text, attachment_url, attachment_type, is_read.
+clinic_announcements
+id
+clinic_id -> clinics.id
+Broadcasts: title, body, is_active, created_at, expires_at.
+clinic_schedules
+id
+clinic_id -> clinics.id
+Operational hours: day_of_week (0-6), open_time, close_time, is_closed.
+time_slots
+id
+clinic_id -> clinics.id
+Appointment slots: slot_date, start_time, end_time, total_slots, booked_slots.
+newsletters
+id
+clinic_id -> clinics.id
+Clinic publications: title, body, target_age_min_years, target_age_max_years, is_published.
+newsletter_media
+id
+newsletter_id -> newsletters.id
+Media attachments: media_type ('image'/'video'), source URL, caption.
+newsletter_likes
+id
+Unique(user_id, newsletter_id)
+Parent reaction tracking for newsletter posts.
+newsletter_comments
+id
+user_id, newsletter_id
+Parent comments and feedback on clinic newsletters.
+forum_posts
+id
+user_id -> users.id
+Parent discussions: title, body, category, is_pinned, is_hidden, timestamps.
+forum_replies
+id
+post_id, user_id
+Threaded responses: body, is_hidden, timestamps.
+forum_reports
+id
+reporter_id, post_id, reply_id
+Moderation flagging: reason, is_resolved, timestamps.
+notification_reads
+id
+Unique(user_id, notification_key)
+Tracks dismissed notification items per parent account.
+6. Algorithmic Pseudocode Specifications
+The following section presents the pseudocode for the critical business logic and computational decision engines in PaPrep.
+Algorithm 1: Dual Authentication & TOTP 2FA Lifecycle
+Handles role-differentiated authentication, session instantiation, and multi-factor verification for parents and clinic providers:
+// ============================================================================
+// ALGORITHM 1: DUAL AUTHENTICATION & TOTP 2-FACTOR AUTHENTICATION
+// ============================================================================
+FUNCTION ParentLogin(email, password):
+    user <- Query User WHERE email == email.toLowerCase()
+    IF user IS NULL OR NOT VerifyPasswordHash(user.password_hash, password) THEN
+        RETURN FailureResponse("Invalid email or password.")
+    END IF
+    InitializeUserSession(user, lifetime=7_DAYS, httpOnly=TRUE, sameSite="Lax")
+    
+    IF Count(user.children) == 0 THEN
+        RETURN Redirect("/children/create")  // Enforce mandatory child onboarding
+    ELSE
+        RETURN Redirect("/dashboard")
+    END IF
+END FUNCTION
+FUNCTION ClinicLogin(email, password, totp_code):
+    account <- Query ClinicAccount WHERE email == email.toLowerCase()
+    IF account IS NULL OR NOT VerifyPasswordHash(account.password_hash, password) THEN
+        RETURN FailureResponse("Invalid clinic credentials.")
+    END IF
+    // Two-Factor Authentication Check
+    IF account.totp_enabled == TRUE THEN
+        IF totp_code IS NULL OR Empty(totp_code) THEN
+            // Direct to 2FA verification step
+            session["pre_auth_clinic_id"] <- account.id
+            RETURN Redirect("/clinic/verify-totp")
+        END IF
+        totp_verifier <- InitializePyOTP(account.totp_secret)
+        IF NOT totp_verifier.verify(totp_code, valid_window=1) THEN
+            RETURN FailureResponse("Invalid or expired 2FA code.")
+        END IF
+    END IF
+    // Establish Clinic Session
+    session["clinic_account_id"] <- account.id
+    RemoveSessionKey("pre_auth_clinic_id")
+    RETURN Redirect("/clinic/dashboard")
+END FUNCTION
+Algorithm 2: PaPrep AI Assistant Intent Matching & RAG Pipeline
+Evaluates incoming natural language requests via multi-tiered deterministic routing before delegating to the Gemini File API with PaPrep Red Book context:
+// ============================================================================
+// ALGORITHM 2: PAPREP AI ASSISTANT INTENT MATCHING & RAG PIPELINE
+// ============================================================================
+FUNCTION MatchBotIntent(query_text, user_context):
+    normalized_query <- TrimAndLowerCase(query_text)
+    
+    // STAGE 1: Emergency Hard-Stop Keyword Interception
+    emergency_tokens <- ["emergency", "seizure", "convulsion", "911", "unconscious", 
+                         "not breathing", "stopped breathing", "severe bleeding"]
+    FOR EACH token IN emergency_tokens DO
+        IF normalized_query CONTAINS token THEN
+            emergency_reply <- "🚨 Emergency Alert: Immediate medical assessment required. Call 911 / 112."
+            shortcuts <- [CreateShortcut("Common Ailments Tracker", "/fever-tracker"),
+                          CreateShortcut("Find Nearest Clinic", "/clinics/")]
+            RETURN (emergency_reply, shortcuts, default_actions=[])
+        END IF
+    END FOR
+    // STAGE 2: Conversational Greetings (English & Filipino)
+    greetings <- ["hi", "hello", "hey", "kamusta", "mabuhay", "good morning", "good day"]
+    IF MatchesAnyPrefix(normalized_query, greetings) THEN
+        greeting_reply <- "👋 Hi " + user_context.first_name + "! I'm your PaPrep Assistant."
+        RETURN (greeting_reply, LoadDefaultNavShortcuts(), LoadDefaultActions())
+    END IF
+    // STAGE 3: Fuzzy Feature Registry Match
+    scored_features <- []
+    FOR EACH feature IN FEATURE_REGISTRY DO
+        score <- CalculateFuzzyKeywordScore(normalized_query, feature.keywords)
+        IF score > 0 THEN
+            scored_features.Append((score, feature))
+        END IF
+    END FOR
+    
+    IF Count(scored_features) > 0 THEN
+        SortDescending(scored_features, key=score)
+        top_feature <- scored_features[0].feature
+        IF scored_features[0].score >= THRESHOLD_EXACT THEN
+            RETURN ("I can help you use " + top_feature.name, [top_feature.shortcut], [])
+        END IF
+    END IF
+    // STAGE 4: Retrieval-Augmented Generation (RAG) with Gemini & Red Book
+    IF SYSTEM_CONFIG.GEMINI_API_KEY IS AVAILABLE THEN
+        TRY
+            red_book_handle <- GetOrUploadGeminiFile("PaPrep_Red_Book.pdf")
+            prompt <- BuildSystemPrompt(
+                role="Empathetic Pediatric Companion for Filipino Parents (0-21y)",
+                priority="Consult attached PaPrep Red Book PDF as primary authoritative reference",
+                formatting="Concise 3-5 sentences, bullet points, clinical disclaimer"
+            )
+            
+            IF red_book_handle IS NOT NULL THEN
+                gemini_response <- GeminiModel.Generate(contents=[red_book_handle, prompt, query_text])
+            ELSE
+                gemini_response <- GeminiModel.Generate(contents=[prompt, query_text])
+            END IF
+            
+            topic_shortcuts <- ExtractContextualShortcuts(normalized_query)
+            RETURN (gemini_response.text, topic_shortcuts, default_actions=[])
+        CATCH Exception AS e:
+            LogWarning("Gemini RAG pipeline failure: " + e.message)
+        END TRY
+    END IF
+    // STAGE 5: Graceful Degraded Fallback
+    fallback_msg <- "👋 I'm having a little trouble connecting right now. Please explore these shortcuts:"
+    RETURN (fallback_msg, LoadDefaultNavShortcuts(), LoadDefaultActions())
+END FUNCTION
+Algorithm 3: Common Ailments Severity & Triage Decision Engine
+Calculates severity classifications (emergency, high, monitor, general) for fever, respiratory, and diarrhea episodes:
+// ============================================================================
+// ALGORITHM 3: COMMON AILMENTS SEVERITY & TRIAGE DECISION ENGINE
+// ============================================================================
+FUNCTION EvaluateFeverSeverity(child_age_months, current_temp_celsius, recent_readings_24h):
+    fever_count_24h <- Count(r IN recent_readings_24h WHERE r.celsius >= 38.0)
+    // Pediatric Red-Flag Rule: Infant under 3 months with fever OR hyperpyrexia
+    IF (child_age_months < 3 AND current_temp_celsius >= 38.0) OR (current_temp_celsius >= 40.0) THEN
+        RETURN {
+            "severity": "emergency",
+            "title": "Emergency Temperature Reading",
+            "message": "Immediate medical assessment required. Do not wait.",
+            "actions": ["Call emergency services (911 / 112)", "Proceed to nearest Emergency Room"]
+        }
+    ELSE IF current_temp_celsius >= 39.0 OR fever_count_24h >= 3 THEN
+        RETURN {
+            "severity": "high",
+            "title": "High Priority Fever",
+            "message": "Prompt medical evaluation advised for persistent or high fever.",
+            "actions": ["Contact your clinic today", "Maintain hydration", "Observe comfort"]
+        }
+    ELSE IF current_temp_celsius >= 38.0 THEN
+        RETURN {
+            "severity": "monitor",
+            "title": "Monitor Temperature",
+            "message": "Temperature indicates fever. Monitor closely.",
+            "actions": ["Offer fluids", "Re-check in 2-4 hours", "Record any new symptoms"]
+        }
+    ELSE
+        RETURN {
+            "severity": "general",
+            "title": "Normal Temperature Range",
+            "message": "Temperature is below fever threshold.",
+            "actions": ["Continue routine care", "Keep child hydrated"]
+        }
+    END IF
+END FUNCTION
+FUNCTION EvaluateRespiratorySeverity(episode):
+    IF episode.difficulty_breathing == TRUE THEN
+        RETURN {"severity": "emergency", "title": "Emergency Breathing Warning",
+                "actions": ["Call 911 / 112 immediately", "Keep child sitting upright"]}
+    ELSE IF episode.wheezing == TRUE OR episode.severity == "severe" OR episode.duration_days >= 7 THEN
+        RETURN {"severity": "high", "title": "High Priority Respiratory Symptoms",
+                "actions": ["Schedule same-day clinic consultation", "Avoid air irritants"]}
+    ELSE IF episode.fever_present == TRUE OR episode.severity == "moderate" OR episode.duration_days >= 3 THEN
+        RETURN {"severity": "monitor", "title": "Monitor Cough/Cold",
+                "actions": ["Offer warm fluids", "Ensure restful environment"]}
+    ELSE
+        RETURN {"severity": "general", "title": "General Cough/Cold Home Care",
+                "actions": ["Continue hydration", "Monitor for changes"]}
+    END IF
+END FUNCTION
+FUNCTION EvaluateDiarrheaSeverity(episode):
+    IF episode.blood_present == TRUE OR episode.dehydration_signs == "severe" THEN
+        RETURN {"severity": "emergency", "title": "Emergency Diarrhea Warning",
+                "actions": ["Immediate ER assessment", "Do not delay hydration treatment"]}
+    ELSE IF episode.dehydration_signs == "moderate" OR episode.episodes_per_day >= 6 OR episode.duration_days >= 3 THEN
+        RETURN {"severity": "high", "title": "High Priority Diarrhea Symptoms",
+                "actions": ["Administer Oral Rehydration Salts (ORS)", "Contact pediatrician today"]}
+    ELSE IF episode.dehydration_signs == "mild" OR episode.episodes_per_day >= 3 OR episode.duration_days >= 2 THEN
+        RETURN {"severity": "monitor", "title": "Monitor Diarrhea Symptoms",
+                "actions": ["Offer small frequent sips of ORS", "Track urination and stool count"]}
+    ELSE
+        RETURN {"severity": "general", "title": "General Diarrhea Care",
+                "actions": ["Continue age-appropriate fluids and feeding"]}
+    END IF
+END FUNCTION
+Algorithm 4: Daily Health Checklist & 7-Day Dashboard Metric Aggregation
+Calculates completion rates and age-bracketed checklist items aligned with Philippine Time (PHT):
+// ============================================================================
+// ALGORITHM 4: DAILY HEALTH CHECKLIST & 7-DAY DASHBOARD AGGREGATION
+// ============================================================================
+FUNCTION SaveHealthChecklist(child_id, checked_keys, notes):
+    today <- GetCurrentDateInPHT()   // Asia/Manila Time Zone
+    record <- Query HealthChecklist WHERE child_id == child_id AND date == today
+    
+    IF record IS NULL THEN
+        record <- New HealthChecklist(
+            child_id=child_id,
+            date=today,
+            checked_items=ToJSON(checked_keys),
+            notes=notes,
+            created_at=UtcNow()
+        )
+        Database.Insert(record)
+    ELSE
+        record.checked_items <- ToJSON(checked_keys)
+        record.notes <- notes
+        record.updated_at <- UtcNow()
+        Database.Update(record)
+    END IF
+    Database.Commit()
+    RETURN record
+END FUNCTION
+FUNCTION AggregateDashboardMetrics(user_id, active_child):
+    today <- GetCurrentDateInPHT()
+    seven_days_ago <- today - 7_DAYS
+    
+    // Retrieve 7-day checklist records
+    checklist_history <- Query HealthChecklist 
+                         WHERE child_id == active_child.id 
+                           AND date BETWEEN seven_days_ago AND today
+                         ORDER BY date ASC
+    total_applicable_items <- Count(GetChecklistItemsForBracket(active_child.age_bracket))
+    metric_series <- []
+    
+    FOR EACH day_offset FROM 6 DOWNTO 0 DO
+        target_date <- today - day_offset
+        day_record <- Find(checklist_history, WHERE date == target_date)
+        
+        IF day_record IS NOT NULL THEN
+            checked_count <- Count(FromJSON(day_record.checked_items))
+            completion_percentage <- Round((checked_count / total_applicable_items) * 100)
+        ELSE
+            completion_percentage <- 0
+        END IF
+        
+        metric_series.Append({
+            "date": target_date.Format("YYYY-MM-DD"),
+            "completion_rate": completion_percentage
+        })
+    END FOR
+    unread_messages <- QueryCount(ClinicMessage WHERE user_id == user_id 
+                                                 AND sender == "clinic" 
+                                                 AND is_read == FALSE)
+    RETURN {
+        "active_child": active_child,
+        "completion_trend": metric_series,
+        "unread_notifications": unread_messages
+    }
+END FUNCTION
+Algorithm 5: Real-Time Bidirectional Messaging & Room Routing
+Manages multi-room Socket.IO broadcasts and synchronization between parents and clinical staff:
+// ============================================================================
+// ALGORITHM 5: REAL-TIME BIDIRECTIONAL MESSAGING & ROOM ROUTING
+// ============================================================================
+ON WebSocket.Event("join", payload):
+    clinic_id <- payload.clinic_id
+    user_id <- payload.user_id
+    
+    // Bind client connection to scoped rooms
+    chat_room <- "chat_" + clinic_id + "_" + user_id
+    clinic_room <- "clinic_" + clinic_id
+    user_room <- "user_" + user_id
+    
+    JoinRoom(chat_room)
+    JoinRoom(clinic_room)
+    JoinRoom(user_room)
+    Emit("room_joined", {"room": chat_room, "status": "success"})
+END ON
+ON WebSocket.Event("send_message", payload):
+    clinic_id <- payload.clinic_id
+    user_id <- payload.user_id
+    message_text <- Trim(payload.text)
+    
+    IF Empty(message_text) THEN RETURN EmitError("Message cannot be empty") END IF
+    // Persist to relational database
+    msg <- New ClinicMessage(
+        clinic_id=clinic_id,
+        user_id=user_id,
+        sender="user",
+        text=message_text,
+        is_read=FALSE,
+        created_at=UtcNow()
+    )
+    Database.Insert(msg)
+    Database.Commit()
+    // Broadcast to active room members
+    chat_room <- "chat_" + clinic_id + "_" + user_id
+    clinic_room <- "clinic_" + clinic_id
+    
+    Broadcast(room=chat_room, event="chat_message", data=msg.ToDict())
+    Broadcast(room=clinic_room, event="unread_update", data={
+        "clinic_id": clinic_id,
+        "user_id": user_id,
+        "last_message": msg.ToDict()
+    })
+END ON
+ON WebSocket.Event("mark_read", payload):
+    clinic_id <- payload.clinic_id
+    user_id <- payload.user_id
+    reader_role <- payload.reader   // 'clinic' OR 'parent'
+    IF reader_role == "clinic" THEN
+        unread_msgs <- Query ClinicMessage WHERE clinic_id == clinic_id 
+                                             AND user_id == user_id 
+                                             AND sender == "user" 
+                                             AND is_read == FALSE
+    ELSE
+        unread_msgs <- Query ClinicMessage WHERE clinic_id == clinic_id 
+                                             AND user_id == user_id 
+                                             AND sender == "clinic" 
+                                             AND is_read == FALSE
+    END IF
+    FOR EACH msg IN unread_msgs DO
+        msg.is_read <- TRUE
+    END FOR
+    Database.Commit()
+    Broadcast(room="chat_" + clinic_id + "_" + user_id, 
+              event="messages_read", 
+              data={"reader": reader_role})
+END ON
+Algorithm 6: Learning Module Assessment & Quiz Mastery Engine
+Calculates quiz scoring, determines pass/fail thresholds (70%), and updates progress state:
+// ============================================================================
+// ALGORITHM 6: LEARNING MODULE ASSESSMENT & MASTERY ENGINE
+// ============================================================================
+FUNCTION SubmitQuiz(user_id, module_id, submitted_answers):
+    questions <- QueryAll(ModuleQuizQuestion WHERE module_id == module_id ORDER BY sort_order ASC)
+    total_questions <- Count(questions)
+    
+    IF total_questions == 0 THEN
+        RETURN FailureResponse("No quiz questions associated with this module.")
+    END IF
+    correct_count <- 0
+    detailed_results <- []
+    FOR EACH q IN questions DO
+        user_choice <- submitted_answers.Get(q.id)   // 'a', 'b', 'c', or 'd'
+        is_correct <- (user_choice == q.correct)
+        
+        IF is_correct THEN
+            correct_count <- correct_count + 1
+        END IF
+        
+        detailed_results.Append({
+            "question_id": q.id,
+            "selected": user_choice,
+            "correct": q.correct,
+            "is_correct": is_correct,
+            "explanation": q.explanation
+        })
+    END FOR
+    score_percentage <- Round((correct_count / total_questions) * 100)
+    passed <- (score_percentage >= 70)   // 70% Mastery Threshold
+    // Upsert ModuleProgress record
+    progress <- Query ModuleProgress WHERE user_id == user_id AND module_id == module_id
+    IF progress IS NULL THEN
+        progress <- New ModuleProgress(user_id=user_id, module_id=module_id, quiz_attempts=1)
+        Database.Insert(progress)
+    ELSE
+        progress.quiz_attempts <- progress.quiz_attempts + 1
+    END IF
+    progress.quiz_score <- Max(progress.quiz_score, score_percentage)
+    IF passed THEN
+        progress.status <- "completed"
+        progress.completed_at <- UtcNow()
+    ELSE
+        IF progress.status != "completed" THEN
+            progress.status <- "in_progress"
+        END IF
+    END IF
+    
+    progress.updated_at <- UtcNow()
+    Database.Commit()
+    RETURN {
+        "score": score_percentage,
+        "passed": passed,
+        "attempts": progress.quiz_attempts,
+        "detailed_results": detailed_results
+    }
+END FUNCTION
+7. Security, Session & Operational Specifications
+• 
+CSRF Protection: Global Flask-WTF CSRF validation enforced across all state-altering POST/PUT/DELETE transactions.
+• 
+Cryptographic Password Hashing: PBKDF2-SHA256 with auto-salted key derivation via Werkzeug security primitives.
+• 
+Time-Based 2FA (TOTP): Clinic staff authentication fortified via PyOTP HMAC-SHA1 tokens with QR code setup.
+• 
+Timezone Normalization (PHT): All child age computations, daily checklist timestamps, and clinic bookings strictly normalized to Asia/Manila (PHT) timezone using utils.today_pht().
+• 
+Session Isolation: Strict boundary between parent Flask-Login cookie session and clinical staff session['clinic_account_id'].
+• 
+Content-Length & Upload Validation: Maximum 50 MB upload threshold with rigorous extension allowlists for clinical chat attachments.

@@ -170,167 +170,6 @@
     </div>
   </section>
 
-  <section class="child-newsletter-section mb-4">
-    <div class="dashboard-section-heading">
-      <div>
-        <h5 class="section-label mb-1"><i class="bi bi-envelope-paper me-2"></i>{{ active_child.name }}'s Newsletter</h5>
-        <p class="text-muted small mb-0">Updates written by clinics monitoring {{ active_child.name }}.</p>
-      </div>
-    </div>
-    {% if children|length > 1 %}
-    <div class="newsletter-child-tabs d-flex flex-wrap gap-2 mb-3" role="tablist" aria-label="Choose a child for age-appropriate newsletters">
-      {% for child in children %}
-      <button type="button"
-              class="btn btn-sm {% if child.id == active_child.id %}btn-primary{% else %}btn-outline-primary{% endif %} newsletter-child-tab"
-              data-newsletter-child-id="{{ child.id }}"
-              role="tab"
-              aria-selected="{{ 'true' if child.id == active_child.id else 'false' }}">
-        {{ child.name }} <span class="small">({{ child.age_display }})</span>
-      </button>
-      {% endfor %}
-    </div>
-    {% endif %}
-    <div class="newsletter-feed">
-      {% for newsletter in newsletters %}
-      <article class="newsletter-item">
-        <header class="newsletter-post-header">
-          <span class="newsletter-icon newsletter-icon--announcement" aria-hidden="true">
-            <i class="bi bi-hospital"></i>
-          </span>
-          <span class="newsletter-author">
-            <strong>{{ newsletter.clinic.name }}</strong>
-            <small><i class="bi bi-patch-check-fill" aria-hidden="true"></i> Verified clinic Â· Updated {{ newsletter.updated_at.strftime('%b %d') }}</small>
-          </span>
-        </header>
-        <div class="newsletter-content">
-          <h6 class="newsletter-title">{{ newsletter.title }}</h6>
-          <div class="newsletter-body-wrap">
-            <span class="newsletter-body-text">{{ newsletter.body }}</span>
-            <button type="button" class="newsletter-read-more" aria-expanded="false">See more</button>
-          </div>
-        </div>
-        {% if newsletter.media %}
-        <div class="newsletter-media-preview">
-          {% for media in newsletter.media %}
-          {% if media.media_type == 'image' %}<img src="{{ media.source }}" alt="{{ media.caption or newsletter.title }}" loading="lazy">{% elif media.embed_url %}<div class="newsletter-video-frame"><iframe src="{{ media.embed_url|replace('www.youtube.com', 'www.youtube-nocookie.com') }}" title="{{ media.caption or newsletter.title }}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe><a class="newsletter-video-fallback" href="{{ media.source }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Video not visible? Watch on YouTube</a></div>{% endif %}
-          {% endfor %}
-        </div>
-        {% endif %}
-        <footer class="newsletter-engagement" aria-label="Newsletter engagement">
-          <button type="button"
-                  class="newsletter-engagement-action newsletter-like-button {% if newsletter.id in liked_newsletter_ids %}is-liked{% endif %}"
-                  data-newsletter-id="{{ newsletter.id }}"
-                  aria-pressed="{{ 'true' if newsletter.id in liked_newsletter_ids else 'false' }}">
-            <i class="bi bi-hand-thumbs-{{ 'up-fill' if newsletter.id in liked_newsletter_ids else 'up' }}" aria-hidden="true"></i>
-            Helpful <span class="newsletter-like-count">{{ newsletter.likes|length }}</span>
-          </button>
-          <button type="button" class="newsletter-engagement-action newsletter-comment-toggle"
-                  data-newsletter-id="{{ newsletter.id }}" aria-expanded="false">
-            <i class="bi bi-chat-left-text" aria-hidden="true"></i>
-            Comment <span class="newsletter-comment-count">{{ newsletter.comments|length }}</span>
-          </button>
-        </footer>
-        <div class="newsletter-comments" data-newsletter-id="{{ newsletter.id }}" hidden>
-          <div class="newsletter-comment-list">
-            {% for comment in newsletter.comments %}
-            <div class="newsletter-comment">
-              <strong>{{ comment.user.first_name }} {{ comment.user.last_name }}</strong>
-              <span class="newsletter-comment-time">{{ comment.created_at.strftime('%b %d, %H:%M') }}</span>
-              <p>{{ comment.text }}</p>
-            </div>
-            {% endfor %}
-          </div>
-          <form class="newsletter-comment-form" data-newsletter-id="{{ newsletter.id }}">
-            <label class="visually-hidden" for="newsletter-comment-{{ newsletter.id }}">Add a comment</label>
-            <input id="newsletter-comment-{{ newsletter.id }}" name="text" type="text"
-                   maxlength="2000" placeholder="Share a thought..." required>
-            <button type="submit" class="btn btn-sm btn-primary">Post</button>
-          </form>
-          <div class="newsletter-comment-error" role="alert" hidden></div>
-        </div>
-      </article>
-      {% else %}
-      <div class="dashboard-empty-resource">No clinic-authored newsletters are available for {{ active_child.name }} yet.</div>
-      {% endfor %}
-    </div>
-  </section>
-
-  <!-- Section: Quick Actions -->
-  <h5 class="section-label mb-3">
-    <i class="bi bi-grid-1x2 me-2"></i>Your PaPrep Modules
-  </h5>
-
-  <div class="modules-grid">
-
-    <!-- Dietary & Health Checklist -->
-    <a href="{{ url_for('symptoms.health_checklist') }}" class="module-card module-card--assessment">
-      <div class="module-card-icon"><i class="bi bi-clipboard2-heart-fill"></i></div>
-      <div class="module-card-body">
-        <h5>Dietary &amp; Health Checklist</h5>
-        <p>Track your child's daily nutrition and health habits with an age-appropriate checklist.</p>
-      </div>
-      <div class="module-card-tag">Daily</div>
-      <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
-    </a>
-
-    <!-- Learning Modules -->
-    <a href="{{ url_for('modules.list_modules') }}" class="module-card module-card--parenting">
-      <div class="module-card-icon"><i class="bi bi-book-fill"></i></div>
-      <div class="module-card-body">
-        <h5>Learning Modules</h5>
-        <p>Parenting, nutrition, and safety education with downloadable guides.</p>
-      </div>
-      <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
-    </a>
-
-    <!-- Common Ailments Tracker -->
-    <a href="{{ url_for('symptoms.fever_tracker') }}" class="module-card module-card--symptom">
-      <div class="module-card-icon"><i class="bi bi-thermometer-half"></i></div>
-      <div class="module-card-body">
-        <h5>Common Ailments Tracker</h5>
-        <p>Log temperature readings, cough/cold episodes, and diarrhea episodes — all with age-aware, threshold-based monitoring guidance.</p>
-      </div>
-      <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
-    </a>
-
-    <!-- Clinic Locator -->
-    <a href="{{ url_for('clinic_portal.login') }}" class="module-card module-card--clinic">
-      <div class="module-card-icon"><i class="bi bi-hospital-fill"></i></div>
-      <div class="module-card-body">
-        <h5>Find a Clinic</h5>
-        <p>Locate nearby pediatric clinics on an interactive map with schedules and availability.</p>
-      </div>
-      <div class="module-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
-    </a>
-
-  </div>
-
-  <!-- Quick Tips -->
-  <div class="quick-tip-card mt-4">
-    <div class="quick-tip-icon"><i class="bi bi-lightbulb-fill"></i></div>
-    <div class="quick-tip-body">
-      <strong>PaPrep Tip:</strong>
-      {% if active_child %}
-        {% set m = active_child.age_months %}
-        {% if m < 6 %}
-          Newborns sleep 14â€“17 hours per day in short bursts. Always place your baby on their back to sleep.
-        {% elif m < 12 %}
-          Around 6 months, your baby is ready for solid foods! Start with single-ingredient purÃ©es and introduce one new food every 2â€“3 days.
-        {% elif m < 24 %}
-          Toddlers need 11â€“14 hours of sleep per day. A consistent bedtime routine makes a world of difference.
-        {% elif m < 36 %}
-          Your 2-year-old is developing language rapidly. Reading together every day supports vocabulary and connection.
-        {% elif m < 48 %}
-          At age 3, your child's imagination is blossoming! Unstructured play is essential for creativity and development.
-        {% else %}
-          Preschool-aged children (4â€“5) are developing self-regulation skills. Consistent, gentle boundaries help them thrive.
-        {% endif %}
-      {% else %}
-        Create a child profile to get personalised tips for your child's age and stage.
-      {% endif %}
-    </div>
-  </div>
-
   </div>{# end #dashboardRestContent #}
 </div>
 
@@ -580,43 +419,18 @@
     facade.classList.remove('video-facade');
   });
 
-  /* ── Adaptive Recommendations Topic Filter & Live Fetch ── */
+  /* ── Adaptive Recommendations Topic Filter, Live Fetch & Auto-Refresh ── */
   (function () {
-    const pills = document.querySelectorAll('.rec-topic-pill');
-    const grid = document.getElementById('recArticlesGrid');
+    const pills   = document.querySelectorAll('.rec-topic-pill');
+    const grid    = document.getElementById('recArticlesGrid');
     const spinner = document.getElementById('recLoadingSpinner');
-    const apiUrl = '/api/recommendations';
+    const apiUrl  = '/api/recommendations';
 
-    pills.forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        const topic = pill.getAttribute('data-topic');
-        pills.forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
+    /* Topic cycle order for auto-refresh */
+    const topicCycle = ['all', 'parenting', 'nutrition', 'safety'];
+    let   cycleIndex = 0;
 
-        if (spinner) spinner.style.display = 'block';
-        if (grid) grid.style.opacity = '0.35';
-
-        fetch(apiUrl + '?topic=' + encodeURIComponent(topic))
-          .then(res => {
-            if (!res.ok) throw new Error('API returned status ' + res.status);
-            return res.json();
-          })
-          .then(data => {
-            if (spinner) spinner.style.display = 'none';
-            if (grid) grid.style.opacity = '1';
-
-            if (data.ok && Array.isArray(data.articles)) {
-              renderArticles(data.articles);
-            }
-          })
-          .catch(err => {
-            if (spinner) spinner.style.display = 'none';
-            if (grid) grid.style.opacity = '1';
-            console.error('Failed to load topic articles:', err);
-          });
-      });
-    });
-
+    /* ── Helper: safe HTML escaping ── */
     function escapeHtml(text) {
       if (!text) return '';
       return String(text)
@@ -626,18 +440,14 @@
         .replace(/"/g, '&quot;');
     }
 
-    function renderArticles(articles) {
-      if (!grid) return;
-      if (!articles || articles.length === 0) {
-        grid.innerHTML = '<div class="col-12 py-4 text-center text-muted"><p>No articles found for this topic at the moment.</p></div>';
-        return;
-      }
-
-      grid.innerHTML = articles.map(article => `
-        <div class="col">
+    /* ── Helper: build a single card HTML string ── */
+    function buildCard(article) {
+      return `
+        <div class="col rec-card-animated">
           <article class="rec-card">
             <div class="rec-card-media">
-              <img src="${escapeHtml(article.urlToImage)}" alt="${escapeHtml(article.title)}" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&w=800&q=80';">
+              <img src="${escapeHtml(article.urlToImage)}" alt="${escapeHtml(article.title)}" loading="lazy"
+                   onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&w=800&q=80';">
               <span class="rec-card-badge">${escapeHtml(article.category || 'health')}</span>
             </div>
             <div class="rec-card-body">
@@ -655,9 +465,91 @@
               </div>
             </div>
           </article>
-        </div>
-      `).join('');
+        </div>`;
     }
+
+    /* ── Replace grid entirely (used when user clicks a pill) ── */
+    function renderArticles(articles) {
+      if (!grid) return;
+      if (!articles || articles.length === 0) {
+        grid.innerHTML = '<div class="col-12 py-4 text-center text-muted"><p>No articles found for this topic at the moment.</p></div>';
+        return;
+      }
+      grid.innerHTML = articles.map(buildCard).join('');
+    }
+
+    /* ── Append up to 3 new cards at the bottom (used by auto-refresh) ── */
+    function appendCards(articles) {
+      if (!grid || !articles || articles.length === 0) return;
+      const newHtml = articles.slice(0, 3).map(buildCard).join('');
+      const frag = document.createRange().createContextualFragment(newHtml);
+      /* Animate in */
+      frag.querySelectorAll('.rec-card-animated').forEach(function (el) {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      });
+      grid.appendChild(frag);
+      /* Trigger animation after paint */
+      requestAnimationFrame(function () {
+        grid.querySelectorAll('.rec-card-animated').forEach(function (el) {
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+          el.classList.remove('rec-card-animated');
+        });
+      });
+    }
+
+    /* ── Fetch articles for a given topic ── */
+    function fetchTopic(topic, callback) {
+      fetch(apiUrl + '?topic=' + encodeURIComponent(topic))
+        .then(function (res) {
+          if (!res.ok) throw new Error('API status ' + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          if (data.ok && Array.isArray(data.articles)) callback(data.articles);
+        })
+        .catch(function (err) { console.warn('Recommendations fetch failed:', err); });
+    }
+
+    /* ── Pill click: replace grid with selected topic ── */
+    pills.forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const topic = pill.getAttribute('data-topic');
+        pills.forEach(function (p) { p.classList.remove('active'); });
+        pill.classList.add('active');
+
+        if (spinner) spinner.style.display = 'block';
+        if (grid)    grid.style.opacity = '0.35';
+
+        fetchTopic(topic, function (articles) {
+          if (spinner) spinner.style.display = 'none';
+          if (grid)    grid.style.opacity = '1';
+          renderArticles(articles);
+          /* Sync cycle to current topic */
+          const idx = topicCycle.indexOf(topic);
+          if (idx !== -1) cycleIndex = (idx + 1) % topicCycle.length;
+        });
+      });
+    });
+
+    /* ── Auto-refresh: every 60 s, move to next topic & append 3 cards ── */
+    setInterval(function () {
+      const nextTopic = topicCycle[cycleIndex];
+      cycleIndex = (cycleIndex + 1) % topicCycle.length;
+
+      /* Highlight the matching pill (visual cue) */
+      pills.forEach(function (p) {
+        const match = p.getAttribute('data-topic') === nextTopic;
+        p.classList.toggle('active', match);
+      });
+
+      fetchTopic(nextTopic, function (articles) {
+        appendCards(articles);
+      });
+    }, 60000); /* 60 000 ms = 1 minute */
+
   })();
 </script>
 {% endblock %}
