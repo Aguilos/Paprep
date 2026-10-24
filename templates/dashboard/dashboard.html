@@ -104,27 +104,27 @@
         </h5>
         <p class="text-muted small mb-0" id="recReasonText">{{ rec_context.reason if rec_context else 'Personalized pediatric guidance & parenting news.' }}</p>
       </div>
-      <div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
         {% if rec_context %}
         <span class="recommendations-badge-context {% if rec_context.has_active_ailment %}is-ailment{% endif %}" id="recContextBadge">
           <i class="bi {{ rec_context.badge_icon }} me-1" id="recContextIcon"></i>
           <span id="recContextText">{{ rec_context.badge_text }}</span>
         </span>
         {% endif %}
-      </div>
 
-    <!-- Countdown timer ring -->
-    <div id="recCountdownWrap" title="Next topic refresh" style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-      <svg id="recCountdownRing" width="32" height="32" viewBox="0 0 32 32"
-           style="transform:rotate(-90deg);" aria-hidden="true">
-        <circle cx="16" cy="16" r="13" fill="none" stroke="#e9ecef" stroke-width="3"/>
-        <circle id="recCountdownArc" cx="16" cy="16" r="13" fill="none"
-                stroke="#0d6efd" stroke-width="3"
-                stroke-dasharray="81.68" stroke-dashoffset="0"
-                style="transition:stroke-dashoffset 1s linear;"/>
-      </svg>
-      <span id="recCountdownLabel" style="font-size:11px;color:#6c757d;min-width:28px;">60s</span>
-    </div>
+        <!-- Countdown timer ring -->
+        <div id="recCountdownWrap" title="Next topic refresh in 60s" style="display:flex;align-items:center;gap:6px;flex-shrink:0;background:#f8f9fa;border:1px solid #e9ecef;border-radius:20px;padding:3px 10px 3px 6px;">
+          <svg id="recCountdownRing" width="26" height="26" viewBox="0 0 32 32"
+               style="transform:rotate(-90deg);" aria-hidden="true">
+            <circle cx="16" cy="16" r="13" fill="none" stroke="#e9ecef" stroke-width="3"/>
+            <circle id="recCountdownArc" cx="16" cy="16" r="13" fill="none"
+                    stroke="#0d6efd" stroke-width="3"
+                    stroke-dasharray="81.68" stroke-dashoffset="0"
+                    style="transition:stroke-dashoffset 1s linear;"/>
+          </svg>
+          <span id="recCountdownLabel" style="font-size:11px;font-weight:600;color:#6c757d;min-width:24px;">60s</span>
+        </div>
+      </div>
     </div>
 
     {# Determine the single active pill server-side to avoid multi-active bugs #}
@@ -447,9 +447,14 @@
     const spinner = document.getElementById('recLoadingSpinner');
     const apiUrl  = '/api/recommendations';
 
-    /* Topic cycle order for auto-refresh */
-    const topicCycle = ['all', 'parenting', 'nutrition', 'safety'];
-    let   cycleIndex = 0;
+    /* Build topic cycle dynamically from available pills in the DOM */
+    const topicCycle = Array.from(pills).map(function (p) {
+      return p.getAttribute('data-topic');
+    }).filter(Boolean);
+
+    const initialActive = document.querySelector('.rec-topic-pill.active');
+    const initialTopic = initialActive ? initialActive.getAttribute('data-topic') : (topicCycle[0] || 'all');
+    let cycleIndex = topicCycle.length > 0 ? (topicCycle.indexOf(initialTopic) + 1) % topicCycle.length : 0;
 
     /* ── Helper: safe HTML escaping ── */
     function escapeHtml(text) {
@@ -459,6 +464,17 @@
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+    }
+
+    /* ── Helper: get currently displayed titles to exclude duplicates on refresh ── */
+    function getCurrentTitles() {
+      if (!grid) return [];
+      const titles = [];
+      grid.querySelectorAll('.rec-card-title').forEach(function (el) {
+        const t = (el.textContent || '').trim();
+        if (t) titles.push(t);
+      });
+      return titles;
     }
 
     /* ── Helper: build a single card HTML string ── */
@@ -489,102 +505,73 @@
         </div>`;
     }
 
-    /* ── Replace grid entirely (used when user clicks a pill) ── */
+    /* ── Replace grid entirely with smooth entrance ── */
     function renderArticles(articles) {
       if (!grid) return;
       if (!articles || articles.length === 0) {
         grid.innerHTML = '<div class="col-12 py-4 text-center text-muted"><p>No articles found for this topic at the moment.</p></div>';
+        grid.style.opacity = '1';
         return;
       }
       grid.innerHTML = articles.map(buildCard).join('');
+      grid.style.opacity = '1';
     }
 
-    /* ── Append up to 3 new cards at the bottom (used by auto-refresh) ── */
-    function appendCards(articles) {
-      if (!grid || !articles || articles.length === 0) return;
-      const newHtml = articles.slice(0, 3).map(buildCard).join('');
+    /* ── Fetch articles with support for auto-refresh and exclusion of current titles ── */
+    function fetchTopic(topic, callback, isAuto, excludeTitles) {
+      let url = apiUrl + '?topic=' + encodeURIComponent(topic);
+      if (isAuto) {
+        url += '&auto=1';
+        if (excludeTitles && excludeTitles.length > 0) {
+          url += '&exclude=' + encodeURIComponent(excludeTitles.join('|||'));
+        }
+      }
 
-      /* Insert HTML and capture the live DOM nodes AFTER they are in the tree */
-      const countBefore = grid.children.length;
-      grid.insertAdjacentHTML('beforeend', newHtml);
-      const newEls = Array.from(grid.children).slice(countBefore);
-
-      /* Start from invisible/shifted, then animate to final on next frame */
-      newEls.forEach(function (el) {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(24px)';
-        el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        el.classList.remove('rec-card-animated');
-      });
-      /* Double rAF ensures the browser has committed the initial styles first */
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          newEls.forEach(function (el) {
-            el.style.opacity = '1';
-            el.style.transform = 'translateY(0)';
-          });
-        });
-      });
-    }
-
-    /* ── Fetch articles for a given topic ── */
-    function fetchTopic(topic, callback) {
-      fetch(apiUrl + '?topic=' + encodeURIComponent(topic))
+      fetch(url)
         .then(function (res) {
           if (!res.ok) throw new Error('API status ' + res.status);
           return res.json();
         })
         .then(function (data) {
-          if (data.ok && Array.isArray(data.articles)) callback(data.articles);
+          if (data.ok && Array.isArray(data.articles)) {
+            callback(data.articles);
+          } else {
+            callback([]);
+          }
         })
-        .catch(function (err) { console.warn('Recommendations fetch failed:', err); });
+        .catch(function (err) {
+          console.warn('Recommendations fetch failed:', err);
+          if (spinner) spinner.style.display = 'none';
+          if (grid) grid.style.opacity = '1';
+          isFetching = false;
+        });
     }
 
-    /* ── Pill click: replace grid with selected topic ── */
-    pills.forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        const topic = pill.getAttribute('data-topic');
-        pills.forEach(function (p) { p.classList.remove('active'); });
-        pill.classList.add('active');
-
-        if (spinner) spinner.style.display = 'block';
-        if (grid)    grid.style.opacity = '0.35';
-
-        fetchTopic(topic, function (articles) {
-          if (spinner) spinner.style.display = 'none';
-          if (grid)    grid.style.opacity = '1';
-          renderArticles(articles);
-          resetCountdown();
-          /* Sync cycle to current topic */
-          const idx = topicCycle.indexOf(topic);
-          if (idx !== -1) cycleIndex = (idx + 1) % topicCycle.length;
-        });
-      });
-    });
-
-    /* ── Auto-refresh: every 60 s, rotate topic & REPLACE grid with 6 cards ── */
+    /* ── Synchronized countdown timer ── */
     const REFRESH_INTERVAL = 60; /* seconds */
     let secondsLeft = REFRESH_INTERVAL;
-    const arc     = document.getElementById('recCountdownArc');
-    const label   = document.getElementById('recCountdownLabel');
+    let isFetching = false;
+    const arc   = document.getElementById('recCountdownArc');
+    const label = document.getElementById('recCountdownLabel');
     const FULL_DASH = 81.68; /* 2 * PI * r (r=13) */
+
+    function updateCountdownVisual(sec) {
+      if (label) label.textContent = sec + 's';
+      if (arc) {
+        const progress = 1 - (sec / REFRESH_INTERVAL);
+        arc.style.strokeDashoffset = String(FULL_DASH * progress);
+      }
+    }
 
     function resetCountdown() {
       secondsLeft = REFRESH_INTERVAL;
-      if (arc)   arc.style.strokeDashoffset = '0';
-      if (label) label.textContent = REFRESH_INTERVAL + 's';
+      updateCountdownVisual(secondsLeft);
     }
 
-    /* 1-second tick for the visual ring */
-    setInterval(function () {
-      secondsLeft = Math.max(0, secondsLeft - 1);
-      const progress = 1 - (secondsLeft / REFRESH_INTERVAL);
-      if (arc)   arc.style.strokeDashoffset = String(FULL_DASH * progress);
-      if (label) label.textContent = secondsLeft + 's';
-    }, 1000);
+    function triggerAutoRefresh() {
+      if (isFetching || topicCycle.length === 0) return;
+      isFetching = true;
 
-    /* 60-second topic rotation: replace grid entirely */
-    setInterval(function () {
       const nextTopic = topicCycle[cycleIndex];
       cycleIndex = (cycleIndex + 1) % topicCycle.length;
 
@@ -593,17 +580,59 @@
         p.classList.toggle('active', p.getAttribute('data-topic') === nextTopic);
       });
 
-      /* Show spinner, fade grid out */
+      /* Collect currently visible article titles so backend guarantees 100% NEW ones */
+      const currentTitles = getCurrentTitles();
+
+      /* Visual loading state */
       if (spinner) spinner.style.display = 'flex';
-      if (grid)    { grid.style.opacity = '0.3'; grid.style.transition = 'opacity 0.4s'; }
+      if (grid) {
+        grid.style.transition = 'opacity 0.3s ease';
+        grid.style.opacity = '0.35';
+      }
 
       fetchTopic(nextTopic, function (articles) {
         if (spinner) spinner.style.display = 'none';
-        if (grid)    { grid.style.opacity = '1'; }
-        renderArticles(articles); /* REPLACE — no off-topic bleed */
+        renderArticles(articles);
+        isFetching = false;
         resetCountdown();
+      }, true, currentTitles);
+    }
+
+    /* Pill click: replace grid with selected topic immediately */
+    pills.forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        const topic = pill.getAttribute('data-topic');
+        pills.forEach(function (p) { p.classList.remove('active'); });
+        pill.classList.add('active');
+
+        if (spinner) spinner.style.display = 'flex';
+        if (grid) {
+          grid.style.transition = 'opacity 0.3s ease';
+          grid.style.opacity = '0.35';
+        }
+
+        isFetching = true;
+        fetchTopic(topic, function (articles) {
+          if (spinner) spinner.style.display = 'none';
+          renderArticles(articles);
+          isFetching = false;
+          resetCountdown();
+          /* Next countdown trigger will advance to the topic following this one */
+          const idx = topicCycle.indexOf(topic);
+          if (idx !== -1) cycleIndex = (idx + 1) % topicCycle.length;
+        }, false);
       });
-    }, REFRESH_INTERVAL * 1000);
+    });
+
+    /* Single synchronized 1-second ticker */
+    setInterval(function () {
+      if (isFetching) return;
+      secondsLeft = Math.max(0, secondsLeft - 1);
+      updateCountdownVisual(secondsLeft);
+      if (secondsLeft <= 0) {
+        triggerAutoRefresh();
+      }
+    }, 1000);
 
   })();
 </script>

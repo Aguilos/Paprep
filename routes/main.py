@@ -340,7 +340,9 @@ def get_recommendations_api():
     else:
         target_topic = topic
 
-    articles = fetch_news_articles(target_topic, limit=6)
+    auto_refresh = request.args.get('auto', '').lower() in ('1', 'true', 'yes')
+    exclude_param = request.args.get('exclude', '').strip()
+    articles = fetch_news_articles(target_topic, limit=6, auto_refresh=auto_refresh, exclude_titles=exclude_param)
     return jsonify({
         'ok': True,
         'context': rec_context,

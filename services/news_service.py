@@ -1,5 +1,6 @@
 import os
 import time
+import random
 import logging
 from datetime import datetime, timedelta
 import requests
@@ -18,12 +19,12 @@ FALLBACK_IMAGES = {
     'general': 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&w=800&q=80',
 }
 
-# Rich curated fallback articles if NewsAPI is offline or rate-limited
+# Rich curated fallback articles (60 high-quality pediatric guides across all categories)
 CURATED_FALLBACK_ARTICLES = {
     'parenting': [
         {
             'title': 'Positive Parenting: Building Emotional Resilience in Young Children',
-            'description': 'Child psychologists share core techniques for validating toddlers’ emotions while setting calm, consistent developmental boundaries at home.',
+            'description': 'Child psychologists share core techniques for validating toddlers\' emotions while setting calm, consistent developmental boundaries at home.',
             'source': 'American Academy of Pediatrics',
             'url': 'https://www.healthychildren.org/English/family-life/family-dynamics/communication-discipline/Pages/Positive-Discipline-and-Child-Guidance.aspx',
             'urlToImage': 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=800&q=80',
@@ -73,6 +74,60 @@ CURATED_FALLBACK_ARTICLES = {
             'url': 'https://www.zerotothree.org/resource/attachment-and-bonding/',
             'urlToImage': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?auto=format&fit=crop&w=800&q=80',
             'publishedAt': '2026-10-02T10:00:00Z',
+            'category': 'parenting',
+        },
+        {
+            'title': 'Fostering Independence in Preschoolers: Chores and Daily Choices',
+            'description': 'Empowering toddlers and preschoolers with age-appropriate responsibility fosters intrinsic confidence, problem solving, and cooperativeness.',
+            'source': 'Child Development Institute',
+            'url': 'https://www.zerotothree.org/resource/fostering-independence-in-early-childhood/',
+            'urlToImage': 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-28T09:15:00Z',
+            'category': 'parenting',
+        },
+        {
+            'title': 'Social-Emotional Milestones: How Toddlers Learn Empathy and Sharing',
+            'description': 'Insights into the neurobiology of early childhood friendships, turn-taking development, and guiding toddlers through conflict peacefully.',
+            'source': 'American Psychological Association',
+            'url': 'https://www.apa.org/topics/parenting/emotion-regulation',
+            'urlToImage': 'https://images.unsplash.com/photo-1485546246426-74dc88dec4d9?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-25T11:40:00Z',
+            'category': 'parenting',
+        },
+        {
+            'title': 'Separation Anxiety in Early Childhood: Gentle Transition Techniques',
+            'description': 'Pediatric strategies for smooth daycare drop-offs, reassuring goodbye rituals, and helping your child develop internal coping mechanisms.',
+            'source': 'HealthyChildren.org',
+            'url': 'https://www.healthychildren.org/English/ages-stages/toddler/Pages/Soothing-Your-Childs-Separation-Anxiety.aspx',
+            'urlToImage': 'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-22T08:20:00Z',
+            'category': 'parenting',
+        },
+        {
+            'title': 'Sibling Rivalry and New Baby Adjustments: Preparing Your Child',
+            'description': 'Actionable steps to help an older sibling feel valued and secure when welcoming a newborn brother or sister into the household.',
+            'source': 'Seattle Children\'s Hospital',
+            'url': 'https://www.seattlechildrens.org/health-safety/keeping-kids-healthy/development/sibling-rivalry/',
+            'urlToImage': 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-18T13:00:00Z',
+            'category': 'parenting',
+        },
+        {
+            'title': 'Speech and Language Milestones: When to Seek Speech Therapy',
+            'description': 'A clear developmental guide tracking phoneme production, vocabulary count, and sentence formation from 12 to 36 months.',
+            'source': 'ASHA Pediatric Speech',
+            'url': 'https://www.asha.org/public/speech/development/',
+            'urlToImage': 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-15T10:10:00Z',
+            'category': 'parenting',
+        },
+        {
+            'title': 'Constructive Discipline: Replacing Time-Outs with Connection',
+            'description': 'Why neuroscientists suggest collaborative problem-solving over isolation when helping dysregulated young children understand household boundaries.',
+            'source': 'Harvard Center on the Developing Child',
+            'url': 'https://developingchild.harvard.edu/resources/inbrief-the-science-of-early-childhood-development/',
+            'urlToImage': 'https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-12T14:30:00Z',
             'category': 'parenting',
         },
     ],
@@ -131,6 +186,60 @@ CURATED_FALLBACK_ARTICLES = {
             'publishedAt': '2026-10-03T11:30:00Z',
             'category': 'nutrition',
         },
+        {
+            'title': 'Gut Health and Probiotics: Building Your Child\'s Microbiome',
+            'description': 'Natural food sources of prebiotic fiber and probiotic cultures like yogurt and kefir that support immunity and healthy digestion in toddlers.',
+            'source': 'Pediatric Gastroenterology Review',
+            'url': 'https://www.healthychildren.org/English/healthy-living/nutrition/Pages/Probiotics.aspx',
+            'urlToImage': 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-30T10:00:00Z',
+            'category': 'nutrition',
+        },
+        {
+            'title': 'Omega-3 DHA for Brain Development: Fish and Plant Sources',
+            'description': 'Why fatty acids are crucial building blocks for retinal and brain tissue, plus safe low-mercury seafood recommendations for toddlers.',
+            'source': 'American Heart Association Pediatrics',
+            'url': 'https://www.eatright.org/food/nutrition/dietary-guidelines-and-myplate/fish-and-kids',
+            'urlToImage': 'https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-26T14:15:00Z',
+            'category': 'nutrition',
+        },
+        {
+            'title': 'Transitioning to Cow\'s Milk or Plant Alternatives: What to Choose',
+            'description': 'Comparing whole cow\'s milk, fortified soy milk, and oat beverages for fat, protein, and calcium content at the 12-month milestone.',
+            'source': 'American Academy of Pediatrics',
+            'url': 'https://www.healthychildren.org/English/healthy-living/nutrition/Pages/Recommended-Drinks-for-Young-Children-Ages-0-5.aspx',
+            'urlToImage': 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-21T09:30:00Z',
+            'category': 'nutrition',
+        },
+        {
+            'title': 'Sensory-Friendly Mealtime: Overcoming Texture Aversions',
+            'description': 'Occupational therapists offer low-pressure exposure ladders for children who struggle with slimy, crunchy, or mixed-texture foods.',
+            'source': 'Child Mind Institute Nutrition',
+            'url': 'https://childmind.org/article/selective-eating-children/',
+            'urlToImage': 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-17T11:00:00Z',
+            'category': 'nutrition',
+        },
+        {
+            'title': 'Plant-Based Toddler Meals: Ensuring Complete Proteins',
+            'description': 'How pairing beans, lentils, whole grains, and seeds ensures growing children receive all nine essential amino acids.',
+            'source': 'Academy of Nutrition and Dietetics',
+            'url': 'https://www.eatright.org/food/nutrition/vegetarian-and-special-diets/vegetarian-diets-for-children',
+            'urlToImage': 'https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-13T15:20:00Z',
+            'category': 'nutrition',
+        },
+        {
+            'title': 'Hydration Guidelines: How Much Water Does Your Toddler Need?',
+            'description': 'Daily ounce recommendations by age group, recognizing mild dehydration, and creating fun water-infusion ideas without juice concentrate.',
+            'source': 'CDC Healthy Schools and Early Care',
+            'url': 'https://www.cdc.gov/nutrition/data-statistics/plain-water-the-healthier-choice.html',
+            'urlToImage': 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-08T08:50:00Z',
+            'category': 'nutrition',
+        },
     ],
     'safety': [
         {
@@ -187,6 +296,60 @@ CURATED_FALLBACK_ARTICLES = {
             'publishedAt': '2026-10-07T10:15:00Z',
             'category': 'safety',
         },
+        {
+            'title': 'Burn and Scald Prevention: Kitchen and Water Heater Safety',
+            'description': 'Setting household water heaters below 120°F (49°C), stove knob guards, and establishing a three-foot toddler-free zone around ovens.',
+            'source': 'Safe Kids Worldwide',
+            'url': 'https://www.safekids.org/safetytips/field_risks/burns-and-scalds',
+            'urlToImage': 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-29T12:00:00Z',
+            'category': 'safety',
+        },
+        {
+            'title': 'Pediatric First Aid Kit: What Every Family Home Needs',
+            'description': 'Pediatrician-curated checklist of bandages, thermometers, antiseptic solutions, antihistamines, and emergency poison control contact cards.',
+            'source': 'American Academy of Pediatrics',
+            'url': 'https://www.healthychildren.org/English/safety-prevention/at-home/Pages/First-Aid-Kit-Chock-Full-of-Useful-Items.aspx',
+            'urlToImage': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-24T16:00:00Z',
+            'category': 'safety',
+        },
+        {
+            'title': 'Window and Balcony Safety: Proven Guards and Locks',
+            'description': 'Why window screens are not designed to stop falls, and how certified 4-inch stop-locks prevent high-risk falls in multistory homes.',
+            'source': 'National Safety Council',
+            'url': 'https://www.nsc.org/community-safety/safety-topics/child-safety/window-safety',
+            'urlToImage': 'https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-19T08:30:00Z',
+            'category': 'safety',
+        },
+        {
+            'title': 'Household Poison Control: Securing Medicines and Cleaners',
+            'description': 'Storing prescription medicines out of reach and sight, child-resistant caps, and immediate steps if a child ingests a cleaning compound.',
+            'source': 'American Association of Poison Control Centers',
+            'url': 'https://www.poison.org/articles/keep-kids-safe-from-household-poisons',
+            'urlToImage': 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-14T11:45:00Z',
+            'category': 'safety',
+        },
+        {
+            'title': 'Button Battery and Magnet Hazards: Critical Warning for Parents',
+            'description': 'High-power button batteries and neodymium magnets create severe internal tissue erosion within two hours if swallowed. Here\'s what to secure.',
+            'source': 'CPSC Child Safety',
+            'url': 'https://www.cpsc.gov/Safety-Education/Safety-Education-Centers/Button-Battery-Safety',
+            'urlToImage': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-10T14:20:00Z',
+            'category': 'safety',
+        },
+        {
+            'title': 'Playground and Helmet Safety: Preventing Head Injuries',
+            'description': 'Guidelines on impact-absorbing wood mulch or rubber surfacing, properly fitted multi-sport helmets, and supervision during climbing play.',
+            'source': 'CDC Injury Prevention',
+            'url': 'https://www.cdc.gov/heads-up/parents/index.html',
+            'urlToImage': 'https://images.unsplash.com/photo-1520637836862-4d197d17c93a?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-05T09:10:00Z',
+            'category': 'safety',
+        },
     ],
     'fever': [
         {
@@ -201,10 +364,46 @@ CURATED_FALLBACK_ARTICLES = {
         {
             'title': 'Hydration During Fevers: Preventing Fluid Loss in Toddlers',
             'description': 'Practical ways to offer small, frequent sips of electrolyte solutions and breastmilk to keep children hydrated while their temperature is elevated.',
-            'source': 'Children’s Hospital Health',
+            'source': 'Children\'s Hospital Health',
             'url': 'https://www.seattlechildrens.org/conditions/a-z/fever/',
             'urlToImage': 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=800&q=80',
             'publishedAt': '2026-10-12T11:00:00Z',
+            'category': 'fever',
+        },
+        {
+            'title': 'Febrile Seizures: Causes, Warning Signs, and Emergency First Aid',
+            'description': 'While frightening to witness, most febrile seizures cause no long-term harm. Pediatric neurologists walk through exact response steps.',
+            'source': 'National Institute of Neurological Disorders',
+            'url': 'https://www.ninds.nih.gov/health-information/disorders/febrile-seizures',
+            'urlToImage': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-10-01T08:15:00Z',
+            'category': 'fever',
+        },
+        {
+            'title': 'When to Call the Doctor for a Fever: Age-by-Age Guide',
+            'description': 'Specific temperature thresholds for infants under 3 months, toddlers, and older kids, plus behavioral red flags requiring pediatric care.',
+            'source': 'Mayo Clinic Pediatrics',
+            'url': 'https://www.mayoclinic.org/diseases-conditions/fever/in-depth/fever/art-20050997',
+            'urlToImage': 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-23T14:40:00Z',
+            'category': 'fever',
+        },
+        {
+            'title': 'Acetaminophen vs. Ibuprofen: Weight-Based Dosing Safety',
+            'description': 'Why weight is far more accurate than age when measuring antipyretic suspensions, and why alternating medications requires pediatric clearance.',
+            'source': 'HealthyChildren.org',
+            'url': 'https://www.healthychildren.org/English/safety-prevention/at-home/medication-safety/Pages/How-to-Take-a-Childs-Temperature.aspx',
+            'urlToImage': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-16T10:00:00Z',
+            'category': 'fever',
+        },
+        {
+            'title': 'Dressing a Feverish Child: Why Bundling Up Can Be Dangerous',
+            'description': 'Pediatricians explain how excessive blankets trap radiant body heat and elevate core temperature, recommending light cotton clothing instead.',
+            'source': 'Cincinnati Children\'s Hospital',
+            'url': 'https://www.cincinnatichildrens.org/health/f/fever',
+            'urlToImage': 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-11T12:20:00Z',
             'category': 'fever',
         },
     ],
@@ -227,6 +426,42 @@ CURATED_FALLBACK_ARTICLES = {
             'publishedAt': '2026-10-10T09:30:00Z',
             'category': 'cough',
         },
+        {
+            'title': 'Nighttime Cough Relief: Elevation and Ultrasonic Humidifiers',
+            'description': 'How cool-mist humidification soothes swollen bronchial tissues and prevents dry airway spasms during sleep without medication.',
+            'source': 'Children\'s National Hospital',
+            'url': 'https://childrensnational.org/visit/conditions-and-treatments/airway-lungs/cough',
+            'urlToImage': 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-27T15:10:00Z',
+            'category': 'cough',
+        },
+        {
+            'title': 'Wheezing and Bronchiolitis: When Cough Signals Airway Restriction',
+            'description': 'Understanding RSV and bronchiolitis in toddlers, monitoring respiratory rates, and recognizing when inhaler therapy or oxygen is needed.',
+            'source': 'CDC Respiratory Viruses',
+            'url': 'https://www.cdc.gov/rsv/infants-young-children/index.html',
+            'urlToImage': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-20T11:45:00Z',
+            'category': 'cough',
+        },
+        {
+            'title': 'Post-Viral Lingering Cough: Expected Recovery Timelines',
+            'description': 'Why a sensitive airway cough can persist for 3 to 4 weeks after an infection has cleared, and how to tell if it has turned into pneumonia.',
+            'source': 'American Lung Association',
+            'url': 'https://www.lung.org/lung-health-diseases/lung-disease-lookup/coughs/coughs-in-children',
+            'urlToImage': 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-15T09:00:00Z',
+            'category': 'cough',
+        },
+        {
+            'title': 'Recognizing Respiratory Distress: Retractions and Nasal Flaring',
+            'description': 'A visual guide for parents on identifying work of breathing: belly breathing, sternal retractions, and grunting that require urgent care.',
+            'source': 'Seattle Children\'s Emergency Care',
+            'url': 'https://www.seattlechildrens.org/conditions/a-z/breathing-difficulty/',
+            'urlToImage': 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-07T13:30:00Z',
+            'category': 'cough',
+        },
     ],
     'colds': [
         {
@@ -247,6 +482,42 @@ CURATED_FALLBACK_ARTICLES = {
             'publishedAt': '2026-10-11T08:45:00Z',
             'category': 'colds',
         },
+        {
+            'title': 'Ear Infection Signs After a Cold: When to Check With an ENT',
+            'description': 'Ear tugging, irritability while lying flat, and renewed fever after cold symptoms improve can indicate acute otitis media.',
+            'source': 'AAP Ear Health',
+            'url': 'https://www.healthychildren.org/English/health-issues/conditions/ear-nose-throat/Pages/Middle-Ear-Infections.aspx',
+            'urlToImage': 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-28T16:15:00Z',
+            'category': 'colds',
+        },
+        {
+            'title': 'Soothing Sore Throats: Warm Broths, Fruit Popsicles and Hydration',
+            'description': 'Simple cold and warm soothing therapies that numb irritated pharyngeal tissues and maintain fluid intake during upper viral infections.',
+            'source': 'Mayo Clinic Health',
+            'url': 'https://www.mayoclinic.org/diseases-conditions/sore-throat/diagnosis-treatment/drc-20351640',
+            'urlToImage': 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-22T10:30:00Z',
+            'category': 'colds',
+        },
+        {
+            'title': 'Preventing Secondary Infections: Hand Hygiene for Littles',
+            'description': 'Fun games and song routines that make handwashing effective and enjoyable, reducing the spread of rhinovirus in home environments.',
+            'source': 'World Health Organization',
+            'url': 'https://www.who.int/campaigns/world-hand-hygiene-day',
+            'urlToImage': 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-17T14:00:00Z',
+            'category': 'colds',
+        },
+        {
+            'title': 'Sleep Strategies for Congested Toddlers: Positioning and Vapor',
+            'description': 'Why slight head elevation and pre-bed warm steam baths help congested toddlers breathe comfortably through their noses at night.',
+            'source': 'Sleep Foundation Pediatrics',
+            'url': 'https://www.sleepfoundation.org/baby-sleep/sick-baby-sleep',
+            'urlToImage': 'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-09T08:00:00Z',
+            'category': 'colds',
+        },
     ],
     'diarrhea': [
         {
@@ -265,6 +536,42 @@ CURATED_FALLBACK_ARTICLES = {
             'url': 'https://www.mayoclinic.org/diseases-conditions/viral-gastroenteritis/diagnosis-treatment/drc-20378852',
             'urlToImage': 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=800&q=80',
             'publishedAt': '2026-10-09T13:10:00Z',
+            'category': 'diarrhea',
+        },
+        {
+            'title': 'Rotavirus and Norovirus in Toddlers: Containment and Disinfection',
+            'description': 'Effective cleaning protocols with chlorine bleach dilution, hand hygiene, and food safety measures to prevent household transmission.',
+            'source': 'CDC Viral Gastroenteritis',
+            'url': 'https://www.cdc.gov/norovirus/index.html',
+            'urlToImage': 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-26T12:00:00Z',
+            'category': 'diarrhea',
+        },
+        {
+            'title': 'Recognizing Severe Dehydration: Tears, Diapers, and Fontanelle',
+            'description': 'Clinical markers of dehydration in young children: lack of tears when crying, fewer than 3 wet diapers in 24 hours, and lethargy.',
+            'source': 'AAP Pediatric Emergency Guidance',
+            'url': 'https://www.healthychildren.org/English/health-issues/injuries-emergencies/Pages/Dehydration.aspx',
+            'urlToImage': 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-18T10:15:00Z',
+            'category': 'diarrhea',
+        },
+        {
+            'title': 'Probiotics During Diarrhea: Shortening the Duration of Symptoms',
+            'description': 'Clinical trials demonstrate specific strains like Lactobacillus rhamnosus GG can reduce viral diarrhea duration by up to 24 hours.',
+            'source': 'European Society for Paediatric Gastroenterology (ESPGHAN)',
+            'url': 'https://www.espghan.org/guidelines',
+            'urlToImage': 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-12T15:30:00Z',
+            'category': 'diarrhea',
+        },
+        {
+            'title': 'When Diarrhea Requires Stool Testing: Warning Signs to Watch For',
+            'description': 'Blood or mucus in stools, persistent high fever, or symptoms lasting over 7 days warrant microbiological testing and pediatric review.',
+            'source': 'Johns Hopkins Medicine',
+            'url': 'https://www.hopkinsmedicine.org/health/conditions-and-diseases/diarrhea-in-children',
+            'urlToImage': 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=800&q=80',
+            'publishedAt': '2026-09-06T09:40:00Z',
             'category': 'diarrhea',
         },
     ],
@@ -295,16 +602,27 @@ def _get_topic_query(topic):
     return mapping.get(topic, mapping['all'])
 
 
-def fetch_news_articles(topic='nutrition', limit=6):
+def fetch_news_articles(topic='nutrition', limit=6, auto_refresh=False, exclude_titles=None):
     """
     Fetch articles for a topic using NewsAPI with in-memory caching and
     curated fallbacks if offline or rate-limited.
+    Supports auto_refresh and exclude_titles to guarantee genuinely new articles
+    on each timer trigger or tab switch.
     """
     topic_key = (topic or 'all').lower()
-    cache_key = (topic_key, limit)
     now = time.time()
 
-    if cache_key in _NEWS_CACHE:
+    # Parse excluded titles if provided
+    exclude_set = set()
+    if exclude_titles:
+        if isinstance(exclude_titles, str):
+            exclude_set = {t.strip().lower() for t in exclude_titles.split('|||') if t.strip()}
+        elif isinstance(exclude_titles, (list, tuple, set)):
+            exclude_set = {str(t).strip().lower() for t in exclude_titles if str(t).strip()}
+
+    cache_key = (topic_key, limit)
+    # Only return cache if not auto-refreshing and no specific excluded titles requested
+    if not auto_refresh and not exclude_set and cache_key in _NEWS_CACHE:
         cached_time, cached_articles = _NEWS_CACHE[cache_key]
         if now - cached_time < CACHE_TTL_SECONDS and cached_articles:
             return cached_articles
@@ -319,7 +637,7 @@ def fetch_news_articles(topic='nutrition', limit=6):
             params = {
                 'q': query,
                 'apiKey': api_key,
-                'pageSize': max(limit, 10),
+                'pageSize': max(limit * 3, 20),
                 'language': 'en',
                 'sortBy': 'relevancy',
             }
@@ -331,6 +649,8 @@ def fetch_news_articles(topic='nutrition', limit=6):
                     title = (item.get('title') or '').strip()
                     desc = (item.get('description') or '').strip()
                     if not title or title == '[Removed]' or desc == '[Removed]':
+                        continue
+                    if title.lower() in exclude_set:
                         continue
                     
                     img = item.get('urlToImage')
@@ -366,23 +686,61 @@ def fetch_news_articles(topic='nutrition', limit=6):
 
     # Fallback to curated articles if API returned empty or failed
     if not articles:
-        fallback_pool = CURATED_FALLBACK_ARTICLES.get(topic_key)
-        if not fallback_pool:
-            if topic_key in ('fever', 'cough', 'colds', 'diarrhea', 'ailment'):
+        # Build comprehensive pool for the topic
+        if topic_key == 'all':
+            fallback_pool = (
+                CURATED_FALLBACK_ARTICLES.get('parenting', []) +
+                CURATED_FALLBACK_ARTICLES.get('nutrition', []) +
+                CURATED_FALLBACK_ARTICLES.get('safety', [])
+            )
+        elif topic_key in ('fever', 'cough', 'colds', 'diarrhea', 'ailment'):
+            if topic_key in CURATED_FALLBACK_ARTICLES:
+                fallback_pool = list(CURATED_FALLBACK_ARTICLES[topic_key])
+                for other in ('fever', 'colds', 'cough', 'diarrhea'):
+                    if other != topic_key:
+                        fallback_pool.extend(CURATED_FALLBACK_ARTICLES.get(other, []))
+            else:
                 fallback_pool = (
                     CURATED_FALLBACK_ARTICLES.get('fever', []) +
                     CURATED_FALLBACK_ARTICLES.get('colds', []) +
-                    CURATED_FALLBACK_ARTICLES.get('cough', [])
+                    CURATED_FALLBACK_ARTICLES.get('cough', []) +
+                    CURATED_FALLBACK_ARTICLES.get('diarrhea', [])
                 )
-            else:
-                fallback_pool = (
-                    CURATED_FALLBACK_ARTICLES.get('parenting', []) +
-                    CURATED_FALLBACK_ARTICLES.get('nutrition', []) +
-                    CURATED_FALLBACK_ARTICLES.get('safety', [])
-                )
-        articles = list(fallback_pool)[:limit]
+        else:
+            fallback_pool = list(CURATED_FALLBACK_ARTICLES.get(topic_key, []))
+            if len(fallback_pool) < limit:
+                for other in ('parenting', 'nutrition', 'safety'):
+                    if other != topic_key:
+                        fallback_pool.extend(CURATED_FALLBACK_ARTICLES.get(other, []))
 
-    _NEWS_CACHE[cache_key] = (now, articles)
+        # Filter out excluded titles if any
+        if exclude_set:
+            fresh_candidates = [
+                a for a in fallback_pool
+                if (a.get('title') or '').strip().lower() not in exclude_set
+            ]
+            if len(fresh_candidates) >= limit:
+                articles = fresh_candidates[:limit]
+            else:
+                # If fresh pool exhausted, take all fresh candidates plus remaining items from pool
+                seen_titles = {(a.get('title') or '').strip().lower() for a in fresh_candidates}
+                remaining = [
+                    a for a in fallback_pool
+                    if (a.get('title') or '').strip().lower() not in seen_titles
+                ]
+                articles = (fresh_candidates + remaining)[:limit]
+        elif auto_refresh:
+            # If auto-refresh without explicit exclusions, shuffle or rotate
+            shuffled = list(fallback_pool)
+            random.seed(int(time.time() // 60))  # Consistent within the minute, changes each minute
+            random.shuffle(shuffled)
+            articles = shuffled[:limit]
+        else:
+            articles = list(fallback_pool)[:limit]
+
+    if not auto_refresh and not exclude_set:
+        _NEWS_CACHE[cache_key] = (now, articles)
+
     return articles
 
 
