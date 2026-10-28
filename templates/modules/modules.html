@@ -42,6 +42,7 @@
 
       {# ── Nutrition Guide ── #}
       {% set gm = given_modules.get('nutrition') %}
+      {% set gm_tl = given_modules.get('nutrition_tagalog') %}
       {% if gm %}
       <div class="col-md-6 col-lg-4">
         <div class="learning-card">
@@ -63,12 +64,33 @@
                     class="btn btn-sm flex-grow-1 given-module-play"
                     style="background-color:#5CAD5C;color:#fff;border-color:#5CAD5C;"
                     data-given-id="nutrition"
+                    data-tagalog-id="nutrition_tagalog"
                     data-module-title="{{ gm.title }}"
+                    data-tagalog-title="{{ gm_tl.title if gm_tl else 'Gabay sa Nutrisyon' }}"
                     data-slide-count="{{ gm.slide_count }}"
                     data-slide-alts="{{ gm.slides|map(attribute='alt')|list|tojson|forceescape }}"
-                    data-slide-base="{{ url_for('modules.given_module_slide', given_id='nutrition', slide_number=1).rsplit('/', 1)[0] }}">
+                    data-tagalog-slide-alts="{{ (gm_tl.slides|map(attribute='alt')|list if gm_tl else [])|tojson|forceescape }}"
+                    data-slide-base="{{ url_for('modules.given_module_slide', given_id='nutrition', slide_number=1).rsplit('/', 1)[0] }}"
+                    data-tagalog-slide-base="{{ url_for('modules.given_module_slide', given_id='nutrition_tagalog', slide_number=1).rsplit('/', 1)[0] if gm_tl else '' }}">
               <i class="bi bi-play-fill me-1"></i>Play
             </button>
+            {% if gm_tl %}
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary given-module-translate"
+                    title="Tagalog version ({{ gm_tl.title }})"
+                    aria-label="View Tagalog version"
+                    data-given-id="nutrition"
+                    data-tagalog-id="nutrition_tagalog"
+                    data-module-title="{{ gm.title }}"
+                    data-tagalog-title="{{ gm_tl.title }}"
+                    data-slide-count="{{ gm.slide_count }}"
+                    data-slide-alts="{{ gm.slides|map(attribute='alt')|list|tojson|forceescape }}"
+                    data-tagalog-slide-alts="{{ gm_tl.slides|map(attribute='alt')|list|tojson|forceescape }}"
+                    data-slide-base="{{ url_for('modules.given_module_slide', given_id='nutrition', slide_number=1).rsplit('/', 1)[0] }}"
+                    data-tagalog-slide-base="{{ url_for('modules.given_module_slide', given_id='nutrition_tagalog', slide_number=1).rsplit('/', 1)[0] }}">
+              <i class="bi bi-translate"></i>
+            </button>
+            {% endif %}
             <a href="{{ url_for('modules.given_module_viewer', given_id='nutrition') }}"
                class="btn btn-sm btn-outline-secondary" title="Open viewer page">
               <i class="bi bi-box-arrow-up-right"></i>
@@ -80,6 +102,7 @@
 
       {# ── Parenting Guide ── #}
       {% set gm = given_modules.get('parenting') %}
+      {% set gm_tl = given_modules.get('parenting_tagalog') %}
       {% if gm %}
       <div class="col-md-6 col-lg-4">
         <div class="learning-card">
@@ -101,12 +124,33 @@
                     class="btn btn-sm flex-grow-1 given-module-play"
                     style="background-color:#4E97D9;color:#fff;border-color:#4E97D9;"
                     data-given-id="parenting"
+                    data-tagalog-id="parenting_tagalog"
                     data-module-title="{{ gm.title }}"
+                    data-tagalog-title="{{ gm_tl.title if gm_tl else 'Gabay sa Pagpapalaki' }}"
                     data-slide-count="{{ gm.slide_count }}"
                     data-slide-alts="{{ gm.slides|map(attribute='alt')|list|tojson|forceescape }}"
-                    data-slide-base="{{ url_for('modules.given_module_slide', given_id='parenting', slide_number=1).rsplit('/', 1)[0] }}">
+                    data-tagalog-slide-alts="{{ (gm_tl.slides|map(attribute='alt')|list if gm_tl else [])|tojson|forceescape }}"
+                    data-slide-base="{{ url_for('modules.given_module_slide', given_id='parenting', slide_number=1).rsplit('/', 1)[0] }}"
+                    data-tagalog-slide-base="{{ url_for('modules.given_module_slide', given_id='parenting_tagalog', slide_number=1).rsplit('/', 1)[0] if gm_tl else '' }}">
               <i class="bi bi-play-fill me-1"></i>Play
             </button>
+            {% if gm_tl %}
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary given-module-translate"
+                    title="Tagalog version ({{ gm_tl.title }})"
+                    aria-label="View Tagalog version"
+                    data-given-id="parenting"
+                    data-tagalog-id="parenting_tagalog"
+                    data-module-title="{{ gm.title }}"
+                    data-tagalog-title="{{ gm_tl.title }}"
+                    data-slide-count="{{ gm.slide_count }}"
+                    data-slide-alts="{{ gm.slides|map(attribute='alt')|list|tojson|forceescape }}"
+                    data-tagalog-slide-alts="{{ gm_tl.slides|map(attribute='alt')|list|tojson|forceescape }}"
+                    data-slide-base="{{ url_for('modules.given_module_slide', given_id='parenting', slide_number=1).rsplit('/', 1)[0] }}"
+                    data-tagalog-slide-base="{{ url_for('modules.given_module_slide', given_id='parenting_tagalog', slide_number=1).rsplit('/', 1)[0] }}">
+              <i class="bi bi-translate"></i>
+            </button>
+            {% endif %}
             <a href="{{ url_for('modules.given_module_viewer', given_id='parenting') }}"
                class="btn btn-sm btn-outline-secondary" title="Open viewer page">
               <i class="bi bi-box-arrow-up-right"></i>
@@ -118,6 +162,7 @@
 
       {# ── Safety Guide ── #}
       {% set gm = given_modules.get('safety') %}
+      {% set gm_tl = given_modules.get('safety_tagalog') %}
       {% if gm %}
       <div class="col-md-6 col-lg-4">
         <div class="learning-card">
@@ -139,12 +184,33 @@
                     class="btn btn-sm flex-grow-1 given-module-play"
                     style="background-color:#FF8C42;color:#fff;border-color:#FF8C42;"
                     data-given-id="safety"
+                    data-tagalog-id="safety_tagalog"
                     data-module-title="{{ gm.title }}"
+                    data-tagalog-title="{{ gm_tl.title if gm_tl else 'Gabay sa Kaligtasan' }}"
                     data-slide-count="{{ gm.slide_count }}"
                     data-slide-alts="{{ gm.slides|map(attribute='alt')|list|tojson|forceescape }}"
-                    data-slide-base="{{ url_for('modules.given_module_slide', given_id='safety', slide_number=1).rsplit('/', 1)[0] }}">
+                    data-tagalog-slide-alts="{{ (gm_tl.slides|map(attribute='alt')|list if gm_tl else [])|tojson|forceescape }}"
+                    data-slide-base="{{ url_for('modules.given_module_slide', given_id='safety', slide_number=1).rsplit('/', 1)[0] }}"
+                    data-tagalog-slide-base="{{ url_for('modules.given_module_slide', given_id='safety_tagalog', slide_number=1).rsplit('/', 1)[0] if gm_tl else '' }}">
               <i class="bi bi-play-fill me-1"></i>Play
             </button>
+            {% if gm_tl %}
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary given-module-translate"
+                    title="Tagalog version ({{ gm_tl.title }})"
+                    aria-label="View Tagalog version"
+                    data-given-id="safety"
+                    data-tagalog-id="safety_tagalog"
+                    data-module-title="{{ gm.title }}"
+                    data-tagalog-title="{{ gm_tl.title }}"
+                    data-slide-count="{{ gm.slide_count }}"
+                    data-slide-alts="{{ gm.slides|map(attribute='alt')|list|tojson|forceescape }}"
+                    data-tagalog-slide-alts="{{ gm_tl.slides|map(attribute='alt')|list|tojson|forceescape }}"
+                    data-slide-base="{{ url_for('modules.given_module_slide', given_id='safety', slide_number=1).rsplit('/', 1)[0] }}"
+                    data-tagalog-slide-base="{{ url_for('modules.given_module_slide', given_id='safety_tagalog', slide_number=1).rsplit('/', 1)[0] }}">
+              <i class="bi bi-translate"></i>
+            </button>
+            {% endif %}
             <a href="{{ url_for('modules.given_module_viewer', given_id='safety') }}"
                class="btn btn-sm btn-outline-secondary" title="Open viewer page">
               <i class="bi bi-box-arrow-up-right"></i>
@@ -277,6 +343,15 @@
           </span>
         </div>
         <div class="d-flex align-items-center gap-2">
+          <!-- Language Toggle in Modal -->
+          <div class="btn-group btn-group-sm me-1" role="group" aria-label="Language selection" id="givenModuleLangGroup">
+            <button type="button" class="btn btn-sm btn-primary py-1 px-2 fw-bold" id="givenModuleLangEn" title="English">
+              EN
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-light py-1 px-2 fw-bold" id="givenModuleLangTl" title="Tagalog">
+              <i class="bi bi-translate me-1"></i>TL
+            </button>
+          </div>
 
           <!-- Fullscreen Toggle -->
           <button type="button" class="btn btn-sm btn-outline-light py-1 px-2" id="givenModuleFullscreenToggle" title="Toggle Fullscreen">
@@ -481,12 +556,22 @@
     // ── PARENTING (23 slides) ────────────────────────────────────────────────
     parenting: {
       1:  coverButtons(2, 10, true),
-      2:  menuTopicCards([3, 4, 5, 7, 8, 9], 10),
+      2:  menuTopicCards([3, 4, 5, 8, 9, 10], 10),
       3:  [menuHotspot(2), backHotspot(2), nextHotspot(4)],
       4:  [menuHotspot(2), backHotspot(3), nextHotspot(5)],
-      5:  [menuHotspot(2), { x: 65.50, y: 90.13, w: 11.50, h: 6.76, target: 4, label: 'Back' }, { x: 78.00, y: 90.13, w: 17.00, h: 6.76, target: 6, label: 'Milk storage' }],
-      6:  [menuHotspot(2), backHotspot(5), nextHotspot(7)],
-      7:  [menuHotspot(2), backHotspot(6), nextHotspot(8)],
+      5:  [
+            menuHotspot(2),
+            { x: 65.50, y: 90.13, w: 11.50, h: 6.76, target: 4, label: 'Back' },
+            { x: 78.00, y: 90.13, w: 17.00, h: 6.76, target: 7, label: 'Milk storage' },
+            { x: 33.00, y: 26.67, w: 15.00, h: 6.40, target: 6, label: 'Watch video' }
+          ],
+      6:  [
+            menuHotspot(2),
+            { x: 65.50, y: 90.13, w: 11.50, h: 6.76, target: 5, label: 'Back' },
+            { x: 78.00, y: 90.13, w: 17.00, h: 6.76, target: 7, label: 'Milk storage' },
+            { x: 20.50, y: 19.55, w: 59.00, h: 59.00, externalUrl: 'https://youtu.be/GaX03lxP5CA', label: 'Watch video on YouTube' }
+          ],
+      7:  [menuHotspot(2), backHotspot(5), nextHotspot(8)],
       8:  [menuHotspot(2), backHotspot(7), nextHotspot(9)],
       9:  [menuHotspot(2), backHotspot(8), nextHotspot(10, 'Quiz')],
       10: quizIntroButtons(11, 2),
@@ -537,11 +622,16 @@
     },
   };
 
+  SLIDE_MAPS.nutrition_tagalog = SLIDE_MAPS.nutrition;
+  SLIDE_MAPS.parenting_tagalog = SLIDE_MAPS.parenting;
+  SLIDE_MAPS.safety_tagalog = SLIDE_MAPS.safety;
+
   // ── renderHotspots: called every time a new slide is shown ────────────────
   function renderHotspots(slideNumber) {
     if (!hotspotLayer) return;
     hotspotLayer.innerHTML = '';
-    var map = SLIDE_MAPS[currentModuleId];
+    var baseKey = (currentModuleId || '').replace('_tagalog', '');
+    var map = SLIDE_MAPS[currentModuleId] || SLIDE_MAPS[baseKey];
     if (!map) return;
     var spots = map[slideNumber];
     if (!spots || !spots.length) return;
@@ -552,18 +642,32 @@
       if (h.label) btn.setAttribute('aria-label', h.label);
       btn.setAttribute('role', 'button');
       btn.setAttribute('tabindex', '0');
-      var target = h.target;
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        showSlide(target);
-      });
-      btn.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
+      if (h.externalUrl) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          window.open(h.externalUrl, '_blank', 'noopener,noreferrer');
+        });
+        btn.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            window.open(h.externalUrl, '_blank', 'noopener,noreferrer');
+          }
+        });
+      } else {
+        var target = h.target;
+        btn.addEventListener('click', function (e) {
           e.stopPropagation();
           showSlide(target);
-        }
-      });
+        });
+        btn.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            showSlide(target);
+          }
+        });
+      }
       hotspotLayer.appendChild(btn);
     });
   }
@@ -575,7 +679,7 @@
     slide.src = slideBase + '/' + current;
     if (slide.complete && slide.naturalWidth > 0) slide.style.opacity = '1';
 
-    slide.alt = alts[current - 1] || title.textContent + ', slide ' + current + ' of ' + total;
+    slide.alt = (alts && alts[current - 1]) || title.textContent + ', slide ' + current + ' of ' + total;
     counter.textContent = current + ' of ' + total;
     previous.disabled = current === 1;
     next.disabled = current === total;
@@ -622,22 +726,85 @@
     });
   }
 
-  // Handle Play Button on Learning Cards
+  let currentLang = 'en';
+  let enTitle = '';
+  let tlTitle = '';
+  let enSlideBase = '';
+  let tlSlideBase = '';
+  let enAlts = [];
+  let tlAlts = [];
+
+  const langEnBtn = document.getElementById('givenModuleLangEn');
+  const langTlBtn = document.getElementById('givenModuleLangTl');
+  const langGroup = document.getElementById('givenModuleLangGroup');
+
+  function setLanguage(lang) {
+    currentLang = lang;
+    const isTl = (lang === 'tl');
+    if (langEnBtn) {
+      langEnBtn.classList.toggle('active', !isTl);
+      langEnBtn.classList.toggle('btn-primary', !isTl);
+      langEnBtn.classList.toggle('btn-outline-light', isTl);
+    }
+    if (langTlBtn) {
+      langTlBtn.classList.toggle('active', isTl);
+      langTlBtn.classList.toggle('btn-primary', isTl);
+      langTlBtn.classList.toggle('btn-outline-light', !isTl);
+    }
+    slideBase = (isTl && tlSlideBase) ? tlSlideBase : enSlideBase;
+    alts = (isTl && tlAlts && tlAlts.length) ? tlAlts : enAlts;
+    if (title) {
+      title.textContent = isTl && tlTitle ? tlTitle : (enTitle || 'Given Module');
+    }
+    if (modalElement && modalElement.classList.contains('show')) {
+      showSlide(current);
+    }
+  }
+
+  if (langEnBtn) {
+    langEnBtn.addEventListener('click', function () {
+      setLanguage('en');
+    });
+  }
+  if (langTlBtn) {
+    langTlBtn.addEventListener('click', function () {
+      setLanguage('tl');
+    });
+  }
+
+  function openGivenModal(button, startLang) {
+    currentModuleId = button.dataset.givenId || '';
+    enTitle = button.dataset.moduleTitle || 'Given Module';
+    tlTitle = button.dataset.tagalogTitle || '';
+    enSlideBase = button.dataset.slideBase || '';
+    tlSlideBase = button.dataset.tagalogSlideBase || '';
+    enAlts = JSON.parse(button.dataset.slideAlts || '[]');
+    tlAlts = JSON.parse(button.dataset.tagalogSlideAlts || '[]');
+    total = parseInt(button.dataset.slideCount, 10) || 23;
+
+    if (langGroup) {
+      langGroup.style.display = tlSlideBase ? 'inline-flex' : 'none';
+    }
+
+    requestFullscreenNow();
+    setLanguage(startLang || 'en');
+    showSlide(1);
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+    modal.show();
+  }
+
+  // Handle Play Button (English)
   document.querySelectorAll('.given-module-play').forEach(function (button) {
     button.addEventListener('click', function () {
-      slideBase = button.dataset.slideBase;
-      total = parseInt(button.dataset.slideCount, 10) || parseInt(button.closest('.learning-card').querySelector('.badge').textContent, 10) || 23;
-      alts = JSON.parse(button.dataset.slideAlts || '[]');
-      title.textContent = button.dataset.moduleTitle || 'Given Module';
-      currentModuleId = button.dataset.givenId || '';
+      openGivenModal(button, 'en');
+    });
+  });
 
-      // Open fullscreen immediately (must be inside a direct user-click handler)
-      requestFullscreenNow();
-
-      showSlide(1);
-
-      const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-      modal.show();
+  // Handle Translate Button (Tagalog)
+  document.querySelectorAll('.given-module-translate').forEach(function (button) {
+    button.addEventListener('click', function () {
+      openGivenModal(button, 'tl');
     });
   });
 

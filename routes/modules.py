@@ -43,8 +43,11 @@ def given_module_registry():
     # Auto-generate fallback if manifest is missing or invalid
     titles = {
         'nutrition': ('Nutrition Guide', 'Nutrition.pptx'),
+        'nutrition_tagalog': ('Gabay sa Nutrisyon', 'Nutrition_Tagalog.pptx'),
         'parenting': ('Parenting Guide', 'Parenting.pptx'),
+        'parenting_tagalog': ('Gabay sa Pagpapalaki', 'Parenting_Tagalog.pptx'),
         'safety': ('Safety Guide', 'Safety.pptx'),
+        'safety_tagalog': ('Gabay sa Kaligtasan', 'Safety_Tagalog.pptx'),
     }
     manifest = {}
     for mod_id, (title, filename) in titles.items():
@@ -58,7 +61,8 @@ def given_module_registry():
                 'title': title,
                 'filename': filename,
                 'slide_count': len(slides),
-                'slides': [{'filename': s, 'alt': f'{title}, slide {i+1} of {len(slides)}'} for i, s in enumerate(slides)]
+                'slides': [{'filename': s, 'alt': f'{title}, slide {i+1} of {len(slides)}'} for i, s in enumerate(slides)],
+                'lang': 'tl' if mod_id.endswith('_tagalog') else 'en'
             }
     if manifest:
         try:
@@ -163,15 +167,50 @@ def module_detail(module_id):
 @modules_bp.route('/given/<given_id>')
 @login_required
 def given_module_viewer(given_id):
-    given_module = given_module_registry().get(given_id)
+    registry = given_module_registry()
+    given_module = registry.get(given_id)
     if not given_module:
         abort(404)
-    if given_id in CATEGORY_META:
-        session['last_module_topic'] = given_id
+    base_id = given_id.replace('_tagalog', '')
+    if base_id in CATEGORY_META:
+        session['last_module_topic'] = base_id
+
+    tagalog_id = f"{base_id}_tagalog"
+    tagalog_module = registry.get(tagalog_id)
+    english_module = registry.get(base_id)
+
     return render_template(
         'modules/given_module_viewer.html',
         given_module=given_module,
+        base_id=base_id,
+        tagalog_module=tagalog_module,
+        english_module=english_module,
         page_title=given_module['title'],
+    )
+
+
+@modules_bp.route('/given/<given_id>/pdf')
+@login_required
+def given_module_pdf(given_id):
+    filename_map = {
+        'nutrition': 'Nutrition.pdf',
+        'nutrition_tagalog': 'Nutrition_Tagalog.pdf',
+        'parenting': 'Parenting.pdf',
+        'parenting_tagalog': 'Parenting_Tagalog.pdf',
+        'safety': 'Safety.pdf',
+        'safety_tagalog': 'Safety_Tagalog.pdf',
+    }
+    filename = filename_map.get(given_id)
+    if not filename:
+        abort(404)
+    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    if not os.path.isfile(file_path):
+        abort(404)
+    return send_file(
+        file_path,
+        mimetype='application/pdf',
+        as_attachment=request.args.get('download') == '1',
+        download_name=filename,
     )
 
 

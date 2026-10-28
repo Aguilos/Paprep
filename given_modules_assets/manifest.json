@@ -97,7 +97,109 @@
         "filename": "slide-023.jpg",
         "alt": "WELL DONE, slide 23 of 23"
       }
-    ]
+    ],
+    "lang": "en"
+  },
+  "nutrition_tagalog": {
+    "id": "nutrition_tagalog",
+    "title": "Gabay sa Nutrisyon",
+    "filename": "Nutrition_Tagalog.pptx",
+    "slide_count": 23,
+    "slides": [
+      {
+        "filename": "slide-001.jpg",
+        "alt": "GABAY SA NUTRISYON, slide 1 of 23"
+      },
+      {
+        "filename": "slide-002.jpg",
+        "alt": "Pumili ng paksang tuklasin, slide 2 of 23"
+      },
+      {
+        "filename": "slide-003.jpg",
+        "alt": "Pagpapasuso: gaano katagal, bakit, slide 3 of 23"
+      },
+      {
+        "filename": "slide-004.jpg",
+        "alt": "Solidong pagkain sa 6 buwan, slide 4 of 23"
+      },
+      {
+        "filename": "slide-005.jpg",
+        "alt": "Tekstura at dalas, slide 5 of 23"
+      },
+      {
+        "filename": "slide-006.jpg",
+        "alt": "Pagbibigay ng iron, slide 6 of 23"
+      },
+      {
+        "filename": "slide-007.jpg",
+        "alt": "Vitamin A at zinc, slide 7 of 23"
+      },
+      {
+        "filename": "slide-008.jpg",
+        "alt": "Pagpupurga kada 6 buwan, slide 8 of 23"
+      },
+      {
+        "filename": "slide-009.jpg",
+        "alt": "Anemya sa iron, slide 9 of 23"
+      },
+      {
+        "filename": "slide-010.jpg",
+        "alt": "MABILIS NA QUIZ, slide 10 of 23"
+      },
+      {
+        "filename": "slide-011.jpg",
+        "alt": "Tanong 1 ng 4, slide 11 of 23"
+      },
+      {
+        "filename": "slide-012.jpg",
+        "alt": "Tama!, slide 12 of 23"
+      },
+      {
+        "filename": "slide-013.jpg",
+        "alt": "Hindi pa tama, slide 13 of 23"
+      },
+      {
+        "filename": "slide-014.jpg",
+        "alt": "Tanong 2 ng 4, slide 14 of 23"
+      },
+      {
+        "filename": "slide-015.jpg",
+        "alt": "Tama!, slide 15 of 23"
+      },
+      {
+        "filename": "slide-016.jpg",
+        "alt": "Hindi pa tama, slide 16 of 23"
+      },
+      {
+        "filename": "slide-017.jpg",
+        "alt": "Tanong 3 ng 4, slide 17 of 23"
+      },
+      {
+        "filename": "slide-018.jpg",
+        "alt": "Tama!, slide 18 of 23"
+      },
+      {
+        "filename": "slide-019.jpg",
+        "alt": "Hindi pa tama, slide 19 of 23"
+      },
+      {
+        "filename": "slide-020.jpg",
+        "alt": "Tanong 4 ng 4, slide 20 of 23"
+      },
+      {
+        "filename": "slide-021.jpg",
+        "alt": "Tama!, slide 21 of 23"
+      },
+      {
+        "filename": "slide-022.jpg",
+        "alt": "Hindi pa tama, slide 22 of 23"
+      },
+      {
+        "filename": "slide-023.jpg",
+        "alt": "MAHUSAY!, slide 23 of 23"
+      }
+    ],
+    "lang": "tl"
   },
   "parenting": {
     "id": "parenting",
@@ -127,19 +229,19 @@
       },
       {
         "filename": "slide-006.jpg",
-        "alt": "How long can expressed milk keep?, slide 6 of 23"
+        "alt": "Good latch: watch the video, slide 6 of 23"
       },
       {
         "filename": "slide-007.jpg",
-        "alt": "Read aloud, every day, slide 7 of 23"
+        "alt": "How long can expressed milk keep?, slide 7 of 23"
       },
       {
         "filename": "slide-008.jpg",
-        "alt": "Protecting children from harm, slide 8 of 23"
+        "alt": "Read aloud, every day, slide 8 of 23"
       },
       {
         "filename": "slide-009.jpg",
-        "alt": "Teens: the HEEADSSS check-in, slide 9 of 23"
+        "alt": "Protecting children from harm, slide 9 of 23"
       },
       {
         "filename": "slide-010.jpg",
@@ -197,7 +299,109 @@
         "filename": "slide-023.jpg",
         "alt": "WELL DONE, slide 23 of 23"
       }
-    ]
+    ],
+    "lang": "en"
+  },
+  "parenting_tagalog": {
+    "id": "parenting_tagalog",
+    "title": "Gabay sa Pagpapalaki",
+    "filename": "Parenting_Tagalog.pptx",
+    "slide_count": 23,
+    "slides": [
+      {
+        "filename": "slide-001.jpg",
+        "alt": "GABAY SA PAGPAPALAKI, slide 1 of 23"
+      },
+      {
+        "filename": "slide-002.jpg",
+        "alt": "Pumili ng paksang tuklasin, slide 2 of 23"
+      },
+      {
+        "filename": "slide-003.jpg",
+        "alt": "Mahalaga ang unang oras, slide 3 of 23"
+      },
+      {
+        "filename": "slide-004.jpg",
+        "alt": "Maagang pag-uwi, slide 4 of 23"
+      },
+      {
+        "filename": "slide-005.jpg",
+        "alt": "Pagpapasuso: posisyon at latch, slide 5 of 23"
+      },
+      {
+        "filename": "slide-006.jpg",
+        "alt": "Magandang latch: panoorin ang video, slide 6 of 23"
+      },
+      {
+        "filename": "slide-007.jpg",
+        "alt": "Tagal ng pinigang gatas, slide 7 of 23"
+      },
+      {
+        "filename": "slide-008.jpg",
+        "alt": "Magbasa nang malakas, araw-araw, slide 8 of 23"
+      },
+      {
+        "filename": "slide-009.jpg",
+        "alt": "Protektahan ang bata sa pinsala, slide 9 of 23"
+      },
+      {
+        "filename": "slide-010.jpg",
+        "alt": "MABILIS NA QUIZ, slide 10 of 23"
+      },
+      {
+        "filename": "slide-011.jpg",
+        "alt": "Tanong 1 ng 4, slide 11 of 23"
+      },
+      {
+        "filename": "slide-012.jpg",
+        "alt": "Tama!, slide 12 of 23"
+      },
+      {
+        "filename": "slide-013.jpg",
+        "alt": "Hindi pa tama, slide 13 of 23"
+      },
+      {
+        "filename": "slide-014.jpg",
+        "alt": "Tanong 2 ng 4, slide 14 of 23"
+      },
+      {
+        "filename": "slide-015.jpg",
+        "alt": "Tama!, slide 15 of 23"
+      },
+      {
+        "filename": "slide-016.jpg",
+        "alt": "Hindi pa tama, slide 16 of 23"
+      },
+      {
+        "filename": "slide-017.jpg",
+        "alt": "Tanong 3 ng 4, slide 17 of 23"
+      },
+      {
+        "filename": "slide-018.jpg",
+        "alt": "Tama!, slide 18 of 23"
+      },
+      {
+        "filename": "slide-019.jpg",
+        "alt": "Hindi pa tama, slide 19 of 23"
+      },
+      {
+        "filename": "slide-020.jpg",
+        "alt": "Tanong 4 ng 4, slide 20 of 23"
+      },
+      {
+        "filename": "slide-021.jpg",
+        "alt": "Tama!, slide 21 of 23"
+      },
+      {
+        "filename": "slide-022.jpg",
+        "alt": "Hindi pa tama, slide 22 of 23"
+      },
+      {
+        "filename": "slide-023.jpg",
+        "alt": "MAHUSAY!, slide 23 of 23"
+      }
+    ],
+    "lang": "tl"
   },
   "safety": {
     "id": "safety",
@@ -313,6 +517,124 @@
         "filename": "slide-027.jpg",
         "alt": "WELL DONE, slide 27 of 27"
       }
-    ]
+    ],
+    "lang": "en"
+  },
+  "safety_tagalog": {
+    "id": "safety_tagalog",
+    "title": "Gabay sa Kaligtasan",
+    "filename": "Safety_Tagalog.pptx",
+    "slide_count": 27,
+    "slides": [
+      {
+        "filename": "slide-001.jpg",
+        "alt": "GABAY SA KALIGTASAN, slide 1 of 27"
+      },
+      {
+        "filename": "slide-002.jpg",
+        "alt": "Pumili ng paksang tuklasin, slide 2 of 27"
+      },
+      {
+        "filename": "slide-003.jpg",
+        "alt": "Ilayo ang maliliit na bagay, slide 3 of 27"
+      },
+      {
+        "filename": "slide-004.jpg",
+        "alt": "Ligtas na tulog sa bawat idlip, slide 4 of 27"
+      },
+      {
+        "filename": "slide-005.jpg",
+        "alt": "Laging may hawak, slide 5 of 27"
+      },
+      {
+        "filename": "slide-006.jpg",
+        "alt": "Gawing ligtas ang bahay sa bata, slide 6 of 27"
+      },
+      {
+        "filename": "slide-007.jpg",
+        "alt": "Kaligtasan sa tubig at paliligo, slide 7 of 27"
+      },
+      {
+        "filename": "slide-008.jpg",
+        "alt": "Ligtas na kuna, slide 8 of 27"
+      },
+      {
+        "filename": "slide-009.jpg",
+        "alt": "Highchair at duyan ng sanggol, slide 9 of 27"
+      },
+      {
+        "filename": "slide-010.jpg",
+        "alt": "Car seat at gamit ng sanggol, slide 10 of 27"
+      },
+      {
+        "filename": "slide-011.jpg",
+        "alt": "Damit at pacifier, slide 11 of 27"
+      },
+      {
+        "filename": "slide-012.jpg",
+        "alt": "Aktibo at protektado, slide 12 of 27"
+      },
+      {
+        "filename": "slide-013.jpg",
+        "alt": "Proteksyon ng bata: estratehiya, slide 13 of 27"
+      },
+      {
+        "filename": "slide-014.jpg",
+        "alt": "MABILIS NA QUIZ, slide 14 of 27"
+      },
+      {
+        "filename": "slide-015.jpg",
+        "alt": "Tanong 1 ng 4, slide 15 of 27"
+      },
+      {
+        "filename": "slide-016.jpg",
+        "alt": "Tama!, slide 16 of 27"
+      },
+      {
+        "filename": "slide-017.jpg",
+        "alt": "Hindi pa tama, slide 17 of 27"
+      },
+      {
+        "filename": "slide-018.jpg",
+        "alt": "Tanong 2 ng 4, slide 18 of 27"
+      },
+      {
+        "filename": "slide-019.jpg",
+        "alt": "Tama!, slide 19 of 27"
+      },
+      {
+        "filename": "slide-020.jpg",
+        "alt": "Hindi pa tama, slide 20 of 27"
+      },
+      {
+        "filename": "slide-021.jpg",
+        "alt": "Tanong 3 ng 4, slide 21 of 27"
+      },
+      {
+        "filename": "slide-022.jpg",
+        "alt": "Tama!, slide 22 of 27"
+      },
+      {
+        "filename": "slide-023.jpg",
+        "alt": "Hindi pa tama, slide 23 of 27"
+      },
+      {
+        "filename": "slide-024.jpg",
+        "alt": "Tanong 4 ng 4, slide 24 of 27"
+      },
+      {
+        "filename": "slide-025.jpg",
+        "alt": "Tama!, slide 25 of 27"
+      },
+      {
+        "filename": "slide-026.jpg",
+        "alt": "Hindi pa tama, slide 26 of 27"
+      },
+      {
+        "filename": "slide-027.jpg",
+        "alt": "MAHUSAY!, slide 27 of 27"
+      }
+    ],
+    "lang": "tl"
   }
 }

@@ -4,21 +4,90 @@
 
 {% block content %}
 <div class="container py-3">
-  <a href="{{ url_for('modules.list_modules') }}" class="btn btn-link ps-0">Back to modules</a>
-  <p class="text-muted">Use Start to open the presentation. Fullscreen may be unavailable in some mobile browsers.</p>
-  <button type="button" class="btn btn-primary" id="givenViewerStart">
-    <i class="bi bi-play-fill me-1"></i>Start presentation
-  </button>
-  <div id="givenViewer" class="bg-dark mt-3 p-2 text-center" hidden>
-    <img id="givenViewerSlide" class="img-fluid" style="max-height:75vh;object-fit:contain;" alt="">
-    <div class="d-flex justify-content-center align-items-center gap-2 mt-2">
-      <button type="button" class="btn btn-outline-light" id="givenViewerPrevious">Previous</button>
-      <span class="text-white" id="givenViewerCounter" aria-live="polite"></span>
-      <button type="button" class="btn btn-outline-light" id="givenViewerNext">Next</button>
-      <button type="button" class="btn btn-outline-light" id="givenViewerExit">Exit fullscreen</button>
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <a href="{{ url_for('modules.list_modules') }}" class="btn btn-link ps-0 text-decoration-none">
+      <i class="bi bi-arrow-left me-1"></i>Back to modules
+    </a>
+    <div class="d-flex align-items-center gap-2">
+      {% if tagalog_module and english_module %}
+      <div class="btn-group btn-group-sm" role="group" aria-label="Language selection">
+        <a href="{{ url_for('modules.given_module_viewer', given_id=english_module.id) }}"
+           class="btn {% if given_module.id == english_module.id %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+           title="English version">
+          English
+        </a>
+        <a href="{{ url_for('modules.given_module_viewer', given_id=tagalog_module.id) }}"
+           class="btn {% if given_module.id == tagalog_module.id %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+           title="Bersyong Tagalog">
+          <i class="bi bi-translate me-1"></i>Tagalog
+        </a>
+      </div>
+      {% endif %}
+      <a href="{{ url_for('modules.given_module_pdf', given_id=given_module.id, download=1) }}"
+         class="btn btn-sm btn-outline-danger" title="Download PDF presentation">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+          <h4 class="mb-1 fw-bold">{{ given_module.title }}</h4>
+          <span class="badge bg-secondary">{{ given_module.slide_count }} slides</span>
+          {% if given_module.lang == 'tl' %}
+          <span class="badge bg-success ms-1"><i class="bi bi-translate me-1"></i>Tagalog</span>
+          {% else %}
+          <span class="badge bg-primary ms-1">English</span>
+          {% endif %}
+        </div>
+        <button type="button" class="btn btn-primary" id="givenViewerStart">
+          <i class="bi bi-play-fill me-1"></i>Start presentation
+        </button>
+      </div>
+
+      <div id="givenViewer" class="bg-dark p-2 text-center rounded position-relative" hidden>
+        <div class="slide-wrapper d-inline-block position-relative" style="max-width: 100%; line-height: 0;">
+          <img id="givenViewerSlide" class="img-fluid" style="max-height: 75vh; object-fit: contain;" alt="">
+          <div id="viewerHotspotLayer" style="position: absolute; inset: 0; pointer-events: none;"></div>
+        </div>
+        <div class="d-flex justify-content-center align-items-center gap-2 mt-3 flex-wrap">
+          <button type="button" class="btn btn-sm btn-outline-light px-3" id="givenViewerPrevious">
+            <i class="bi bi-chevron-left me-1"></i>Previous
+          </button>
+          <span class="text-white mx-2 px-2 py-1 rounded small bg-white bg-opacity-10 font-monospace fw-bold"
+                id="givenViewerCounter" aria-live="polite">
+            1 of {{ given_module.slide_count }}
+          </span>
+          <button type="button" class="btn btn-sm btn-outline-light px-3" id="givenViewerNext">
+            Next<i class="bi bi-chevron-right ms-1"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-warning ms-2" id="givenViewerFullscreen">
+            <i class="bi bi-arrows-fullscreen me-1"></i>Fullscreen
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+
+<style>
+.slide-hotspot {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.slide-hotspot:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -30,12 +99,204 @@
   const counter = document.getElementById('givenViewerCounter');
   const previous = document.getElementById('givenViewerPrevious');
   const next = document.getElementById('givenViewerNext');
-  const exit = document.getElementById('givenViewerExit');
+  const fsBtn = document.getElementById('givenViewerFullscreen');
+  const hotspotLayer = document.getElementById('viewerHotspotLayer');
+
   const base = {{ url_for('modules.given_module_slide', given_id=given_module.id, slide_number=1).rsplit('/', 1)[0]|tojson }};
   const fallbackAltTitle = {{ given_module.title|tojson }};
   const total = {{ given_module.slide_count }};
   const alts = {{ given_module.slides|map(attribute='alt')|list|tojson }};
+  const currentModuleId = {{ given_module.id|tojson }};
   let current = 1;
+
+  // Slide navigation maps
+  function coverButtons(menuSlide, quizSlide, isParenting) {
+    if (isParenting) {
+      return [
+        { x: 6.00, y: 81.78, w: 20.00, h: 8.18, target: menuSlide, label: 'Start exploring' },
+        { x: 28.00, y: 81.78, w: 18.00, h: 8.18, target: quizSlide, label: 'Take the quiz' },
+      ];
+    }
+    return [
+      { x: 6.00, y: 81.78, w: 17.50, h: 8.18, target: menuSlide, label: 'Start exploring' },
+      { x: 25.00, y: 81.78, w: 16.50, h: 8.18, target: quizSlide, label: 'Take the quiz' },
+    ];
+  }
+  function menuHotspot(menuSlide) { return { x: 83.50, y: 7.11, w: 11.50, h: 7.11, target: menuSlide, label: 'Menu' }; }
+  function backHotspot(prevSlide) { return { x: 70.50, y: 90.13, w: 11.50, h: 6.76, target: prevSlide, label: 'Back' }; }
+  function nextHotspot(nextSlide, label) { return { x: 83.00, y: 90.13, w: 12.00, h: 6.76, target: nextSlide, label: label || 'Next' }; }
+  function quizIntroButtons(q1Slide, menuSlide) {
+    return [
+      { x: 6.00, y: 77.33, w: 18.00, h: 8.18, target: q1Slide, label: 'Start quiz' },
+      { x: 26.00, y: 77.33, w: 14.00, h: 8.18, target: menuSlide, label: 'Menu' },
+    ];
+  }
+  function answerRows(correctLetter, correctSlide, wrongSlide) {
+    var rows = [
+      { x: 5.00, y: 41.78, w: 90.00, h: 13.51, label: 'A' },
+      { x: 5.00, y: 57.42, w: 90.00, h: 13.51, label: 'B' },
+      { x: 5.00, y: 73.07, w: 90.00, h: 13.51, label: 'C' },
+    ];
+    rows.forEach(function (r) { r.target = (r.label === correctLetter) ? correctSlide : wrongSlide; });
+    return rows;
+  }
+  function feedbackButtons(actionSlide, menuSlide, actionLabel) {
+    return [
+      { x: 72.00, y: 77.33, w: 23.00, h: 8.89, target: actionSlide, label: actionLabel || 'Next question' },
+      { x: 5.00, y: 77.33, w: 14.00, h: 8.89, target: menuSlide, label: 'Menu' },
+    ];
+  }
+  function completionButtons(menuSlide, retakeSlide) {
+    return [
+      { x: 6.00, y: 80.89, w: 20.00, h: 8.18, target: menuSlide, label: 'Back to menu' },
+      { x: 28.00, y: 80.89, w: 18.00, h: 8.18, target: retakeSlide, label: 'Retake quiz' },
+    ];
+  }
+  function menuTopicCards(targets, quizSlide) {
+    return [
+      { x: 74.50, y: 7.11, w: 20.50, h: 7.11, target: quizSlide, label: 'Take the quiz' },
+      { x: 5.00, y: 23.11, w: 28.00, h: 31.11, target: targets[0], label: 'Topic 1' },
+      { x: 36.00, y: 23.11, w: 28.00, h: 31.11, target: targets[1], label: 'Topic 2' },
+      { x: 67.00, y: 23.11, w: 28.00, h: 31.11, target: targets[2], label: 'Topic 3' },
+      { x: 5.00, y: 56.89, w: 28.00, h: 31.11, target: targets[3], label: 'Topic 4' },
+      { x: 36.00, y: 56.89, w: 28.00, h: 31.11, target: targets[4], label: 'Topic 5' },
+      { x: 67.00, y: 56.89, w: 28.00, h: 31.11, target: targets[5], label: 'Topic 6' },
+    ];
+  }
+
+  const SLIDE_MAPS = {
+    nutrition: {
+      1:  coverButtons(2, 10, false),
+      2:  menuTopicCards([3, 4, 6, 7, 8, 9], 10),
+      3:  [menuHotspot(2), backHotspot(2), nextHotspot(4)],
+      4:  [menuHotspot(2), backHotspot(3), nextHotspot(5)],
+      5:  [menuHotspot(2), backHotspot(4), nextHotspot(6)],
+      6:  [menuHotspot(2), backHotspot(5), nextHotspot(7)],
+      7:  [menuHotspot(2), backHotspot(6), nextHotspot(8)],
+      8:  [menuHotspot(2), backHotspot(7), nextHotspot(9)],
+      9:  [menuHotspot(2), backHotspot(8), nextHotspot(10, 'Quiz')],
+      10: quizIntroButtons(11, 2),
+      11: answerRows('A', 12, 13).concat([menuHotspot(2)]),
+      12: feedbackButtons(14, 2, 'Next question'),
+      13: feedbackButtons(11, 2, 'Try again'),
+      14: answerRows('C', 15, 16).concat([menuHotspot(2)]),
+      15: feedbackButtons(17, 2, 'Next question'),
+      16: feedbackButtons(14, 2, 'Try again'),
+      17: answerRows('B', 18, 19).concat([menuHotspot(2)]),
+      18: feedbackButtons(20, 2, 'Next question'),
+      19: feedbackButtons(17, 2, 'Try again'),
+      20: answerRows('C', 21, 22).concat([menuHotspot(2)]),
+      21: feedbackButtons(23, 2, 'Finish'),
+      22: feedbackButtons(20, 2, 'Try again'),
+      23: completionButtons(2, 11),
+    },
+    parenting: {
+      1:  coverButtons(2, 10, true),
+      2:  menuTopicCards([3, 4, 5, 8, 9, 10], 10),
+      3:  [menuHotspot(2), backHotspot(2), nextHotspot(4)],
+      4:  [menuHotspot(2), backHotspot(3), nextHotspot(5)],
+      5:  [
+            menuHotspot(2),
+            { x: 65.50, y: 90.13, w: 11.50, h: 6.76, target: 4, label: 'Back' },
+            { x: 78.00, y: 90.13, w: 17.00, h: 6.76, target: 7, label: 'Milk storage' },
+            { x: 33.00, y: 26.67, w: 15.00, h: 6.40, target: 6, label: 'Watch video' }
+          ],
+      6:  [
+            menuHotspot(2),
+            { x: 65.50, y: 90.13, w: 11.50, h: 6.76, target: 5, label: 'Back' },
+            { x: 78.00, y: 90.13, w: 17.00, h: 6.76, target: 7, label: 'Milk storage' },
+            { x: 20.50, y: 19.55, w: 59.00, h: 59.00, externalUrl: 'https://youtu.be/GaX03lxP5CA', label: 'Watch video on YouTube' }
+          ],
+      7:  [menuHotspot(2), backHotspot(5), nextHotspot(8)],
+      8:  [menuHotspot(2), backHotspot(7), nextHotspot(9)],
+      9:  [menuHotspot(2), backHotspot(8), nextHotspot(10, 'Quiz')],
+      10: quizIntroButtons(11, 2),
+      11: answerRows('B', 12, 13).concat([menuHotspot(2)]),
+      12: feedbackButtons(14, 2, 'Next question'),
+      13: feedbackButtons(11, 2, 'Try again'),
+      14: answerRows('C', 15, 16).concat([menuHotspot(2)]),
+      15: feedbackButtons(17, 2, 'Next question'),
+      16: feedbackButtons(14, 2, 'Try again'),
+      17: answerRows('A', 18, 19).concat([menuHotspot(2)]),
+      18: feedbackButtons(20, 2, 'Next question'),
+      19: feedbackButtons(17, 2, 'Try again'),
+      20: answerRows('B', 21, 22).concat([menuHotspot(2)]),
+      21: feedbackButtons(23, 2, 'Finish'),
+      22: feedbackButtons(20, 2, 'Try again'),
+      23: completionButtons(2, 11),
+    },
+    safety: {
+      1:  coverButtons(2, 14, false),
+      2:  menuTopicCards([3, 4, 5, 7, 8, 12], 14),
+      3:  [menuHotspot(2), backHotspot(2), nextHotspot(4)],
+      4:  [menuHotspot(2), backHotspot(3), nextHotspot(5)],
+      5:  [menuHotspot(2), backHotspot(4), nextHotspot(6)],
+      6:  [menuHotspot(2), backHotspot(5), nextHotspot(7)],
+      7:  [menuHotspot(2), backHotspot(6), nextHotspot(8)],
+      8:  [menuHotspot(2), backHotspot(7), nextHotspot(9)],
+      9:  [menuHotspot(2), backHotspot(8), nextHotspot(10)],
+      10: [menuHotspot(2), backHotspot(9), nextHotspot(11)],
+      11: [menuHotspot(2), backHotspot(10), nextHotspot(12)],
+      12: [menuHotspot(2), backHotspot(11), nextHotspot(13)],
+      13: [menuHotspot(2), backHotspot(12), nextHotspot(14, 'Quiz')],
+      14: quizIntroButtons(15, 2),
+      15: answerRows('B', 16, 17).concat([menuHotspot(2)]),
+      16: feedbackButtons(18, 2, 'Next question'),
+      17: feedbackButtons(15, 2, 'Try again'),
+      18: answerRows('C', 19, 20).concat([menuHotspot(2)]),
+      19: feedbackButtons(21, 2, 'Next question'),
+      20: feedbackButtons(18, 2, 'Try again'),
+      21: answerRows('A', 22, 23).concat([menuHotspot(2)]),
+      22: feedbackButtons(24, 2, 'Next question'),
+      23: feedbackButtons(21, 2, 'Try again'),
+      24: answerRows('C', 25, 26).concat([menuHotspot(2)]),
+      25: feedbackButtons(27, 2, 'Finish'),
+      26: feedbackButtons(24, 2, 'Try again'),
+      27: completionButtons(2, 15),
+    },
+  };
+  SLIDE_MAPS.nutrition_tagalog = SLIDE_MAPS.nutrition;
+  SLIDE_MAPS.parenting_tagalog = SLIDE_MAPS.parenting;
+  SLIDE_MAPS.safety_tagalog = SLIDE_MAPS.safety;
+
+  function renderHotspots(slideNumber) {
+    if (!hotspotLayer) return;
+    hotspotLayer.innerHTML = '';
+    const baseKey = (currentModuleId || '').replace('_tagalog', '');
+    const map = SLIDE_MAPS[currentModuleId] || SLIDE_MAPS[baseKey];
+    if (!map) return;
+    const spots = map[slideNumber];
+    if (!spots || !spots.length) return;
+
+    spots.forEach(function (h) {
+      const btn = document.createElement('div');
+      btn.className = 'slide-hotspot';
+      btn.style.cssText = 'left:' + h.x + '%;top:' + h.y + '%;width:' + h.w + '%;height:' + h.h + '%;';
+      if (h.label) btn.setAttribute('aria-label', h.label);
+      btn.setAttribute('role', 'button');
+      btn.setAttribute('tabindex', '0');
+      if (h.externalUrl) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          window.open(h.externalUrl, '_blank', 'noopener,noreferrer');
+        });
+      } else {
+        const target = h.target;
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          showSlide(target);
+        });
+        btn.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            showSlide(target);
+          }
+        });
+      }
+      hotspotLayer.appendChild(btn);
+    });
+  }
 
   function showSlide(number) {
     current = Math.max(1, Math.min(total, number));
@@ -44,29 +305,32 @@
     counter.textContent = current + ' of ' + total;
     previous.disabled = current === 1;
     next.disabled = current === total;
+    renderHotspots(current);
     if (current < total) {
       const preload = new Image();
       preload.src = base + '/' + (current + 1);
     }
   }
-  function requestFullscreen() {
-    const request = viewer.requestFullscreen || viewer.webkitRequestFullscreen;
-    if (request) {
-      const result = request.call(viewer);
-      if (result && result.catch) result.catch(function () {});
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      const request = viewer.requestFullscreen || viewer.webkitRequestFullscreen;
+      if (request) request.call(viewer);
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
     }
   }
+
   start.addEventListener('click', function () {
     viewer.hidden = false;
     showSlide(1);
-    requestFullscreen();
     start.hidden = true;
   });
+
   previous.addEventListener('click', function () { showSlide(current - 1); });
   next.addEventListener('click', function () { showSlide(current + 1); });
-  exit.addEventListener('click', function () {
-    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
-  });
+  if (fsBtn) fsBtn.addEventListener('click', toggleFullscreen);
+
   document.addEventListener('keydown', function (event) {
     if (viewer.hidden) return;
     if (event.key === 'ArrowLeft') showSlide(current - 1);
