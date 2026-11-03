@@ -475,7 +475,7 @@
     return { x: 83.00, y: 90.13, w: 12.00, h: 6.76, target: nextSlide, label: label || 'Next' };
   }
 
-  // Quiz Intro buttons (Slide 10 in Nutrition/Parenting, Slide 14 in Safety)
+  // Quiz Intro buttons (Slide 10 in Nutrition/Parenting, Slide 18 in Safety)
   function quizIntroButtons(q1Slide, menuSlide) {
     return [
       { x: 6.00, y: 77.33, w: 18.00, h: 8.18, target: q1Slide, label: 'Start quiz' },
@@ -590,35 +590,47 @@
       23: completionButtons(2, 11),
     },
 
-    // ── SAFETY (27 slides) ───────────────────────────────────────────────────
+    // ── SAFETY (31 slides) ───────────────────────────────────────────────────
     safety: {
-      1:  coverButtons(2, 14, false),
-      2:  menuTopicCards([3, 4, 5, 7, 8, 12], 14),
+      1:  coverButtons(2, 18, false),
+      2:  menuTopicCards([3, 4, 9, 11, 12, 16], 18),
       3:  [menuHotspot(2), backHotspot(2), nextHotspot(4)],
-      4:  [menuHotspot(2), backHotspot(3), nextHotspot(5)],
+      4:  [
+            menuHotspot(2),
+            backHotspot(3),
+            nextHotspot(9),
+            { x: 5.00, y: 22.22, w: 44.00, h: 28.44, target: 5, label: 'Back to sleep' },
+            { x: 51.00, y: 22.22, w: 44.00, h: 28.44, target: 6, label: 'Crib or bassinet' },
+            { x: 5.00, y: 53.33, w: 44.00, h: 28.44, target: 7, label: 'Room-sharing' },
+            { x: 51.00, y: 53.33, w: 44.00, h: 28.44, target: 8, label: 'Bed-sharing' },
+          ],
       5:  [menuHotspot(2), backHotspot(4), nextHotspot(6)],
-      6:  [menuHotspot(2), backHotspot(5), nextHotspot(7)],
-      7:  [menuHotspot(2), backHotspot(6), nextHotspot(8)],
-      8:  [menuHotspot(2), backHotspot(7), nextHotspot(9)],
-      9:  [menuHotspot(2), backHotspot(8), nextHotspot(10)],
+      6:  [menuHotspot(2), backHotspot(4), nextHotspot(7)],
+      7:  [menuHotspot(2), backHotspot(4), nextHotspot(8)],
+      8:  [menuHotspot(2), backHotspot(4), nextHotspot(9)],
+      9:  [menuHotspot(2), backHotspot(4), nextHotspot(10)],
       10: [menuHotspot(2), backHotspot(9), nextHotspot(11)],
       11: [menuHotspot(2), backHotspot(10), nextHotspot(12)],
       12: [menuHotspot(2), backHotspot(11), nextHotspot(13)],
-      13: [menuHotspot(2), backHotspot(12), nextHotspot(14, 'Quiz')],
-      14: quizIntroButtons(15, 2),
-      15: answerRows('B', 16, 17).concat([menuHotspot(2)]),
-      16: feedbackButtons(18, 2, 'Next question'),
-      17: feedbackButtons(15, 2, 'Try again'),
-      18: answerRows('C', 19, 20).concat([menuHotspot(2)]),
-      19: feedbackButtons(21, 2, 'Next question'),
-      20: feedbackButtons(18, 2, 'Try again'),
-      21: answerRows('A', 22, 23).concat([menuHotspot(2)]),
-      22: feedbackButtons(24, 2, 'Next question'),
-      23: feedbackButtons(21, 2, 'Try again'),
-      24: answerRows('C', 25, 26).concat([menuHotspot(2)]),
-      25: feedbackButtons(27, 2, 'Finish'),
-      26: feedbackButtons(24, 2, 'Try again'),
-      27: completionButtons(2, 15),
+      13: [menuHotspot(2), backHotspot(12), nextHotspot(14)],
+      14: [menuHotspot(2), backHotspot(13), nextHotspot(15)],
+      15: [menuHotspot(2), backHotspot(14), nextHotspot(16)],
+      16: [menuHotspot(2), backHotspot(15), nextHotspot(17)],
+      17: [menuHotspot(2), backHotspot(16), nextHotspot(18, 'Quiz')],
+      18: quizIntroButtons(19, 2),
+      19: answerRows('B', 20, 21).concat([menuHotspot(2)]),
+      20: feedbackButtons(22, 2, 'Next question'),
+      21: feedbackButtons(19, 2, 'Try again'),
+      22: answerRows('C', 23, 24).concat([menuHotspot(2)]),
+      23: feedbackButtons(25, 2, 'Next question'),
+      24: feedbackButtons(22, 2, 'Try again'),
+      25: answerRows('A', 26, 27).concat([menuHotspot(2)]),
+      26: feedbackButtons(28, 2, 'Next question'),
+      27: feedbackButtons(25, 2, 'Try again'),
+      28: answerRows('C', 29, 30).concat([menuHotspot(2)]),
+      29: feedbackButtons(31, 2, 'Finish'),
+      30: feedbackButtons(28, 2, 'Try again'),
+      31: completionButtons(2, 19),
     },
   };
 

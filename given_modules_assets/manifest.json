@@ -407,115 +407,131 @@
     "id": "safety",
     "title": "Safety Guide",
     "filename": "Safety.pptx",
-    "slide_count": 27,
+    "slide_count": 31,
     "slides": [
       {
         "filename": "slide-001.jpg",
-        "alt": "SAFETY GUIDE, slide 1 of 27"
+        "alt": "SAFETY GUIDE, slide 1 of 31"
       },
       {
         "filename": "slide-002.jpg",
-        "alt": "Pick a topic to explore, slide 2 of 27"
+        "alt": "Pick a topic to explore, slide 2 of 31"
       },
       {
         "filename": "slide-003.jpg",
-        "alt": "Keep small objects out of reach, slide 3 of 27"
+        "alt": "Keep small objects out of reach, slide 3 of 31"
       },
       {
         "filename": "slide-004.jpg",
-        "alt": "Safe sleep for every nap, slide 4 of 27"
+        "alt": "Safe sleep for every nap, slide 4 of 31"
       },
       {
         "filename": "slide-005.jpg",
-        "alt": "Hands on, always, slide 5 of 27"
+        "alt": "Back to sleep: the basics, slide 5 of 31"
       },
       {
         "filename": "slide-006.jpg",
-        "alt": "Childproof the home, slide 6 of 27"
+        "alt": "Crib and bassinet safety, slide 6 of 31"
       },
       {
         "filename": "slide-007.jpg",
-        "alt": "Water safety and bath time, slide 7 of 27"
+        "alt": "Room-sharing, explained, slide 7 of 31"
       },
       {
         "filename": "slide-008.jpg",
-        "alt": "A safe crib, slide 8 of 27"
+        "alt": "Bed-sharing safety, slide 8 of 31"
       },
       {
         "filename": "slide-009.jpg",
-        "alt": "Highchair and infant swing, slide 9 of 27"
+        "alt": "Hands on, always, slide 9 of 31"
       },
       {
         "filename": "slide-010.jpg",
-        "alt": "Car seat and baby gear, slide 10 of 27"
+        "alt": "Childproof the home, slide 10 of 31"
       },
       {
         "filename": "slide-011.jpg",
-        "alt": "Clothes and pacifiers, slide 11 of 27"
+        "alt": "Water safety and bath time, slide 11 of 31"
       },
       {
         "filename": "slide-012.jpg",
-        "alt": "Active and protected, slide 12 of 27"
+        "alt": "A safe crib, slide 12 of 31"
       },
       {
         "filename": "slide-013.jpg",
-        "alt": "Child protection strategies, slide 13 of 27"
+        "alt": "Highchair and infant swing, slide 13 of 31"
       },
       {
         "filename": "slide-014.jpg",
-        "alt": "QUICK QUIZ, slide 14 of 27"
+        "alt": "Car seat and baby gear, slide 14 of 31"
       },
       {
         "filename": "slide-015.jpg",
-        "alt": "Question 1 of 4, slide 15 of 27"
+        "alt": "Clothes and pacifiers, slide 15 of 31"
       },
       {
         "filename": "slide-016.jpg",
-        "alt": "Correct!, slide 16 of 27"
+        "alt": "Active and protected, slide 16 of 31"
       },
       {
         "filename": "slide-017.jpg",
-        "alt": "Not quite, slide 17 of 27"
+        "alt": "Child protection strategies, slide 17 of 31"
       },
       {
         "filename": "slide-018.jpg",
-        "alt": "Question 2 of 4, slide 18 of 27"
+        "alt": "QUICK QUIZ, slide 18 of 31"
       },
       {
         "filename": "slide-019.jpg",
-        "alt": "Correct!, slide 19 of 27"
+        "alt": "Question 1 of 4, slide 19 of 31"
       },
       {
         "filename": "slide-020.jpg",
-        "alt": "Not quite, slide 20 of 27"
+        "alt": "Correct!, slide 20 of 31"
       },
       {
         "filename": "slide-021.jpg",
-        "alt": "Question 3 of 4, slide 21 of 27"
+        "alt": "Not quite, slide 21 of 31"
       },
       {
         "filename": "slide-022.jpg",
-        "alt": "Correct!, slide 22 of 27"
+        "alt": "Question 2 of 4, slide 22 of 31"
       },
       {
         "filename": "slide-023.jpg",
-        "alt": "Not quite, slide 23 of 27"
+        "alt": "Correct!, slide 23 of 31"
       },
       {
         "filename": "slide-024.jpg",
-        "alt": "Question 4 of 4, slide 24 of 27"
+        "alt": "Not quite, slide 24 of 31"
       },
       {
         "filename": "slide-025.jpg",
-        "alt": "Correct!, slide 25 of 27"
+        "alt": "Question 3 of 4, slide 25 of 31"
       },
       {
         "filename": "slide-026.jpg",
-        "alt": "Not quite, slide 26 of 27"
+        "alt": "Correct!, slide 26 of 31"
       },
       {
         "filename": "slide-027.jpg",
-        "alt": "WELL DONE, slide 27 of 27"
+        "alt": "Not quite, slide 27 of 31"
+      },
+      {
+        "filename": "slide-028.jpg",
+        "alt": "Question 4 of 4, slide 28 of 31"
+      },
+      {
+        "filename": "slide-029.jpg",
+        "alt": "Correct!, slide 29 of 31"
+      },
+      {
+        "filename": "slide-030.jpg",
+        "alt": "Not quite, slide 30 of 31"
+      },
+      {
+        "filename": "slide-031.jpg",
+        "alt": "WELL DONE, slide 31 of 31"
       }
     ],
     "lang": "en"
@@ -524,115 +540,131 @@
     "id": "safety_tagalog",
     "title": "Gabay sa Kaligtasan",
     "filename": "Safety_Tagalog.pptx",
-    "slide_count": 27,
+    "slide_count": 31,
     "slides": [
       {
         "filename": "slide-001.jpg",
-        "alt": "GABAY SA KALIGTASAN, slide 1 of 27"
+        "alt": "GABAY SA KALIGTASAN, slide 1 of 31"
       },
       {
         "filename": "slide-002.jpg",
-        "alt": "Pumili ng paksang tuklasin, slide 2 of 27"
+        "alt": "Pumili ng paksang tuklasin, slide 2 of 31"
       },
       {
         "filename": "slide-003.jpg",
-        "alt": "Ilayo ang maliliit na bagay, slide 3 of 27"
+        "alt": "Ilayo ang maliliit na bagay, slide 3 of 31"
       },
       {
         "filename": "slide-004.jpg",
-        "alt": "Ligtas na tulog sa bawat idlip, slide 4 of 27"
+        "alt": "Ligtas na tulog sa bawat idlip, slide 4 of 31"
       },
       {
         "filename": "slide-005.jpg",
-        "alt": "Laging may hawak, slide 5 of 27"
+        "alt": "Nakatihaya: ang mga batayan, slide 5 of 31"
       },
       {
         "filename": "slide-006.jpg",
-        "alt": "Gawing ligtas ang bahay sa bata, slide 6 of 27"
+        "alt": "Ligtas na kuna at bassinet, slide 6 of 31"
       },
       {
         "filename": "slide-007.jpg",
-        "alt": "Kaligtasan sa tubig at paliligo, slide 7 of 27"
+        "alt": "Magkasama sa kuwarto, slide 7 of 31"
       },
       {
         "filename": "slide-008.jpg",
-        "alt": "Ligtas na kuna, slide 8 of 27"
+        "alt": "Pagsasama sa kama: kaligtasan, slide 8 of 31"
       },
       {
         "filename": "slide-009.jpg",
-        "alt": "Highchair at duyan ng sanggol, slide 9 of 27"
+        "alt": "Laging may hawak, slide 9 of 31"
       },
       {
         "filename": "slide-010.jpg",
-        "alt": "Car seat at gamit ng sanggol, slide 10 of 27"
+        "alt": "Gawing ligtas ang bahay sa bata, slide 10 of 31"
       },
       {
         "filename": "slide-011.jpg",
-        "alt": "Damit at pacifier, slide 11 of 27"
+        "alt": "Kaligtasan sa tubig at paliligo, slide 11 of 31"
       },
       {
         "filename": "slide-012.jpg",
-        "alt": "Aktibo at protektado, slide 12 of 27"
+        "alt": "Ligtas na kuna, slide 12 of 31"
       },
       {
         "filename": "slide-013.jpg",
-        "alt": "Proteksyon ng bata: estratehiya, slide 13 of 27"
+        "alt": "Highchair at duyan ng sanggol, slide 13 of 31"
       },
       {
         "filename": "slide-014.jpg",
-        "alt": "MABILIS NA QUIZ, slide 14 of 27"
+        "alt": "Car seat at gamit ng sanggol, slide 14 of 31"
       },
       {
         "filename": "slide-015.jpg",
-        "alt": "Tanong 1 ng 4, slide 15 of 27"
+        "alt": "Damit at pacifier, slide 15 of 31"
       },
       {
         "filename": "slide-016.jpg",
-        "alt": "Tama!, slide 16 of 27"
+        "alt": "Aktibo at protektado, slide 16 of 31"
       },
       {
         "filename": "slide-017.jpg",
-        "alt": "Hindi pa tama, slide 17 of 27"
+        "alt": "Proteksyon ng bata: estratehiya, slide 17 of 31"
       },
       {
         "filename": "slide-018.jpg",
-        "alt": "Tanong 2 ng 4, slide 18 of 27"
+        "alt": "MABILIS NA QUIZ, slide 18 of 31"
       },
       {
         "filename": "slide-019.jpg",
-        "alt": "Tama!, slide 19 of 27"
+        "alt": "Tanong 1 ng 4, slide 19 of 31"
       },
       {
         "filename": "slide-020.jpg",
-        "alt": "Hindi pa tama, slide 20 of 27"
+        "alt": "Tama!, slide 20 of 31"
       },
       {
         "filename": "slide-021.jpg",
-        "alt": "Tanong 3 ng 4, slide 21 of 27"
+        "alt": "Hindi pa tama, slide 21 of 31"
       },
       {
         "filename": "slide-022.jpg",
-        "alt": "Tama!, slide 22 of 27"
+        "alt": "Tanong 2 ng 4, slide 22 of 31"
       },
       {
         "filename": "slide-023.jpg",
-        "alt": "Hindi pa tama, slide 23 of 27"
+        "alt": "Tama!, slide 23 of 31"
       },
       {
         "filename": "slide-024.jpg",
-        "alt": "Tanong 4 ng 4, slide 24 of 27"
+        "alt": "Hindi pa tama, slide 24 of 31"
       },
       {
         "filename": "slide-025.jpg",
-        "alt": "Tama!, slide 25 of 27"
+        "alt": "Tanong 3 ng 4, slide 25 of 31"
       },
       {
         "filename": "slide-026.jpg",
-        "alt": "Hindi pa tama, slide 26 of 27"
+        "alt": "Tama!, slide 26 of 31"
       },
       {
         "filename": "slide-027.jpg",
-        "alt": "MAHUSAY!, slide 27 of 27"
+        "alt": "Hindi pa tama, slide 27 of 31"
+      },
+      {
+        "filename": "slide-028.jpg",
+        "alt": "Tanong 4 ng 4, slide 28 of 31"
+      },
+      {
+        "filename": "slide-029.jpg",
+        "alt": "Tama!, slide 29 of 31"
+      },
+      {
+        "filename": "slide-030.jpg",
+        "alt": "Hindi pa tama, slide 30 of 31"
+      },
+      {
+        "filename": "slide-031.jpg",
+        "alt": "MAHUSAY!, slide 31 of 31"
       }
     ],
     "lang": "tl"
