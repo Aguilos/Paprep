@@ -325,7 +325,7 @@
     {% if current_user.is_authenticated %}
     <div id="global_chat_bubble" class="chat-bubble" style="position:fixed;right:20px;bottom:20px;z-index:1065;">
       <button type="button" class="btn btn-primary chat-launcher-btn rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0 overflow-hidden" data-state="closed" aria-expanded="false" aria-controls="global_chat_panel" onclick="toggleGlobalChat()">
-        <img class="icon-chat" src="/static/image/Logo.png" alt="Toggle PaPrep Messenger" style="width:36px;height:36px;object-fit:contain;filter:brightness(0) invert(1);">
+        <img class="icon-chat" src="{{ url_for('static', filename='image/chatbot_icon.png') }}" alt="PaPrep Assistant" style="width:56px;height:56px;object-fit:contain;">
       </button>
     </div>
 
@@ -336,7 +336,7 @@
         <div class="d-flex align-items-center">
           <div class="d-flex align-items-center gap-2">
             <div class="messenger-avatar avatar-sm d-flex align-items-center justify-content-center p-1" style="background:rgba(255,255,255,0.25);">
-              <img src="/static/image/Logo.png" alt="PaPrep" style="width:22px;height:22px;object-fit:contain;filter:brightness(0) invert(1);">
+              <img src="{{ url_for('static', filename='image/chatbot_icon.png') }}" alt="PaPrep Assistant" style="width:36px;height:36px;object-fit:contain;">
             </div>
             <div>
               <div class="fw-bold small line-height-1">PaPrep Messenger</div>
@@ -361,7 +361,7 @@
         <div class="chat-messages-container flex-grow-1 overflow-auto p-2" id="bot_messages_list" style="max-height: 290px;">
           <div class="msgr-msg-row recv">
             <div class="messenger-avatar avatar-sm flex-shrink-0 bot-avatar">
-              <img src="/static/image/Logo.png" alt="PaPrep">
+              <img src="{{ url_for('static', filename='image/chatbot_icon.png') }}" alt="PaPrep Assistant" style="width:28px;height:28px;object-fit:contain;">
             </div>
             <div class="msgr-bubble">
               <div>👋 <strong>Hi! I'm your PaPrep Assistant.</strong></div>

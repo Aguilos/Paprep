@@ -564,13 +564,13 @@ body.child-quickview-open #dashboardRestContent {
   transform: scale(0.94);
 }
 
-/* Upright brand logo icon inside launcher - remains upright at all times */
+/* Cat icon inside launcher - upright, transparent bg shows through */
 .chat-launcher-btn .icon-chat,
 .chat-launcher-btn img.icon-chat {
-  width: 34px !important;
-  height: 34px !important;
+  width: 56px !important;
+  height: 56px !important;
   object-fit: contain !important;
-  filter: brightness(0) invert(1) !important;
+  filter: none !important;
   transform: none !important;
   display: block;
   transition: transform 0.25s ease;
@@ -645,26 +645,26 @@ body.child-quickview-open #dashboardRestContent {
   max-width: 100%;
 }
 
-/* Bot message logo avatar - high-contrast PaPrep Messenger gradient circle */
+/* Bot message cat avatar - transparent, shows full cat at 28px */
 .bot-avatar {
   width: 28px !important;
   height: 28px !important;
   min-width: 28px !important;
   border-radius: 50% !important;
-  background: var(--msgr-gradient) !important;
-  box-shadow: 0 2px 6px rgba(0, 132, 255, 0.3) !important;
+  background: transparent !important;
+  box-shadow: none !important;
   border: none !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   flex-shrink: 0 !important;
-  overflow: hidden !important;
+  overflow: visible !important;
 }
 .bot-avatar img {
-  width: 18px !important;
-  height: 18px !important;
+  width: 28px !important;
+  height: 28px !important;
   object-fit: contain !important;
-  filter: brightness(0) invert(1) !important;
+  filter: none !important;
   display: block !important;
 }
 

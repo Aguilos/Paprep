@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       row.innerHTML = `
         <div class="messenger-avatar avatar-sm flex-shrink-0 bot-avatar">
-          <img src="/static/image/Logo.png" alt="PaPrep">
+          <img src="/static/image/chatbot_icon.png" alt="PaPrep Assistant" style="width:28px;height:28px;object-fit:contain;">
         </div>
         <div class="msgr-bubble">
           ${bodyHtml}
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
             typingRow.className = 'msgr-msg-row recv typing-indicator-row';
             typingRow.innerHTML = `
               <div class="messenger-avatar avatar-sm flex-shrink-0 bot-avatar">
-                <img src="/static/image/Logo.png" alt="PaPrep">
+                <img src="/static/image/chatbot_icon.png" alt="PaPrep Assistant" style="width:28px;height:28px;object-fit:contain;">
               </div>
               <div class="msgr-bubble text-muted fst-italic" style="padding:6px 12px;font-size:12px;">
                 <span class="spinner-grow spinner-grow-sm me-1" role="status" style="width:8px;height:8px;"></span>Typing...
