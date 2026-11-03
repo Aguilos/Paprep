@@ -214,9 +214,51 @@ document.addEventListener('DOMContentLoaded', function() {
   window.markSingleNotifRead = markSingleNotifRead;
   window.loadHistory = loadHistory;
 
-  // ── PaPrep Assistant Bot Handler ────────────────────────
-  async function handleBotSubmit(evt) {
-    if (evt) evt.preventDefault();
+  // ============================================================
+  // NURSE KITTY & GEMINI AI INTERACTIVE ENGINE
+  // ============================================================
+
+  function setKittyTalking(isTalking) {
+    const heads = document.querySelectorAll('.kitty-chathead-wrap');
+    heads.forEach(h => {
+      if (isTalking) {
+        h.classList.add('talking');
+      } else {
+        h.classList.remove('talking');
+      }
+    });
+  }
+
+  function triggerKittyMouthChatter(duration = 2200) {
+    setKittyTalking(true);
+    clearTimeout(window._kittyTalkTimeout);
+    window._kittyTalkTimeout = setTimeout(() => {
+      setKittyTalking(false);
+    }, duration);
+  }
+
+  function pokeNurseKitty() {
+    const heads = document.querySelectorAll('.kitty-chathead-wrap');
+    heads.forEach(h => {
+      h.classList.add('winking');
+      setTimeout(() => h.classList.remove('winking'), 650);
+    });
+    triggerKittyMouthChatter(1500);
+  }
+
+  // Eye pupil tracking following mouse cursor
+  document.addEventListener('mousemove', (e) => {
+    const pupils = document.querySelectorAll('.kitty-pupil-eye');
+    if (!pupils.length) return;
+    const xOffset = ((e.clientX / window.innerWidth) - 0.5) * 3.5;
+    const yOffset = ((e.clientY / window.innerHeight) - 0.5) * 2.5;
+    pupils.forEach(p => {
+      p.style.transform = `translate(${xOffset.toFixed(1)}px, ${yOffset.toFixed(1)}px)`;
+    });
+  });
+
+  async function handleBotSubmit(e) {
+    if (e) e.preventDefault();
     const input = document.getElementById('bot_input');
     if (!input) return;
     const text = input.value.trim();
@@ -237,9 +279,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const list = document.getElementById('bot_messages_list');
     if (!list) return;
     const userDiv = document.createElement('div');
-    userDiv.className = 'chat-msg user bg-primary text-white p-2 rounded-3 mb-2 small shadow-sm ms-auto';
-    userDiv.style.maxWidth = '85%';
-    userDiv.innerHTML = `<div>${escapeHtml(text)}</div>`;
+    userDiv.className = 'dark-msg-row sent';
+    userDiv.innerHTML = `<div class="dark-msg-bubble user-bubble">${escapeHtml(text)}</div>`;
     list.appendChild(userDiv);
     list.scrollTop = list.scrollHeight;
   }
@@ -251,10 +292,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Show typing indicator
     const typingDiv = document.createElement('div');
     typingDiv.id = 'bot_typing';
-    typingDiv.className = 'chat-msg assistant text-muted p-2 small mb-2';
-    typingDiv.innerHTML = '<em>PaPrep Assistant is typing...</em>';
+    typingDiv.className = 'dark-msg-row recv';
+    typingDiv.innerHTML = `
+      <div class="dark-msg-bubble bot-bubble typing-bubble">
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="ms-2" style="font-size:0.8rem;color:#93c5fd;">Nurse Kitty is thinking...</span>
+      </div>`;
     list.appendChild(typingDiv);
     list.scrollTop = list.scrollHeight;
+
+    // Mouth begins subtle movement during thinking
+    setKittyTalking(true);
 
     try {
       const res = await fetch('/chat/bot', {
@@ -279,6 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (document.getElementById('bot_typing')) {
         document.getElementById('bot_typing').remove();
       }
+      setKittyTalking(false);
 
       if (res.ok && data.ok) {
         if (data.degraded) {
@@ -302,6 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (document.getElementById('bot_typing')) {
         document.getElementById('bot_typing').remove();
       }
+      setKittyTalking(false);
       renderBotError();
     }
   }
@@ -316,34 +368,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const botDiv = document.createElement('div');
-    botDiv.className = 'chat-msg assistant bg-light text-dark p-2 rounded-3 mb-2 small shadow-sm';
-    botDiv.style.maxWidth = '90%';
+    botDiv.className = 'dark-msg-row recv';
 
     let formattedText = escapeHtml(data.text)
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#93c5fd;">$1</strong>')
       .replace(/\n/g, '<br>');
 
-    let html = `<div>${formattedText}</div>`;
+    let html = `<div class="dark-msg-bubble bot-bubble"><div>${formattedText}</div>`;
 
     if (data.shortcuts && data.shortcuts.length > 0) {
-      html += `<div class="mt-2 pt-2 border-top d-flex flex-wrap gap-1">`;
+      html += `<div class="mt-2 pt-2 border-top d-flex flex-wrap gap-1" style="border-color:#1c355a!important;">`;
       data.shortcuts.forEach(s => {
-        html += `<a href="${s.url}" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill" style="font-size:0.72rem;"><i class="${s.icon} me-1"></i>${escapeHtml(s.label)}</a>`;
+        html += `<a href="${s.url}" class="dark-chip-btn text-decoration-none"><i class="${s.icon} me-1"></i>${escapeHtml(s.label)}</a>`;
       });
       html += `</div>`;
     }
 
+    html += `</div>`;
     botDiv.innerHTML = html;
     list.appendChild(botDiv);
     list.scrollTop = list.scrollHeight;
+
+    // Visual Nurse Kitty mouth movement on reply
+    triggerKittyMouthChatter(2400);
 
     // Update quick actions if actions provided
     if (data.actions && data.actions.length > 0) {
       const actionsContainer = document.getElementById('bot_quick_actions');
       if (actionsContainer) {
-        let actHtml = `<div class="d-flex flex-wrap gap-1">`;
+        let actHtml = `<div class="d-flex flex-wrap gap-1 bot-chip-row">`;
         data.actions.forEach(act => {
-          actHtml += `<button class="btn btn-outline-secondary btn-xs py-0 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('${escapeHtml(act)}')">${escapeHtml(act)}</button>`;
+          actHtml += `<button type="button" class="dark-chip-btn" onclick="sendBotQuickQuery('${escapeHtml(act)}')">${escapeHtml(act)}</button>`;
         });
         actHtml += `</div>`;
         actionsContainer.innerHTML = actHtml;
@@ -355,12 +410,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const list = document.getElementById('bot_messages_list');
     if (!list) return;
     const errDiv = document.createElement('div');
-    errDiv.className = 'chat-msg assistant bg-warning-subtle text-dark p-2 rounded-3 mb-2 small';
-    errDiv.innerHTML = 'Sorry, I had trouble processing that. Please try asking again or select a shortcut above!';
+    errDiv.className = 'dark-msg-row recv';
+    errDiv.innerHTML = '<div class="dark-msg-bubble bot-bubble" style="border-color:#b91c1c;color:#fca5a5;">Sorry, I had trouble processing that with Gemini AI. Please try asking again or select a shortcut below!</div>';
     list.appendChild(errDiv);
     list.scrollTop = list.scrollHeight;
+    triggerKittyMouthChatter(1200);
   }
 
   window.handleBotSubmit = handleBotSubmit;
   window.sendBotQuickQuery = sendBotQuickQuery;
+  window.setKittyTalking = setKittyTalking;
+  window.triggerKittyMouthChatter = triggerKittyMouthChatter;
+  window.pokeNurseKitty = pokeNurseKitty;
 });

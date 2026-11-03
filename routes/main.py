@@ -350,3 +350,6 @@ def get_recommendations_api():
         'effective_topic': target_topic,
         'articles': articles,
     })
+
+
+# ---------------------------------------------------------------------------

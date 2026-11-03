@@ -321,32 +321,73 @@
       {% block content %}{% endblock %}
     </main>
 
-    <!-- Global Floating Chat Bubble & Panel (Assistant + Live Consultation) -->
+    <!-- Global Floating Interactive Chathead & Dark Panel (Nurse Kitty + Gemini AI) -->
     {% if current_user.is_authenticated %}
-    <div id="global_chat_bubble" class="chat-bubble" style="position:fixed;right:20px;bottom:20px;z-index:1065;">
-      <button type="button" class="btn btn-primary chat-launcher-btn rounded-circle shadow-lg d-flex align-items-center justify-content-center p-0 overflow-hidden" data-state="closed" aria-expanded="false" aria-controls="global_chat_panel" onclick="toggleGlobalChat()">
-        <img class="icon-chat" src="{{ url_for('static', filename='image/chatbot_icon.png') }}" alt="PaPrep Assistant" style="width:56px;height:56px;object-fit:contain;">
+    <div id="global_chat_bubble" class="chat-bubble kitty-launcher-bubble">
+      <button type="button" class="kitty-chathead-btn shadow-lg" data-state="closed" aria-expanded="false" aria-controls="global_chat_panel" onclick="toggleGlobalChat()" title="Chat with Nurse Kitty">
+        <div class="kitty-chathead-wrap" id="launcher_kitty_head">
+          <img class="kitty-base-img" src="{{ url_for('static', filename='image/chatbot_icon.png') }}" alt="Nurse Kitty - PaPrep Assistant">
+          <svg class="kitty-face-overlay" viewBox="0 0 100 100" aria-hidden="true">
+            <!-- Left Eyelid -->
+            <ellipse class="kitty-eyelid kitty-eyelid-left" cx="34.6" cy="55.1" rx="10.8" ry="11.8" fill="#58abef"/>
+            <!-- Right Eyelid -->
+            <ellipse class="kitty-eyelid kitty-eyelid-right" cx="64.8" cy="55.1" rx="10.8" ry="11.8" fill="#58abef"/>
+            <!-- Pupils Shines for cursor tracking -->
+            <circle class="kitty-pupil-eye pupil-left" cx="33" cy="53" r="2.4" fill="#ffffff"/>
+            <circle class="kitty-pupil-eye pupil-right" cx="63.2" cy="53" r="2.4" fill="#ffffff"/>
+            <!-- Talking Mouth Overlay -->
+            <g class="kitty-mouth-group">
+              <path class="kitty-mouth-cavity" d="M 44.5 74.8 Q 50.1 73.2 55.7 74.8 Q 56 81.8 50.1 82.2 Q 44.2 81.8 44.5 74.8 Z" fill="#350b18" stroke="#163968" stroke-width="0.8"/>
+              <ellipse class="kitty-mouth-tongue" cx="50.1" cy="79.6" rx="4" ry="2.2" fill="#ff748e"/>
+              <path d="M 48 74.8 Q 50.1 76.5 52.2 74.8 Z" fill="#ffffff"/>
+            </g>
+          </svg>
+        </div>
+        <span class="kitty-online-badge" title="Nurse Kitty is online"></span>
       </button>
     </div>
 
     <div id="global_chat_backdrop" class="global-chat-backdrop d-none"></div>
-    <div id="global_chat_panel" class="card shadow-lg position-fixed d-none border-0 global-chat-panel" role="dialog" aria-modal="true" aria-label="PaPrep Messenger">
-      <!-- Messenger Header -->
-      <div class="card-header border-0 text-white p-3 d-flex flex-column gap-2" style="background: var(--msgr-gradient);">
-        <div class="d-flex align-items-center">
+
+    <div id="global_chat_panel" class="card shadow-lg position-fixed d-none border-0 global-chat-panel dark-chat-panel" role="dialog" aria-modal="true" aria-label="Nurse Kitty Assistant">
+      <!-- Peeking Nurse Kitty Mascot on Top of Panel (as in reference image) -->
+      <div class="panel-mascot-anchor" onclick="pokeNurseKitty()" title="Click to poke Nurse Kitty!">
+        <div class="kitty-chathead-wrap panel-mascot-head" id="panel_kitty_head">
+          <img class="kitty-base-img" src="{{ url_for('static', filename='image/chatbot_icon.png') }}" alt="Nurse Kitty">
+          <svg class="kitty-face-overlay" viewBox="0 0 100 100" aria-hidden="true">
+            <ellipse class="kitty-eyelid kitty-eyelid-left" cx="34.6" cy="55.1" rx="10.8" ry="11.8" fill="#58abef"/>
+            <ellipse class="kitty-eyelid kitty-eyelid-right" cx="64.8" cy="55.1" rx="10.8" ry="11.8" fill="#58abef"/>
+            <circle class="kitty-pupil-eye pupil-left" cx="33" cy="53" r="2.4" fill="#ffffff"/>
+            <circle class="kitty-pupil-eye pupil-right" cx="63.2" cy="53" r="2.4" fill="#ffffff"/>
+            <g class="kitty-mouth-group">
+              <path class="kitty-mouth-cavity" d="M 44.5 74.8 Q 50.1 73.2 55.7 74.8 Q 56 81.8 50.1 82.2 Q 44.2 81.8 44.5 74.8 Z" fill="#350b18" stroke="#163968" stroke-width="0.8"/>
+              <ellipse class="kitty-mouth-tongue" cx="50.1" cy="79.6" rx="4" ry="2.2" fill="#ff748e"/>
+              <path d="M 48 74.8 Q 50.1 76.5 52.2 74.8 Z" fill="#ffffff"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Nurse Kitty Header Bar -->
+      <div class="dark-chat-header d-flex flex-column gap-2">
+        <div class="d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-2">
-            <div class="messenger-avatar avatar-sm d-flex align-items-center justify-content-center p-1" style="background:rgba(255,255,255,0.25);">
-              <img src="{{ url_for('static', filename='image/chatbot_icon.png') }}" alt="PaPrep Assistant" style="width:36px;height:36px;object-fit:contain;">
-            </div>
             <div>
-              <div class="fw-bold small line-height-1">PaPrep Messenger</div>
-              <div class="small text-white-50" style="font-size:11px;">
-                <span class="d-inline-block rounded-circle bg-success me-1" style="width:6px;height:6px;"></span>Active Now
+              <div class="kitty-title">Nurse Kitty</div>
+              <div class="kitty-status">
+                <span class="status-dot"></span>online
               </div>
             </div>
           </div>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="dark-close-btn" onclick="toggleGlobalChat()" aria-label="Close Nurse Kitty Chat">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
         </div>
-        <div class="msgr-toggle-container">
+
+        <!-- Mode Switcher Pill Tabs (compatible with switchChatTab) -->
+        <div class="msgr-toggle-container dark-toggle-container">
           <button type="button" class="msgr-toggle-btn active" id="tab-bot" onclick="switchChatTab('bot')">
             <i class="bi bi-robot"></i> Assistant
           </button>
@@ -356,58 +397,65 @@
         </div>
       </div>
 
-      <!-- Mode 1: PaPrep Assistant Bot -->
-      <div id="chat_view_bot" class="card-body p-2 d-flex flex-column h-100 bg-white" style="overflow:hidden;">
-        <div class="chat-messages-container flex-grow-1 overflow-auto p-2" id="bot_messages_list" style="max-height: 290px;">
-          <div class="msgr-msg-row recv">
-            <div class="messenger-avatar avatar-sm flex-shrink-0 bot-avatar">
-              <img src="{{ url_for('static', filename='image/chatbot_icon.png') }}" alt="PaPrep Assistant" style="width:28px;height:28px;object-fit:contain;">
-            </div>
-            <div class="msgr-bubble">
-              <div>👋 <strong>Hi! I'm your PaPrep Assistant.</strong></div>
-              <div class="mt-1">Ask me about fever care, nutrition, safety, or pick a quick shortcut below!</div>
+      <!-- Mode 1: PaPrep Assistant Bot (Nurse Kitty + Gemini AI) -->
+      <div id="chat_view_bot" class="card-body p-0 d-flex flex-column h-100 dark-chat-body" style="overflow:hidden;">
+        <div class="chat-messages-container flex-grow-1 overflow-auto p-3" id="bot_messages_list">
+          <div class="dark-msg-row recv">
+            <div class="dark-msg-bubble bot-bubble">
+              <div class="fw-semibold mb-1" style="color:#93c5fd;">Hi, I'm Nurse Kitty! How can I help you today?</div>
+              <div style="color:#cbd5e1;font-size:0.88rem;line-height:1.45;">Ask me about fever care, nutrition, safety, or pick a quick shortcut below!</div>
             </div>
           </div>
         </div>
+
         <!-- Suggestion Chips -->
-        <div class="px-2 py-1 border-top bg-light flex-shrink-0" id="bot_quick_actions">
+        <div class="px-3 py-2 border-top dark-chips-container flex-shrink-0" id="bot_quick_actions">
           <div class="d-flex flex-wrap gap-1 bot-chip-row">
-            <button class="btn btn-outline-primary btn-xs py-1 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('Fever care guidance')">🌡️ Fever</button>
-            <button class="btn btn-outline-primary btn-xs py-1 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('Nutrition tips for my child')">🍎 Nutrition</button>
-            <button class="btn btn-outline-danger btn-xs py-1 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('Emergency red flags')">🚨 Emergency</button>
-            <button class="btn btn-outline-success btn-xs py-1 px-2 rounded-pill" style="font-size:0.75rem;" onclick="sendBotQuickQuery('Find a clinic nearby')">🏥 Clinics</button>
+            <button type="button" class="dark-chip-btn" onclick="sendBotQuickQuery('Fever care guidance')">🌡️ Fever</button>
+            <button type="button" class="dark-chip-btn" onclick="sendBotQuickQuery('Nutrition tips for my child')">🍎 Nutrition</button>
+            <button type="button" class="dark-chip-btn danger" onclick="sendBotQuickQuery('Emergency red flags')">🚨 Emergency</button>
+            <button type="button" class="dark-chip-btn" onclick="sendBotQuickQuery('Find a clinic nearby')">🏥 Clinics</button>
           </div>
         </div>
-        <form class="p-2 border-top bg-white flex-shrink-0 pb-1" onsubmit="handleBotSubmit(event)">
-          <div class="messenger-input-capsule mb-1">
-            <input type="text" id="bot_input" class="messenger-input" placeholder="Ask PaPrep Assistant..." required>
-            <button type="submit" class="messenger-btn-icon"><i class="bi bi-send-fill fs-6"></i></button>
+
+        <form class="p-2 border-top dark-input-bar flex-shrink-0" onsubmit="handleBotSubmit(event)">
+          <div class="dark-input-capsule">
+            <input type="text" id="bot_input" class="dark-text-input" placeholder="Ask Nurse Kitty..." autocomplete="off" required>
+            <button type="submit" class="dark-send-btn" title="Send query to Nurse Kitty">
+              <span>Send</span>
+              <i class="bi bi-send-fill ms-1"></i>
+            </button>
           </div>
-          <div class="text-center lh-1 mt-1" style="font-size: 10px; color: #999;">
-            <i class="bi bi-robot"></i> Automated AI suggestions. Not medical advice.
+          <div class="text-center mt-1" style="font-size: 10px; color: #64748b;">
+            <i class="bi bi-stars text-info"></i> Powered by Gemini AI. Automated suggestions, not medical advice.
           </div>
         </form>
       </div>
 
       <!-- Mode 2: Live Clinic Consultation -->
-      <div id="chat_view_clinic" class="card-body p-2 d-flex flex-column h-100 d-none bg-white" style="overflow:hidden;">
+      <div id="chat_view_clinic" class="card-body p-0 d-flex flex-column h-100 d-none dark-chat-body" style="overflow:hidden;">
         {% if clinic is defined %}
-        <div class="text-muted small px-2 py-1 border-bottom">Messaging: <strong>{{ clinic.name }}</strong></div>
-        <div class="chat-messages-container flex-grow-1 overflow-auto p-2" id="chat_list_{{ clinic.id }}" style="max-height: 310px;">
+        <div class="px-3 py-2 border-bottom" style="background:#0f1d33;color:#94a3b8;font-size:0.82rem;border-color:#1e3557!important;">
+          Messaging: <strong class="text-white">{{ clinic.name }}</strong>
+        </div>
+        <div class="chat-messages-container flex-grow-1 overflow-auto p-3" id="chat_list_{{ clinic.id }}">
           <!-- Loaded dynamically via chat.js -->
         </div>
-        <form class="p-2 border-top bg-white flex-shrink-0" onsubmit="sendMessage(event, {{ clinic.id }})">
-          <div class="messenger-input-capsule">
-            <input type="text" id="chat_input_{{ clinic.id }}" class="messenger-input" placeholder="Message clinic..." oninput="handleTypingEvent({{ clinic.id }})" required>
-            <button type="submit" class="messenger-btn-icon"><i class="bi bi-send-fill fs-6"></i></button>
+        <form class="p-2 border-top dark-input-bar flex-shrink-0" onsubmit="sendMessage(event, {{ clinic.id }})">
+          <div class="dark-input-capsule">
+            <input type="text" id="chat_input_{{ clinic.id }}" class="dark-text-input" placeholder="Message clinic..." oninput="handleTypingEvent({{ clinic.id }})" required>
+            <button type="submit" class="dark-send-btn">
+              <span>Send</span>
+              <i class="bi bi-send-fill ms-1"></i>
+            </button>
           </div>
         </form>
         {% else %}
-        <div class="text-center p-4 text-muted small my-auto">
-          <i class="bi bi-hospital fs-1 text-primary d-block mb-2" style="color:var(--msgr-blue) !important;"></i>
+        <div class="text-center p-4 text-muted small my-auto" style="color:#94a3b8!important;">
+          <i class="bi bi-hospital fs-1 d-block mb-2" style="color:#38bdf8!important;"></i>
           To chat directly with clinic staff, visit a clinic profile page from <strong>Find a Clinic</strong>.
           <div class="mt-3">
-            <a href="{{ url_for('clinics.clinic_locator') }}" class="btn btn-sm text-white rounded-pill px-3" style="background:var(--msgr-gradient);">Find a Clinic Nearby</a>
+            <a href="{{ url_for('clinics.clinic_locator') }}" class="btn btn-sm text-white rounded-pill px-3" style="background:#2563eb;">Find a Clinic Nearby</a>
           </div>
         </div>
         {% endif %}
@@ -418,7 +466,7 @@
     function toggleGlobalChat() {
       const panel = document.getElementById('global_chat_panel');
       const backdrop = document.getElementById('global_chat_backdrop');
-      const launcher = document.querySelector('.chat-launcher-btn');
+      const launcher = document.querySelector('.kitty-chathead-btn');
       if (!panel) return;
       const isOpening = panel.classList.contains('d-none');
       panel.classList.toggle('d-none', !isOpening);
@@ -432,6 +480,15 @@
       if (launcher) {
         launcher.dataset.state = isOpening ? 'open' : 'closed';
         launcher.setAttribute('aria-expanded', String(isOpening));
+      }
+      if (isOpening) {
+        if (typeof greetNurseKitty === 'function') {
+          greetNurseKitty();
+        }
+        setTimeout(() => {
+          const input = document.getElementById('bot_input');
+          if (input) input.focus();
+        }, 120);
       }
     }
     function dismissFeatureHelp() {
@@ -560,6 +617,11 @@
   });
   if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
   if (overlay) overlay.addEventListener('click', closeSidebar);
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && wrapper && wrapper.classList.contains('sidebar-open')) {
+      closeSidebar();
+    }
+  });
 
   document.querySelectorAll('.child-topbar-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
