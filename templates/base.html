@@ -31,10 +31,8 @@
   <aside class="app-sidebar" id="appSidebar">
     <div class="sidebar-header">
       <div class="sidebar-brand">
-        <div class="brand-icon"><img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"></div>
-        <div class="brand-text">
-          <span class="brand-name">PaPrep</span>
-        </div>
+        <div class="brand-icon"><img src="{{ url_for('static', filename='image/Logo.png') }}" alt="PaPrep Logo"></div>
+        <span class="brand-name">PaPrep</span>
       </div>
       <button class="sidebar-close-btn d-lg-none" id="sidebarCloseBtn">
         <i class="bi bi-x-lg"></i>
@@ -350,28 +348,26 @@
     <div id="global_chat_backdrop" class="global-chat-backdrop d-none"></div>
 
     <div id="global_chat_panel" class="card shadow-lg position-fixed d-none border-0 global-chat-panel dark-chat-panel" role="dialog" aria-modal="true" aria-label="Nurse Kitty Assistant">
-      <!-- Peeking Nurse Kitty Mascot on Top of Panel (as in reference image) -->
-      <div class="panel-mascot-anchor" onclick="pokeNurseKitty()" title="Click to poke Nurse Kitty!">
-        <div class="kitty-chathead-wrap panel-mascot-head" id="panel_kitty_head">
-          <img class="kitty-base-img" src="{{ url_for('static', filename='image/chatbot_icon.png') }}" alt="Nurse Kitty">
-          <svg class="kitty-face-overlay" viewBox="0 0 100 100" aria-hidden="true">
-            <ellipse class="kitty-eyelid kitty-eyelid-left" cx="34.6" cy="55.1" rx="10.8" ry="11.8" fill="#58abef"/>
-            <ellipse class="kitty-eyelid kitty-eyelid-right" cx="64.8" cy="55.1" rx="10.8" ry="11.8" fill="#58abef"/>
-            <circle class="kitty-pupil-eye pupil-left" cx="33" cy="53" r="2.4" fill="#ffffff"/>
-            <circle class="kitty-pupil-eye pupil-right" cx="63.2" cy="53" r="2.4" fill="#ffffff"/>
-            <g class="kitty-mouth-group">
-              <path class="kitty-mouth-cavity" d="M 44.5 74.8 Q 50.1 73.2 55.7 74.8 Q 56 81.8 50.1 82.2 Q 44.2 81.8 44.5 74.8 Z" fill="#350b18" stroke="#163968" stroke-width="0.8"/>
-              <ellipse class="kitty-mouth-tongue" cx="50.1" cy="79.6" rx="4" ry="2.2" fill="#ff748e"/>
-              <path d="M 48 74.8 Q 50.1 76.5 52.2 74.8 Z" fill="#ffffff"/>
-            </g>
-          </svg>
-        </div>
-      </div>
-
-      <!-- Nurse Kitty Header Bar -->
+      <!-- Nurse Kitty Header Bar: Logo Icon on left, Nurse Kitty title on right (sidebar-brand format) -->
       <div class="dark-chat-header d-flex flex-column gap-2">
         <div class="d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2">
+          <div class="kitty-brand-header">
+            <div class="kitty-brand-icon" id="panel_kitty_avatar" onclick="pokeNurseKitty()" title="Click to poke Nurse Kitty!">
+              <div class="kitty-chathead-wrap panel-header-head" id="panel_kitty_head">
+                <img class="kitty-base-img" src="{{ url_for('static', filename='image/chatbot_icon.png') }}" alt="Nurse Kitty">
+                <svg class="kitty-face-overlay" viewBox="0 0 100 100" aria-hidden="true">
+                  <ellipse class="kitty-eyelid kitty-eyelid-left" cx="34.6" cy="55.1" rx="10.8" ry="11.8" fill="#58abef"/>
+                  <ellipse class="kitty-eyelid kitty-eyelid-right" cx="64.8" cy="55.1" rx="10.8" ry="11.8" fill="#58abef"/>
+                  <circle class="kitty-pupil-eye pupil-left" cx="33" cy="53" r="2.4" fill="#ffffff"/>
+                  <circle class="kitty-pupil-eye pupil-right" cx="63.2" cy="53" r="2.4" fill="#ffffff"/>
+                  <g class="kitty-mouth-group">
+                    <path class="kitty-mouth-cavity" d="M 44.5 74.8 Q 50.1 73.2 55.7 74.8 Q 56 81.8 50.1 82.2 Q 44.2 81.8 44.5 74.8 Z" fill="#350b18" stroke="#163968" stroke-width="0.8"/>
+                    <ellipse class="kitty-mouth-tongue" cx="50.1" cy="79.6" rx="4" ry="2.2" fill="#ff748e"/>
+                    <path d="M 48 74.8 Q 50.1 76.5 52.2 74.8 Z" fill="#ffffff"/>
+                  </g>
+                </svg>
+              </div>
+            </div>
             <div>
               <div class="kitty-title">Nurse Kitty</div>
               <div class="kitty-status">
@@ -467,21 +463,27 @@
       const panel = document.getElementById('global_chat_panel');
       const backdrop = document.getElementById('global_chat_backdrop');
       const launcher = document.querySelector('.kitty-chathead-btn');
+      const bubble = document.getElementById('global_chat_bubble');
       if (!panel) return;
+
       const isOpening = panel.classList.contains('d-none');
-      panel.classList.toggle('d-none', !isOpening);
-      if (backdrop) {
-        backdrop.classList.toggle('d-none', !isOpening);
-        if (!backdrop._bound) {
-          backdrop.addEventListener('click', toggleGlobalChat);
-          backdrop._bound = true;
-        }
-      }
-      if (launcher) {
-        launcher.dataset.state = isOpening ? 'open' : 'closed';
-        launcher.setAttribute('aria-expanded', String(isOpening));
-      }
+
       if (isOpening) {
+        panel.classList.remove('d-none');
+        if (backdrop) {
+          backdrop.classList.remove('d-none');
+          if (!backdrop._bound) {
+            backdrop.addEventListener('click', toggleGlobalChat);
+            backdrop._bound = true;
+          }
+        }
+        if (bubble) {
+          bubble.classList.add('panel-open');
+        }
+        if (launcher) {
+          launcher.dataset.state = 'open';
+          launcher.setAttribute('aria-expanded', 'true');
+        }
         if (typeof greetNurseKitty === 'function') {
           greetNurseKitty();
         }
@@ -489,6 +491,20 @@
           const input = document.getElementById('bot_input');
           if (input) input.focus();
         }, 120);
+      } else {
+        if (bubble) {
+          bubble.classList.remove('panel-open');
+        }
+        if (launcher) {
+          launcher.dataset.state = 'closed';
+          launcher.setAttribute('aria-expanded', 'false');
+        }
+        setTimeout(() => {
+          if (bubble && !bubble.classList.contains('panel-open')) {
+            panel.classList.add('d-none');
+            if (backdrop) backdrop.classList.add('d-none');
+          }
+        }, 220);
       }
     }
     function dismissFeatureHelp() {
