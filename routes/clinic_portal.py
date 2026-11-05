@@ -489,6 +489,54 @@ def add_resource():
     return redirect(url_for('clinic_portal.manage_modules'))
 
 
+@clinic_portal_bp.route('/resources/<int:resource_id>/edit', methods=['POST'])
+@clinic_login_required
+def edit_resource(resource_id):
+    account = _current_clinic_account()
+    resource = ParentChildResource.query.filter_by(
+        id=resource_id, clinic_account_id=account.id
+    ).first_or_404()
+    title = request.form.get('title', '').strip()
+    url = request.form.get('url', '').strip()
+    resource_type = request.form.get('resource_type', 'link')
+    min_age = _parse_int(request.form.get('target_age_min_months'), 0)
+    max_age = _parse_int(request.form.get('target_age_max_months'), 60)
+    if not title or not url:
+        flash('Resource title and URL are required.', 'error')
+        return redirect(url_for('clinic_portal.manage_modules'))
+    if resource_type not in ('video', 'link'):
+        resource_type = 'link'
+    if min_age < 0 or max_age < min_age:
+        flash('Please provide a valid age range.', 'error')
+        return redirect(url_for('clinic_portal.manage_modules'))
+
+    resource.title = title
+    resource.description = request.form.get('description', '').strip()
+    resource.url = url
+    resource.thumbnail_url = request.form.get('thumbnail_url', '').strip() or None
+    resource.resource_type = resource_type
+    resource.category = request.form.get('category', 'parenting').strip() or 'parenting'
+    resource.target_age_min_months = min_age
+    resource.target_age_max_months = max_age
+    db.session.commit()
+    flash(f'Resource "{resource.title}" updated.', 'success')
+    return redirect(url_for('clinic_portal.manage_modules'))
+
+
+@clinic_portal_bp.route('/resources/<int:resource_id>/delete', methods=['POST'])
+@clinic_login_required
+def delete_resource(resource_id):
+    account = _current_clinic_account()
+    resource = ParentChildResource.query.filter_by(
+        id=resource_id, clinic_account_id=account.id
+    ).first_or_404()
+    title = resource.title
+    db.session.delete(resource)
+    db.session.commit()
+    flash(f'Resource "{title}" deleted.', 'info')
+    return redirect(url_for('clinic_portal.manage_modules'))
+
+
 @clinic_portal_bp.route('/modules/add', methods=['POST'])
 @clinic_login_required
 def add_module():

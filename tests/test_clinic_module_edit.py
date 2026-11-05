@@ -7,7 +7,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app import create_app, db
 from config import Config
-from models import Clinic, ClinicAccount, LearningModule, ModuleProgress, ModuleQuizQuestion, User
+from models import (
+    Clinic,
+    ClinicAccount,
+    LearningModule,
+    ModuleProgress,
+    ModuleQuizQuestion,
+    ParentChildResource,
+    User,
+)
 
 
 class ClinicModuleEditTests(unittest.TestCase):
@@ -61,10 +69,36 @@ class ClinicModuleEditTests(unittest.TestCase):
                 category='safety',
                 clinic_account_id=None,
             )
-            db.session.add_all([cls.module, cls.system_module])
+            cls.resource = ParentChildResource(
+                title='Original resource',
+                description='Original resource description',
+                url='https://example.com/original',
+                resource_type='link',
+                category='parenting',
+                target_age_min_months=0,
+                target_age_max_months=60,
+                clinic_account_id=cls.owner.id,
+            )
+            cls.other_resource = ParentChildResource(
+                title='Other resource',
+                description='Other resource description',
+                url='https://example.com/other',
+                resource_type='video',
+                category='safety',
+                target_age_min_months=12,
+                target_age_max_months=48,
+                clinic_account_id=cls.other.id,
+            )
+            db.session.add_all([
+                cls.module,
+                cls.system_module,
+                cls.resource,
+                cls.other_resource,
+            ])
             db.session.commit()
             cls.module_id = cls.module.id
             cls.system_module_id = cls.system_module.id
+            cls.resource_id = cls.resource.id
             cls.owner_id = cls.owner.id
             cls.other_id = cls.other.id
             cls.parent_id = cls.parent.id
@@ -79,6 +113,28 @@ class ClinicModuleEditTests(unittest.TestCase):
             module.age_group = '0-6 months'
             db.session.query(ModuleProgress).filter_by(module_id=self.module_id).delete()
             db.session.query(ModuleQuizQuestion).filter_by(module_id=self.module_id).delete()
+            resource = db.session.get(ParentChildResource, self.resource_id)
+            if resource is None:
+                resource = ParentChildResource(
+                    title='Original resource',
+                    description='Original resource description',
+                    url='https://example.com/original',
+                    resource_type='link',
+                    category='parenting',
+                    target_age_min_months=0,
+                    target_age_max_months=60,
+                    clinic_account_id=self.owner_id,
+                )
+                db.session.add(resource)
+                db.session.flush()
+                self.resource_id = resource.id
+            resource.title = 'Original resource'
+            resource.description = 'Original resource description'
+            resource.url = 'https://example.com/original'
+            resource.resource_type = 'link'
+            resource.category = 'parenting'
+            resource.target_age_min_months = 0
+            resource.target_age_max_months = 60
             db.session.commit()
 
     @classmethod
@@ -208,6 +264,62 @@ class ClinicModuleEditTests(unittest.TestCase):
             f'/clinic/modules/{self.module_id}/editor'.encode(),
             other_response.data,
         )
+
+    def test_owner_can_edit_resource(self):
+        response = self.clinic_client(self.owner_id).post(
+            f'/clinic/resources/{self.resource_id}/edit',
+            data={
+                'title': 'Updated resource',
+                'description': 'Updated description',
+                'url': 'https://example.com/updated',
+                'resource_type': 'video',
+                'category': 'nutrition',
+                'target_age_min_months': '6',
+                'target_age_max_months': '24',
+                'thumbnail_url': 'https://example.com/thumb.jpg',
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            resource = db.session.get(ParentChildResource, self.resource_id)
+            self.assertEqual(resource.title, 'Updated resource')
+            self.assertEqual(resource.resource_type, 'video')
+            self.assertEqual(resource.target_age_max_months, 24)
+
+    def test_owner_can_delete_resource(self):
+        response = self.clinic_client(self.owner_id).post(
+            f'/clinic/resources/{self.resource_id}/delete'
+        )
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            self.assertIsNone(db.session.get(ParentChildResource, self.resource_id))
+
+    def test_different_clinic_cannot_edit_or_delete_resource(self):
+        client = self.clinic_client(self.other_id)
+        edit_response = client.post(
+            f'/clinic/resources/{self.resource_id}/edit',
+            data={'title': 'Tampered', 'url': 'https://example.com/tampered'},
+        )
+        delete_response = client.post(
+            f'/clinic/resources/{self.resource_id}/delete'
+        )
+        self.assertEqual(edit_response.status_code, 404)
+        self.assertEqual(delete_response.status_code, 404)
+        with self.app.app_context():
+            self.assertEqual(
+                db.session.get(ParentChildResource, self.resource_id).title,
+                'Original resource',
+            )
+
+    def test_resource_actions_are_visible_only_to_owner(self):
+        owner_response = self.clinic_client(self.owner_id).get('/clinic/modules')
+        other_response = self.clinic_client(self.other_id).get('/clinic/modules')
+        edit_path = f'/clinic/resources/{self.resource_id}/edit'.encode()
+        delete_path = f'/clinic/resources/{self.resource_id}/delete'.encode()
+        self.assertIn(edit_path, owner_response.data)
+        self.assertIn(delete_path, owner_response.data)
+        self.assertNotIn(edit_path, other_response.data)
+        self.assertNotIn(delete_path, other_response.data)
 
     def test_progress_and_quiz_data_survive_edit(self):
         with self.app.app_context():
