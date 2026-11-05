@@ -55,6 +55,39 @@ class GivenModuleTests(unittest.TestCase):
         self.assertIn(b'data-given-id="parenting"', response.data)
         self.assertIn(b'/modules/given/parenting', response.data)
 
+    def test_given_modules_categorized_by_active_filter(self):
+        # All category -> all 3 guides shown
+        response_all = self.client.get('/modules/')
+        self.assertEqual(response_all.status_code, 200)
+        self.assertIn(b'Given Modules', response_all.data)
+        self.assertIn(b'data-given-id="parenting"', response_all.data)
+        self.assertIn(b'data-given-id="nutrition"', response_all.data)
+        self.assertIn(b'data-given-id="safety"', response_all.data)
+
+        # Parenting category -> only parenting guide shown
+        response_parenting = self.client.get('/modules/?category=parenting')
+        self.assertEqual(response_parenting.status_code, 200)
+        self.assertIn(b'Given Modules', response_parenting.data)
+        self.assertIn(b'data-given-id="parenting"', response_parenting.data)
+        self.assertNotIn(b'data-given-id="nutrition"', response_parenting.data)
+        self.assertNotIn(b'data-given-id="safety"', response_parenting.data)
+
+        # Nutrition category -> only nutrition guide shown
+        response_nutrition = self.client.get('/modules/?category=nutrition')
+        self.assertEqual(response_nutrition.status_code, 200)
+        self.assertIn(b'Given Modules', response_nutrition.data)
+        self.assertIn(b'data-given-id="nutrition"', response_nutrition.data)
+        self.assertNotIn(b'data-given-id="parenting"', response_nutrition.data)
+        self.assertNotIn(b'data-given-id="safety"', response_nutrition.data)
+
+        # Safety category -> only safety guide shown
+        response_safety = self.client.get('/modules/?category=safety')
+        self.assertEqual(response_safety.status_code, 200)
+        self.assertIn(b'Given Modules', response_safety.data)
+        self.assertIn(b'data-given-id="safety"', response_safety.data)
+        self.assertNotIn(b'data-given-id="parenting"', response_safety.data)
+        self.assertNotIn(b'data-given-id="nutrition"', response_safety.data)
+
     def test_viewer_and_every_slide_are_available_to_parent(self):
         response = self.client.get('/modules/given/nutrition')
         self.assertEqual(response.status_code, 200)
