@@ -453,6 +453,16 @@ def manage_modules():
                            category_meta=CATEGORY_META)
 
 
+def _resource_age_months(field_name, default, legacy_field_name):
+    years = request.form.get(field_name)
+    if years is not None and years.strip() != '':
+        try:
+            return round(float(years) * 12)
+        except (TypeError, ValueError):
+            return -1
+    return _parse_int(request.form.get(legacy_field_name), default)
+
+
 @clinic_portal_bp.route('/resources/add', methods=['POST'])
 @clinic_login_required
 def add_resource():
@@ -467,8 +477,8 @@ def add_resource():
         return redirect(url_for('clinic_portal.manage_modules'))
     if resource_type not in ('video', 'link'):
         resource_type = 'link'
-    min_age = _parse_int(request.form.get('target_age_min_months'), 0)
-    max_age = _parse_int(request.form.get('target_age_max_months'), 60)
+    min_age = _resource_age_months('target_age_min_years', 0, 'target_age_min_months')
+    max_age = _resource_age_months('target_age_max_years', 60, 'target_age_max_months')
     if min_age < 0 or max_age < min_age:
         flash('Please provide a valid age range.', 'error')
         return redirect(url_for('clinic_portal.manage_modules'))
@@ -499,8 +509,8 @@ def edit_resource(resource_id):
     title = request.form.get('title', '').strip()
     url = request.form.get('url', '').strip()
     resource_type = request.form.get('resource_type', 'link')
-    min_age = _parse_int(request.form.get('target_age_min_months'), 0)
-    max_age = _parse_int(request.form.get('target_age_max_months'), 60)
+    min_age = _resource_age_months('target_age_min_years', 0, 'target_age_min_months')
+    max_age = _resource_age_months('target_age_max_years', 60, 'target_age_max_months')
     if not title or not url:
         flash('Resource title and URL are required.', 'error')
         return redirect(url_for('clinic_portal.manage_modules'))

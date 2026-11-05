@@ -286,6 +286,25 @@ class ClinicModuleEditTests(unittest.TestCase):
             self.assertEqual(resource.resource_type, 'video')
             self.assertEqual(resource.target_age_max_months, 24)
 
+    def test_resource_year_inputs_are_stored_as_months_and_displayed_as_years(self):
+        client = self.clinic_client(self.owner_id)
+        response = client.post(
+            f'/clinic/resources/{self.resource_id}/edit',
+            data={
+                'title': 'Year-based resource',
+                'url': 'https://example.com/years',
+                'target_age_min_years': '0.5',
+                'target_age_max_years': '2',
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        page = client.get('/clinic/modules')
+        self.assertIn(b'0.5\xe2\x80\x932 years', page.data)
+        with self.app.app_context():
+            resource = db.session.get(ParentChildResource, self.resource_id)
+            self.assertEqual(resource.target_age_min_months, 6)
+            self.assertEqual(resource.target_age_max_months, 24)
+
     def test_owner_can_delete_resource(self):
         response = self.clinic_client(self.owner_id).post(
             f'/clinic/resources/{self.resource_id}/delete'

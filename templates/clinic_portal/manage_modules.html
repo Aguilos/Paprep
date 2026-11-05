@@ -31,7 +31,7 @@
       <tr>
         <td><div class="fw-600">{{ resource.title }}</div><small class="text-muted">{{ resource.category|title }}</small></td>
         <td>{{ resource.resource_type|title }}</td>
-        <td>{{ resource.target_age_min_months }}–{{ resource.target_age_max_months }} months</td>
+        <td>{{ '%g'|format(resource.target_age_min_months / 12) }}–{{ '%g'|format(resource.target_age_max_months / 12) }} years</td>
         <td>
           <div class="d-flex gap-1">
             <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
@@ -64,8 +64,8 @@
         <div class="col-md-4"><label class="form-label fw-semibold">Type</label><select name="resource_type" class="form-select"><option value="link" {% if resource.resource_type == 'link' %}selected{% endif %}>Link</option><option value="video" {% if resource.resource_type == 'video' %}selected{% endif %}>Video</option></select></div>
         <div class="col-12"><label class="form-label fw-semibold">Description</label><textarea name="description" class="form-control" rows="2">{{ resource.description or '' }}</textarea></div>
         <div class="col-md-4"><label class="form-label fw-semibold">Category</label><input name="category" value="{{ resource.category }}" class="form-control"></div>
-        <div class="col-md-4"><label class="form-label fw-semibold">Min age (months)</label><input name="target_age_min_months" type="number" min="0" value="{{ resource.target_age_min_months }}" class="form-control"></div>
-        <div class="col-md-4"><label class="form-label fw-semibold">Max age (months)</label><input name="target_age_max_months" type="number" min="0" value="{{ resource.target_age_max_months }}" class="form-control"></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Min age (years)</label><input name="target_age_min_years" type="number" min="0" step="0.5" value="{{ '%g'|format(resource.target_age_min_months / 12) }}" class="form-control"></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Max age (years)</label><input name="target_age_max_years" type="number" min="0" step="0.5" value="{{ '%g'|format(resource.target_age_max_months / 12) }}" class="form-control"></div>
         <div class="col-12"><label class="form-label fw-semibold">Thumbnail URL <small class="text-muted">(optional)</small></label><input name="thumbnail_url" type="url" value="{{ resource.thumbnail_url or '' }}" class="form-control"></div>
       </div></div>
       <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="submit">Save Changes</button></div>
@@ -167,8 +167,8 @@
         <div class="col-md-4"><label class="form-label fw-semibold">Type</label><select name="resource_type" class="form-select"><option value="link">Link</option><option value="video">Video</option></select></div>
         <div class="col-12"><label class="form-label fw-semibold">Description</label><textarea name="description" class="form-control" rows="2"></textarea></div>
         <div class="col-md-4"><label class="form-label fw-semibold">Category</label><input name="category" value="parenting" class="form-control"></div>
-        <div class="col-md-4"><label class="form-label fw-semibold">Min age (months)</label><input name="target_age_min_months" type="number" min="0" value="0" class="form-control"></div>
-        <div class="col-md-4"><label class="form-label fw-semibold">Max age (months)</label><input name="target_age_max_months" type="number" min="0" value="60" class="form-control"></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Min age (years)</label><input name="target_age_min_years" type="number" min="0" step="0.5" value="0" class="form-control"></div>
+        <div class="col-md-4"><label class="form-label fw-semibold">Max age (years)</label><input name="target_age_max_years" type="number" min="0" step="0.5" value="5" class="form-control"></div>
         <div class="col-12"><label class="form-label fw-semibold">Thumbnail URL <small class="text-muted">(optional)</small></label><input name="thumbnail_url" type="url" class="form-control"></div>
       </div></div>
       <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" type="submit">Save Resource</button></div>
