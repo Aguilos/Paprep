@@ -80,6 +80,7 @@ with app.app_context():
         cols = db.session.execute(text("PRAGMA table_info('clinic_messages')")).fetchall()
         print('clinic_messages schema:', cols)
     except Exception as e:
+        db.session.rollback()
         print('pragma error', e)
     msgs = ClinicMessage.query.filter_by(clinic_id=clinic.id, user_id=u.id).all()
     print('messages count after parent send:', len(msgs))

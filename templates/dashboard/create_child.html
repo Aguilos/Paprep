@@ -49,8 +49,8 @@
             <input type="date" class="form-control form-control-lg" id="dob" name="date_of_birth"
                    value="{{ child.date_of_birth.isoformat() if editing else (form_data.get('date_of_birth', '')) }}"
                    required>
-            <div class="form-text">Age must be 0–5 years.</div>
-            <div class="invalid-feedback">Please enter a valid date of birth.</div>
+            <div class="form-text">Age must be 0–21 years.</div>
+            <div class="invalid-feedback" id="dobFeedback">Please enter a valid date of birth.</div>
           </div>
           <div class="col-sm-6">
             <label for="gender" class="form-label fw-semibold">Gender</label>
@@ -106,19 +106,23 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
 // Validate DOB on client side
 document.getElementById('childForm').addEventListener('submit', function(e) {
-  const dob = document.getElementById('dob').value;
+  const dobInput = document.getElementById('dob');
+  const dob = dobInput.value;
   if (dob) {
     const birthDate = new Date(dob);
     const today = new Date();
     const ageMonths = (today.getFullYear() - birthDate.getFullYear()) * 12
       + (today.getMonth() - birthDate.getMonth());
-    if (ageMonths > 72) {
+    if (birthDate > today || ageMonths > 252) {
       e.preventDefault();
-      document.getElementById('dob').classList.add('is-invalid');
-      document.getElementById('dob').nextElementSibling.textContent = 'PaPrep supports children aged 0–21 years only.';
-      document.getElementById('dob').nextElementSibling.style.display = 'block';
+      dobInput.classList.add('is-invalid');
+      document.getElementById('dobFeedback').textContent =
+        birthDate > today
+          ? 'Date of birth cannot be in the future.'
+          : 'PaPrep supports children aged 0–21 years.';
       return;
     }
   }

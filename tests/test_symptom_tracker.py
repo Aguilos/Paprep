@@ -84,7 +84,7 @@ class SymptomTrackerTests(unittest.TestCase):
         # /cough-cold-tracker now redirects to /fever-tracker?tab=cough
         response = self.client.get('/fever-tracker', query_string={'tab': 'cough'})
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'No cough/cold episodes yet', response.data)
+        self.assertIn(b'No cough episodes yet', response.data)
         with self.app.app_context():
             self.assertEqual(RespiratoryEpisode.query.filter_by(child_id=self.child_two_id).count(), 0)
 
